@@ -1,6 +1,10 @@
-python-pptx
-Pillow
-requests
-# LibreOffice + pdf2image による画像変換用
-pdf2image
-# poppler-utils が必要（システムレベルでインストール）
+python-pptx>=0.6.21          # PPTX解析・操作用
+Pillow>=10.0.0               # 画像処理ライブラリ
+requests>=2.31.0             # HTTP通信用
+pdf2image>=3.1.0             # PDFを画像に変換
+supabase>=1.0.0              # Supabase Python SDK
+
+# システムレベルでのインストールが必要（Docker/サーバーレス環境）:
+# - libreoffice (headless mode対応)
+# - poppler-utils (pdf2imageの依存関係)
+# - fonts-liberation, fonts-dejavu-core (日本語フォント対応)
