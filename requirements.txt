@@ -1,0 +1,6 @@
+python-pptx
+Pillow
+requests
+# LibreOffice + pdf2image による画像変換用
+pdf2image
+# poppler-utils が必要（システムレベルでインストール）

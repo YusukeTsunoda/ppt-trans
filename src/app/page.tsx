@@ -1,103 +1,67 @@
-import Image from "next/image";
+'use client'; // ブラウザで動くコンポーネントであることを示す
 
-export default function Home() {
+import { useState } from 'react';
+
+export default function HomePage() {
+  const [file, setFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0];
+    if (selectedFile) {
+      if (selectedFile.type !== 'application/vnd.openxmlformats-officedocument.presentationml.presentation') {
+        setError('PowerPoint (.pptx) ファイルを選択してください。');
+        setFile(null);
+      } else {
+        setFile(selectedFile);
+        setError(null);
+      }
+    }
+  };
+
+  const handleUpload = async () => {
+    if (!file) return;
+    setIsUploading(true);
+    setError(null);
+    // ここに後でAPIを呼び出す処理を書く
+    alert(`「${file.name}」をアップロードします。（まだ処理は実装していません）`);
+    setIsUploading(false);
+  };
+
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <main className="flex min-h-screen flex-col items-center justify-center p-24 bg-gray-50">
+      <div className="w-full max-w-lg p-8 space-y-6 bg-white rounded-lg shadow-md">
+        <div className="text-center">
+          <h1 className="text-3xl font-bold text-gray-800">PowerPoint 翻訳ツール</h1>
+          <p className="mt-2 text-gray-600">.pptxファイルをアップロードして翻訳を開始します。</p>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
+        <div className="flex flex-col items-center space-y-4">
+          <input
+            type="file"
+            onChange={handleFileChange}
+            accept=".pptx,application/vnd.openxmlformats-officedocument.presentationml.presentation"
+            className="block w-full text-sm text-gray-500
+              file:mr-4 file:py-2 file:px-4
+              file:rounded-full file:border-0
+              file:text-sm file:font-semibold
+              file:bg-violet-50 file:text-violet-700
+              hover:file:bg-violet-100"
           />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+          {file && <p className="text-sm text-gray-500">選択中のファイル: {file.name}</p>}
+          {error && <p className="text-sm text-red-500">{error}</p>}
+        </div>
+        <button
+          onClick={handleUpload}
+          disabled={!file || isUploading}
+          className="w-full px-4 py-2 text-white bg-violet-600 rounded-md
+            hover:bg-violet-700 focus:outline-none focus:ring-2
+            focus:ring-offset-2 focus:ring-violet-500
+            disabled:bg-gray-400 disabled:cursor-not-allowed"
         >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+          {isUploading ? '処理中...' : '解析を開始'}
+        </button>
+      </div>
+    </main>
   );
 }
