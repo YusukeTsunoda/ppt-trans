@@ -6,7 +6,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -102,8 +102,8 @@ model Translation {
   file          File     @relation(fields: [fileId], references: [id], onDelete: Cascade)
   
   slideNumber   Int
-  originalText  String   @db.Text
-  translatedText String  @db.Text
+  originalText  String
+  translatedText String
   
   createdAt     DateTime @default(now())
   

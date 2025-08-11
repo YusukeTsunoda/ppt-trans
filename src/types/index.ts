@@ -29,6 +29,9 @@ export interface SlideData {
 export interface ProcessingResult {
   slides: SlideData[];
   totalSlides: number;
+  fileName?: string;
+  processedAt?: string;
+  fileId?: string;
 }
 
 // 翻訳用テキスト（APIリクエスト用）

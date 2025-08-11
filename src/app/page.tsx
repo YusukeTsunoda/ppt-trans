@@ -5,6 +5,7 @@ import { EditorScreen } from '@/components/EditorScreen';
 import { PreviewScreen } from '@/components/PreviewScreen';
 import { SettingsScreen } from '@/components/SettingsScreen';
 import { Sidebar } from '@/components/Sidebar';
+import { UserNav } from '@/components/UserNav';
 import { getSettings } from '@/lib/settings';
 import { addToHistory, updateHistoryItem, type TranslationHistoryItem } from '@/lib/history';
 import type { ProcessingResult } from '@/types';
@@ -231,10 +232,16 @@ export default function HomePage() {
         {currentPage === 'upload' && (
           <main className="min-h-screen bg-slate-50 dark:bg-slate-900">
       <div className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-slate-900 dark:text-slate-100 mb-2">PowerPoint 翻訳ツール</h1>
-          <p className="text-lg text-slate-600 dark:text-slate-400">LibreOffice + pdf2image による高品質変換</p>
+        {/* Header with User Navigation */}
+        <div className="mb-8">
+          <div className="flex justify-between items-center mb-6">
+            <div></div>
+            <UserNav />
+          </div>
+          <div className="text-center">
+            <h1 className="text-4xl font-bold text-slate-900 dark:text-slate-100 mb-2">PowerPoint 翻訳ツール</h1>
+            <p className="text-lg text-slate-600 dark:text-slate-400">LibreOffice + pdf2image による高品質変換</p>
+          </div>
         </div>
 
         {/* Upload Section */}
