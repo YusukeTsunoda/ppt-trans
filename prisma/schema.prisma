@@ -1,0 +1,162 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ユーザーモデル
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  username      String    @unique
+  passwordHash  String
+  role          Role      @default(USER)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  lastLoginAt   DateTime?
+  isActive      Boolean   @default(true)
+  
+  // リレーション
+  files         File[]
+  settings      UserSettings?
+  sessions      Session[]
+  auditLogs     AuditLog[]
+  
+  @@index([email])
+  @@index([username])
+}
+
+// ユーザー設定
+model UserSettings {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // 翻訳設定
+  translationModel  String   @default("claude-3-haiku-20240307")
+  targetLanguage    String   @default("Japanese")
+  batchSize         Int      @default(5)
+  autoSave          Boolean  @default(true)
+  theme             String   @default("light")
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+// セッション管理
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expires      DateTime
+  createdAt    DateTime @default(now())
+  
+  @@index([sessionToken])
+  @@index([userId])
+}
+
+// ファイル管理
+model File {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  fileName        String
+  originalFileUrl String
+  translatedFileUrl String?
+  fileSize        Int
+  mimeType        String
+  
+  // 処理状態
+  status          FileStatus @default(PENDING)
+  processedAt     DateTime?
+  
+  // メタデータ
+  totalSlides     Int?
+  sourceLanguage  String?
+  targetLanguage  String?
+  translationModel String?
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  // リレーション
+  translations    Translation[]
+  auditLogs       AuditLog[]
+  
+  @@index([userId])
+  @@index([status])
+}
+
+// 翻訳履歴
+model Translation {
+  id            String   @id @default(cuid())
+  fileId        String
+  file          File     @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  
+  slideNumber   Int
+  originalText  String   @db.Text
+  translatedText String  @db.Text
+  
+  createdAt     DateTime @default(now())
+  
+  @@index([fileId])
+}
+
+// 監査ログ
+model AuditLog {
+  id          String      @id @default(cuid())
+  userId      String
+  user        User        @relation(fields: [userId], references: [id])
+  
+  action      AuditAction
+  entityType  String      // "file", "user", "settings" など
+  entityId    String?
+  
+  fileId      String?
+  file        File?       @relation(fields: [fileId], references: [id])
+  
+  metadata    Json?       // 追加情報
+  ipAddress   String?
+  userAgent   String?
+  
+  createdAt   DateTime    @default(now())
+  
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+// Enum定義
+enum Role {
+  USER
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum FileStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum AuditAction {
+  LOGIN
+  LOGOUT
+  FILE_UPLOAD
+  FILE_DOWNLOAD
+  FILE_DELETE
+  FILE_TRANSLATE
+  SETTINGS_UPDATE
+  USER_CREATE
+  USER_UPDATE
+  USER_DELETE
+}

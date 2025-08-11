@@ -1,36 +1,98 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# PowerPoint 翻訳アプリ
 
-## Getting Started
+PowerPointファイルをアップロードして翻訳し、編集できるWebアプリケーションです。
 
-First, run the development server:
+## セットアップ
 
+### 前提条件
+
+- Node.js 18以上
+- Python 3.8以上
+- npm または yarn
+
+### インストール手順
+
+1. **リポジトリをクローン**
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone https://github.com/YusukeTsunoda/ppt-trans.git
+cd ppt-trans
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. **Node.js依存関係をインストール**
+```bash
+npm install
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. **Python仮想環境を作成・有効化**
+```bash
+# 仮想環境を作成
+python3 -m venv venv
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+# 仮想環境を有効化
+# macOS/Linux:
+source venv/bin/activate
+# Windows:
+# venv\Scripts\activate
+```
 
-## Learn More
+4. **Python依存関係をインストール**
+```bash
+pip install -r requirements.txt
+```
 
-To learn more about Next.js, take a look at the following resources:
+5. **環境変数を設定**
+`.env.local`ファイルを作成し、必要な環境変数を設定してください：
+```env
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+ANTHROPIC_API_KEY=your_anthropic_api_key
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+6. **開発サーバーを起動**
+```bash
+npm run dev
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+アプリケーションは `http://localhost:3000` で利用できます。
 
-## Deploy on Vercel
+## 開発
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### venv環境の管理
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **有効化**: `source venv/bin/activate`
+- **無効化**: `deactivate`
+- **依存関係の更新**: `pip install -r requirements.txt`
+- **新しいパッケージの追加**: `pip install package_name && pip freeze > requirements.txt`
+
+### ファイル構成
+
+```
+pptx-translator/
+├── app/                    # Next.js 13 App Router
+│   ├── api/               # API エンドポイント
+│   └── page.tsx           # メインページ
+├── lib/                    # ユーティリティ
+├── venv/                   # Python仮想環境
+├── requirements.txt        # Python依存関係
+└── package.json           # Node.js依存関係
+```
+
+## 機能
+
+- PowerPointファイルのアップロード
+- スライドの画像化（LibreOffice + pdf2image）
+- テキスト抽出と翻訳（Claude API）
+- 翻訳文の編集
+- 翻訳版PowerPointのダウンロード
+
+## 技術スタック
+
+- **フロントエンド**: Next.js 13, TypeScript, Tailwind CSS
+- **バックエンド**: Python (Vercel Functions)
+- **データベース**: Supabase
+- **翻訳**: Anthropic Claude API
+- **画像処理**: LibreOffice, pdf2image, Pillow
+
+## ライセンス
+
+MIT License
