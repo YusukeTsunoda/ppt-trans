@@ -2,6 +2,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { AuditAction } from '@prisma/client';
 
 export async function getCurrentUser() {
   const session = await getServerSession(authOptions);
@@ -53,7 +54,7 @@ export async function requireAdmin() {
 
 export async function logUserAction(
   userId: string,
-  action: string,
+  action: AuditAction,
   entityType: string,
   entityId?: string,
   metadata?: any

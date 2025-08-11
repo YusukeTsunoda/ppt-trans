@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import type { ProcessingResult, SlideData } from '@/types';
 import { getSettings } from '@/lib/settings';
 import { updateHistoryItem } from '@/lib/history';
+import { useResponsive } from '@/hooks/useResponsive';
+import { LazyImage } from '@/components/LazyImage';
 
 // CSSアニメーションをグローバルスタイルとして追加
 const globalStyles = `
@@ -25,6 +27,7 @@ interface PreviewScreenProps {
 }
 
 export function PreviewScreen({ data, onBack, onDataUpdate, historyId }: PreviewScreenProps) {
+  const responsive = useResponsive();
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [isTranslating, setIsTranslating] = useState(false);
   const [targetLanguage, setTargetLanguage] = useState('Japanese');
@@ -389,7 +392,7 @@ export function PreviewScreen({ data, onBack, onDataUpdate, historyId }: Preview
                 </svg>
                 戻る
               </button>
-              <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+              <h1 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-slate-100">
                 プレビュー & 翻訳
               </h1>
             </div>
@@ -534,7 +537,7 @@ export function PreviewScreen({ data, onBack, onDataUpdate, historyId }: Preview
         )}
 
         {/* メインコンテンツ - 中央配置の大きなスライド */}
-        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 mb-6 border border-slate-200 dark:border-slate-700">
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 md:p-6 mb-6 border border-slate-200 dark:border-slate-700">
           <div className="mb-4">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
@@ -687,7 +690,7 @@ export function PreviewScreen({ data, onBack, onDataUpdate, historyId }: Preview
         </div>
 
         {/* テキストペア表示 - スライド下に配置 */}
-        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 border border-slate-200 dark:border-slate-700">
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 md:p-6 border border-slate-200 dark:border-slate-700">
           <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
             <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -698,7 +701,7 @@ export function PreviewScreen({ data, onBack, onDataUpdate, historyId }: Preview
           {hasTexts ? (
             <>
               {/* ヘッダー */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 mb-4 border-b border-slate-200 pb-3">
+              <div className={`grid ${responsive.isMobile ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-2'} gap-4 lg:gap-6 mb-4 border-b border-slate-200 pb-3`}>
                 <div>
                   <h3 className="text-base font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2">
                     <span className="w-2 h-2 bg-blue-600 rounded-full"></span>

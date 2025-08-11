@@ -1,34 +1,45 @@
 'use client';
 
 import { useSession } from 'next-auth/react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useTransition, useOptimistic } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { formatDistanceToNow } from 'date-fns';
-import { ja } from 'date-fns/locale';
 import { downloadFile } from '@/lib/downloadUtils';
+import { listFilesAction, type FileWithTranslations } from '@/server-actions/files/list';
+import { deleteFileAction } from '@/server-actions/files/delete';
+import { Loader2, Trash2, Download, FileText, AlertCircle } from 'lucide-react';
 
-interface UserFile {
-  id: string;
-  fileName: string;
-  originalFileUrl: string;
-  translatedFileUrl: string | null;
-  fileSize: number;
-  status: string;
-  totalSlides: number | null;
-  sourceLanguage: string | null;
-  targetLanguage: string | null;
-  createdAt: string;
-  processedAt: string | null;
-}
+// date-fnsを動的インポート
+const formatDate = (date: Date): string => {
+  const now = new Date();
+  const diff = now.getTime() - date.getTime();
+  const seconds = Math.floor(diff / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+  
+  if (days > 0) return `${days}日前`;
+  if (hours > 0) return `${hours}時間前`;
+  if (minutes > 0) return `${minutes}分前`;
+  return 'たった今';
+};
 
 export default function FilesPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [files, setFiles] = useState<UserFile[]>([]);
+  const [files, setFiles] = useState<FileWithTranslations[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [deletingFileId, setDeletingFileId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState('');
+  const [isPending, startTransition] = useTransition();
+  const [deletingFileId, setDeletingFileId] = useState<string | null>(null);
+  
+  // Optimistic updates for file deletion
+  const [optimisticFiles, setOptimisticFiles] = useOptimistic(
+    files,
+    (state: FileWithTranslations[], deletedFileId: string) => 
+      state.filter(f => f.id !== deletedFileId)
+  );
 
   useEffect(() => {
     if (status === 'loading') return;
@@ -43,14 +54,24 @@ export default function FilesPage() {
 
   const fetchFiles = async () => {
     setIsLoading(true);
+    setError(null);
+    
     try {
-      const response = await fetch('/api/files');
-      if (response.ok) {
-        const data = await response.json();
-        setFiles(data.files);
+      const result = await listFilesAction({
+        page: 1,
+        pageSize: 50,
+        sortBy: 'createdAt',
+        sortOrder: 'desc'
+      });
+      
+      if (result.success && result.files) {
+        setFiles(result.files);
+      } else {
+        setError(result.error || 'ファイルの取得に失敗しました');
       }
     } catch (error) {
       console.error('Error fetching files:', error);
+      setError('ファイルの取得中にエラーが発生しました');
     } finally {
       setIsLoading(false);
     }
@@ -63,27 +84,35 @@ export default function FilesPage() {
 
     setDeletingFileId(fileId);
     setMessage('');
+    setError(null);
+
+    // Optimistic update
+    startTransition(() => {
+      setOptimisticFiles(fileId);
+    });
 
     try {
-      const response = await fetch(`/api/files?id=${fileId}`, {
-        method: 'DELETE',
-      });
-
-      if (response.ok) {
+      const result = await deleteFileAction(fileId);
+      
+      if (result.success) {
         setMessage('ファイルを削除しました');
-        setFiles(files.filter(f => f.id !== fileId));
+        // Server Actionが成功したら実際のファイルリストを更新
+        setFiles(prev => prev.filter(f => f.id !== fileId));
       } else {
-        setMessage('ファイルの削除に失敗しました');
+        // 削除に失敗した場合は元に戻す
+        setError(result.error || 'ファイルの削除に失敗しました');
+        await fetchFiles(); // リストを再取得
       }
     } catch (error) {
       console.error('Error deleting file:', error);
-      setMessage('ファイルの削除中にエラーが発生しました');
+      setError('ファイルの削除中にエラーが発生しました');
+      await fetchFiles(); // リストを再取得
     } finally {
       setDeletingFileId(null);
     }
   };
 
-  const handleDownload = async (file: UserFile) => {
+  const handleDownload = async (file: FileWithTranslations) => {
     const success = await downloadFile({
       url: file.translatedFileUrl || file.originalFileUrl,
       fileName: file.fileName
@@ -103,79 +132,91 @@ export default function FilesPage() {
   };
 
   const getStatusBadge = (status: string) => {
-    const statusConfig = {
-      PENDING: { label: '処理待ち', className: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' },
-      PROCESSING: { label: '処理中', className: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' },
-      COMPLETED: { label: '完了', className: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' },
-      FAILED: { label: '失敗', className: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' },
+    const statusStyles = {
+      PENDING: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
+      PROCESSING: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+      COMPLETED: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+      FAILED: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
     };
 
-    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.PENDING;
+    const statusLabels = {
+      PENDING: '処理待ち',
+      PROCESSING: '処理中',
+      COMPLETED: '完了',
+      FAILED: '失敗',
+    };
 
     return (
-      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${config.className}`}>
-        {config.label}
+      <span className={`px-2 py-1 text-xs font-medium rounded-full ${statusStyles[status as keyof typeof statusStyles] || ''}`}>
+        {statusLabels[status as keyof typeof statusLabels] || status}
       </span>
     );
   };
 
-  if (isLoading) {
+  if (status === 'loading' || isLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-lg">読み込み中...</div>
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
       </div>
     );
   }
 
+  if (!session) {
+    return null;
+  }
+
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* ヘッダー */}
-        <div className="mb-8 flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">マイファイル</h1>
-            <p className="mt-2 text-gray-600 dark:text-gray-400">
-              アップロードしたファイルの管理
-            </p>
-          </div>
+    <div className="container mx-auto px-4 py-8 max-w-7xl">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold mb-2">ファイル管理</h1>
+        <p className="text-gray-600 dark:text-gray-400">
+          アップロードしたファイルの一覧と管理
+        </p>
+      </div>
+
+      {/* メッセージ表示 */}
+      {message && (
+        <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg text-green-800 dark:bg-green-900/20 dark:border-green-800 dark:text-green-200">
+          {message}
+        </div>
+      )}
+
+      {/* エラー表示 */}
+      {error && (
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-800 dark:bg-red-900/20 dark:border-red-800 dark:text-red-200 flex items-center gap-2">
+          <AlertCircle className="w-5 h-5" />
+          {error}
+        </div>
+      )}
+
+      {/* アップロードボタン */}
+      <div className="mb-6">
+        <Link
+          href="/"
+          className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+        >
+          <FileText className="w-5 h-5 mr-2" />
+          新しいファイルをアップロード
+        </Link>
+      </div>
+
+      {/* ファイルリスト */}
+      {optimisticFiles.length === 0 ? (
+        <div className="text-center py-12 bg-gray-50 dark:bg-gray-800 rounded-lg">
+          <FileText className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+          <p className="text-gray-600 dark:text-gray-400">
+            まだファイルがありません
+          </p>
           <Link
             href="/"
-            className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            className="mt-4 inline-block text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
           >
-            新しいファイルをアップロード
+            最初のファイルをアップロード
           </Link>
         </div>
-
-        {message && (
-          <div className={`mb-4 p-3 rounded-lg text-sm ${
-            message.includes('失敗') || message.includes('エラー')
-              ? 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400'
-              : 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400'
-          }`}>
-            {message}
-          </div>
-        )}
-
-        {/* ファイルリスト */}
-        {files.length === 0 ? (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-8 text-center">
-            <div className="text-gray-400 mb-4">
-              <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-              </svg>
-            </div>
-            <p className="text-gray-500 dark:text-gray-400">
-              まだファイルがアップロードされていません
-            </p>
-            <Link
-              href="/"
-              className="mt-4 inline-block px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-            >
-              最初のファイルをアップロード
-            </Link>
-          </div>
-        ) : (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+      ) : (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+          <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
               <thead className="bg-gray-50 dark:bg-gray-900">
                 <tr>
@@ -186,62 +227,77 @@ export default function FilesPage() {
                     サイズ
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    スライド
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    翻訳言語
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     ステータス
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    翻訳
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     アップロード日時
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     操作
                   </th>
                 </tr>
               </thead>
               <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                {files.map((file) => (
-                  <tr key={file.id}>
+                {optimisticFiles.map((file) => (
+                  <tr key={file.id} className={isPending && deletingFileId === file.id ? 'opacity-50' : ''}>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-foreground">
-                        {file.fileName}
+                      <div className="flex items-center">
+                        <FileText className="w-5 h-5 text-gray-400 mr-3" />
+                        <div>
+                          <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                            {file.fileName}
+                          </div>
+                          {file.totalSlides && (
+                            <div className="text-xs text-gray-500 dark:text-gray-400">
+                              {file.totalSlides} スライド
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
                       {formatBytes(file.fileSize)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
-                      {file.totalSlides || '-'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                      {file.targetLanguage || '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {getStatusBadge(file.status)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                      {formatDistanceToNow(new Date(file.createdAt), { 
-                        addSuffix: true, 
-                        locale: ja 
-                      })}
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
+                      {file.translations.length > 0 ? (
+                        <span className="text-green-600 dark:text-green-400">
+                          {file.translations.length} 件の翻訳
+                        </span>
+                      ) : (
+                        <span className="text-gray-400">未翻訳</span>
+                      )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={() => handleDownload(file)}
-                          className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
-                        >
-                          ダウンロード
-                        </button>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
+                      {formatDate(new Date(file.createdAt))}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <div className="flex items-center justify-end gap-2">
+                        {file.translatedFileUrl && (
+                          <button
+                            onClick={() => handleDownload(file)}
+                            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                            title="ダウンロード"
+                          >
+                            <Download className="w-5 h-5" />
+                          </button>
+                        )}
                         <button
                           onClick={() => handleDelete(file.id, file.fileName)}
                           disabled={deletingFileId === file.id}
-                          className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 disabled:opacity-50"
+                          className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 disabled:opacity-50"
+                          title="削除"
                         >
-                          {deletingFileId === file.id ? '削除中...' : '削除'}
+                          {deletingFileId === file.id ? (
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-5 h-5" />
+                          )}
                         </button>
                       </div>
                     </td>
@@ -250,8 +306,8 @@ export default function FilesPage() {
               </tbody>
             </table>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

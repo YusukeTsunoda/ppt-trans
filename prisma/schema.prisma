@@ -15,8 +15,11 @@ model User {
   id            String    @id @default(cuid())
   email         String    @unique
   username      String    @unique
-  passwordHash  String
+  name          String?
+  password      String?   // passwordHashからpasswordに変更（bcryptハッシュを保存）
+  passwordHash  String?   // 互換性のため一時的に保持
   role          Role      @default(USER)
+  image         String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   lastLoginAt   DateTime?
@@ -27,6 +30,8 @@ model User {
   settings      UserSettings?
   sessions      Session[]
   auditLogs     AuditLog[]
+  activityLogs  ActivityLog[]
+  usageLimit    UsageLimit?
   
   @@index([email])
   @@index([username])
@@ -90,6 +95,7 @@ model File {
   // リレーション
   translations    Translation[]
   auditLogs       AuditLog[]
+  activityLogs    ActivityLog[]
   
   @@index([userId])
   @@index([status])
@@ -101,9 +107,13 @@ model Translation {
   fileId        String
   file          File     @relation(fields: [fileId], references: [id], onDelete: Cascade)
   
-  slideNumber   Int
-  originalText  String
-  translatedText String
+  slideNumber   Int?
+  originalText  String?
+  translatedText String?
+  targetLanguage String?
+  status        String?
+  progress      Int?
+  completedAt   DateTime?
   
   createdAt     DateTime @default(now())
   
@@ -159,4 +169,42 @@ enum AuditAction {
   USER_CREATE
   USER_UPDATE
   USER_DELETE
+}
+
+// アクティビティログ（Server Actions用）
+model ActivityLog {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  action      String   // "FILE_UPLOAD", "FILE_DELETE", "LOGIN", など
+  targetType  String?  // "file", "user", "settings" など
+  targetId    String?
+  fileId      String?
+  file        File?    @relation(fields: [fileId], references: [id])
+  metadata    Json?    // 追加情報
+  
+  createdAt   DateTime @default(now())
+  
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+// 使用量制限
+model UsageLimit {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  monthlyFileLimit  Int      @default(10)
+  currentMonthFiles Int      @default(0)
+  maxFileSize       Int      @default(104857600) // 100MB
+  maxStorageSize    Int      @default(1073741824) // 1GB
+  resetDate         DateTime @default(now())
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@index([userId])
 }

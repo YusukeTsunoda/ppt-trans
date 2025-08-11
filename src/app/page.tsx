@@ -1,11 +1,17 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { EditorScreen } from '@/components/EditorScreen';
-import { PreviewScreen } from '@/components/PreviewScreen';
-import { SettingsScreen } from '@/components/SettingsScreen';
+import { batchTranslate } from '@/server-actions/translate/process';
+import { uploadPptxAction } from '@/server-actions/files/upload';
+import { 
+  DynamicEditorScreen, 
+  DynamicPreviewScreen, 
+  DynamicSettingsScreen 
+} from '@/components/DynamicImports';
 import { Sidebar } from '@/components/Sidebar';
 import { UserNav } from '@/components/UserNav';
+import { MobileNav } from '@/components/MobileNav';
+import { useResponsive } from '@/hooks/useResponsive';
 import { getSettings } from '@/lib/settings';
 import { addToHistory, updateHistoryItem, type TranslationHistoryItem } from '@/lib/history';
 import type { ProcessingResult } from '@/types';
@@ -25,6 +31,7 @@ export default function HomePage() {
   const [currentPage, setCurrentPage] = useState<'upload' | 'preview' | 'editor' | 'settings'>('upload');
   const [settings, setSettings] = useState<Settings>(getSettings());
   const [currentHistoryId, setCurrentHistoryId] = useState<string | null>(null);
+  const responsive = useResponsive();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -62,26 +69,18 @@ export default function HomePage() {
         return;
       }
 
-      // 翻訳APIを呼び出す
-      const response = await fetch('/api/translate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          texts: allTexts,
-          targetLang: targetLanguage,
-          model: settings.translationModel
-        }),
+      // Server Actionを使用して翻訳
+      const result = await batchTranslate({
+        texts: allTexts.map(t => ({ id: t.id, text: t.originalText })),
+        targetLanguage: targetLanguage as any,
+        model: settings.translationModel as any
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || '翻訳に失敗しました。');
+      if (!result.success) {
+        throw new Error(result.error || '翻訳に失敗しました。');
       }
 
-      const data = await response.json();
-      const translations = data.translations;
+      const translations = result.data?.translations || [];
 
       // 翻訳結果をprocessingResultに反映
       const updatedResult = { ...processingResult };
@@ -125,22 +124,18 @@ export default function HomePage() {
     setShowPreviews(false);
 
     try {
-      // Create form data for file upload
+      // Server Actionを使用してファイルをアップロード
       const formData = new FormData();
       formData.append('file', file);
 
-      // Call the processing API
-      const response = await fetch('/api/process-pptx', {
-        method: 'POST',
-        body: formData,
-      });
+      const uploadResult = await uploadPptxAction(null, formData);
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'ファイルの処理に失敗しました。');
+      if (!uploadResult.success) {
+        throw new Error(uploadResult.error || 'ファイルの処理に失敗しました。');
       }
 
-      const result: ProcessingResult = await response.json();
+      // TODO: ファイル処理の結果を取得するロジックを実装
+      const result: ProcessingResult = uploadResult.data as any;
       
       // Set the processing result and show preview screen
       setProcessingResult(result);
@@ -193,23 +188,28 @@ export default function HomePage() {
 
   return (
     <div className="flex h-screen bg-slate-50 dark:bg-slate-900">
-      {/* サイドバー */}
-      <Sidebar 
-        currentPage={currentPage}
-        onPageChange={handlePageChange}
-        hasData={processingResult !== null}
-      />
+      {/* モバイルナビゲーション */}
+      {responsive.isMobile && <MobileNav />}
+      
+      {/* デスクトップサイドバー */}
+      {!responsive.isMobile && (
+        <Sidebar 
+          currentPage={currentPage}
+          onPageChange={handlePageChange}
+          hasData={processingResult !== null}
+        />
+      )}
 
       {/* メインコンテンツ */}
       <div className="flex-1 overflow-auto">
         {/* 設定画面 */}
         {currentPage === 'settings' && (
-          <SettingsScreen onSettingsChange={handleSettingsChange} />
+          <DynamicSettingsScreen onSettingsChange={handleSettingsChange} />
         )}
 
         {/* プレビュー画面 */}
         {currentPage === 'preview' && processingResult && (
-          <PreviewScreen 
+          <DynamicPreviewScreen 
             data={processingResult} 
             onBack={() => handlePageChange('upload')}
             onDataUpdate={(updatedData) => {
@@ -221,7 +221,7 @@ export default function HomePage() {
 
         {/* 編集画面 */}
         {currentPage === 'editor' && processingResult && (
-          <EditorScreen 
+          <DynamicEditorScreen 
             data={processingResult} 
             onBack={() => handlePageChange('preview')}
             historyId={currentHistoryId}
@@ -236,11 +236,11 @@ export default function HomePage() {
         <div className="mb-8">
           <div className="flex justify-between items-center mb-6">
             <div></div>
-            <UserNav />
+            {!responsive.isMobile && <UserNav />}
           </div>
           <div className="text-center">
-            <h1 className="text-4xl font-bold text-slate-900 dark:text-slate-100 mb-2">PowerPoint 翻訳ツール</h1>
-            <p className="text-lg text-slate-600 dark:text-slate-400">LibreOffice + pdf2image による高品質変換</p>
+            <h1 className="text-2xl md:text-4xl font-bold text-slate-900 dark:text-slate-100 mb-2">PowerPoint 翻訳ツール</h1>
+            <p className="text-sm md:text-lg text-slate-600 dark:text-slate-400">LibreOffice + pdf2image による高品質変換</p>
           </div>
         </div>
 
@@ -312,7 +312,7 @@ export default function HomePage() {
                     総テキスト要素: {processingResult.slides.reduce((total, slide) => total + slide.texts.length, 0)} 個
                   </p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <button
                     onClick={() => setShowPreviewScreen(true)}
                     className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-1 transition-all duration-200 font-medium"
@@ -385,7 +385,7 @@ export default function HomePage() {
               </div>
 
               {/* Slide Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 md:gap-4">
                 {processingResult.slides.map((slide) => (
                   <div 
                     key={slide.pageNumber} 
