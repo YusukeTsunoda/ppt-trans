@@ -71,6 +71,9 @@ export function getSupabaseAdminClient(): SupabaseClient {
   });
 }
 
+// デフォルトエクスポートとしてクライアントを公開
+export const supabase = getSupabaseClient();
+
 /**
  * ストレージバケットの存在確認と作成
  */

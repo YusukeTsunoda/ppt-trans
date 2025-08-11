@@ -11,7 +11,8 @@ export interface TranslationHistoryItem {
   translationModel: string;
   createdAt: string;
   updatedAt: string;
-  status: 'uploaded' | 'translating' | 'translated' | 'downloaded';
+  completedAt?: string;  // 完了時刻（オプション）
+  status: 'uploaded' | 'translating' | 'translated' | 'downloaded' | 'failed';  // failedステータス追加
 }
 
 const HISTORY_KEY = 'pptx-translator-history';

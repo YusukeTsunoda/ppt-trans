@@ -3,6 +3,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import SessionProvider from "@/components/SessionProvider";
+import { ToastProvider } from "@/components/Toast";
+import { SessionManager } from "@/components/SessionManager";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -39,7 +41,10 @@ export default function RootLayout({
               disableTransitionOnChange
               storageKey="pptx-translator-theme"
             >
-              {children}
+              <ToastProvider>
+                {process.env.NEXT_PUBLIC_DISABLE_SESSION_MANAGER !== 'true' && <SessionManager />}
+                {children}
+              </ToastProvider>
             </ThemeProvider>
           </SessionProvider>
         </ErrorBoundary>
