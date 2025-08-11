@@ -1,13 +1,22 @@
 import Redis from 'ioredis';
 
+// Redis接続が必須かどうか
+const REDIS_ENABLED = process.env.REDIS_ENABLED === 'true';
+
 // Redis接続設定
 export const redisConfig = {
   host: process.env.REDIS_HOST || 'localhost',
   port: parseInt(process.env.REDIS_PORT || '6379'),
   password: process.env.REDIS_PASSWORD,
   db: parseInt(process.env.REDIS_DB || '0'),
-  maxRetriesPerRequest: 3,
+  maxRetriesPerRequest: 1,
+  enableOfflineQueue: false,
+  lazyConnect: true,
   retryStrategy: (times: number) => {
+    if (times > 3) {
+      // 3回以上失敗したら諦める
+      return null;
+    }
     const delay = Math.min(times * 50, 2000);
     return delay;
   },
@@ -15,25 +24,48 @@ export const redisConfig = {
 
 // Redisクライアントのシングルトンインスタンス
 let redisClient: Redis | null = null;
+let redisAvailable = false;
 
-export function getRedisClient(): Redis {
+export function getRedisClient(): Redis | null {
+  if (!REDIS_ENABLED) {
+    return null;
+  }
+
   if (!redisClient) {
     redisClient = new Redis(redisConfig);
     
     redisClient.on('connect', () => {
       console.log('🚀 Redis connected successfully');
+      redisAvailable = true;
     });
 
     redisClient.on('error', (err) => {
-      console.error('❌ Redis connection error:', err);
+      // エラーをログに記録するが、アプリケーションを停止しない
+      if (redisAvailable) {
+        console.warn('⚠️ Redis connection lost:', err.message);
+        redisAvailable = false;
+      }
     });
 
     redisClient.on('close', () => {
-      console.log('🔌 Redis connection closed');
+      if (redisAvailable) {
+        console.log('🔌 Redis connection closed');
+        redisAvailable = false;
+      }
+    });
+
+    // 接続を試みる（失敗しても続行）
+    redisClient.connect().catch((err) => {
+      console.warn('⚠️ Redis is not available, continuing without cache:', err.message);
+      redisAvailable = false;
     });
   }
 
-  return redisClient;
+  return redisAvailable ? redisClient : null;
+}
+
+export function isRedisAvailable(): boolean {
+  return redisAvailable;
 }
 
 // キャッシュキー生成ヘルパー

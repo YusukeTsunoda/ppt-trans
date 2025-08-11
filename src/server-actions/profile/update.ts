@@ -300,7 +300,7 @@ export async function changePassword(formData: FormData) {
     const validatedData = changePasswordSchema.parse(data);
 
     // 現在のパスワードを確認
-    const bcrypt = require('bcryptjs');
+    const { compare, hash } = await import('bcryptjs');
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: { password: true },
@@ -316,7 +316,7 @@ export async function changePassword(formData: FormData) {
       );
     }
 
-    const isPasswordValid = await bcrypt.compare(validatedData.currentPassword, user.password);
+    const isPasswordValid = await compare(validatedData.currentPassword, user.password);
     if (!isPasswordValid) {
       throw new AppError(
         'Invalid current password',
@@ -328,7 +328,7 @@ export async function changePassword(formData: FormData) {
     }
 
     // 新しいパスワードをハッシュ化
-    const hashedPassword = await bcrypt.hash(validatedData.newPassword, 10);
+    const hashedPassword = await hash(validatedData.newPassword, 10);
 
     // パスワードを更新
     await prisma.user.update({

@@ -21,11 +21,12 @@ export const authOptions: AuthOptions = {
           where: { email: credentials.email }
         });
 
-        if (!user || !user.password) {
+        if (!user || (!user.password && !user.passwordHash)) {
           return null;
         }
 
-        const isPasswordValid = await compare(credentials.password, user.password);
+        const hashedPassword = user.password || user.passwordHash || '';
+        const isPasswordValid = await compare(credentials.password, hashedPassword);
 
         if (!isPasswordValid) {
           return null;
@@ -34,9 +35,9 @@ export const authOptions: AuthOptions = {
         return {
           id: user.id,
           email: user.email,
-          name: user.name,
+          name: user.name || user.username || '',
           role: user.role,
-          image: user.image
+          image: user.image || null
         };
       }
     })
@@ -83,11 +84,12 @@ export async function signIn(
     where: { email: credentials.email }
   });
 
-  if (!user || !user.password) {
+  if (!user || (!user.password && !user.passwordHash)) {
     return { error: 'CredentialsSignin' };
   }
 
-  const isPasswordValid = await compare(credentials.password, user.password);
+  const hashedPassword = user.password || user.passwordHash || '';
+  const isPasswordValid = await compare(credentials.password, hashedPassword);
 
   if (!isPasswordValid) {
     return { error: 'CredentialsSignin' };
@@ -116,9 +118,9 @@ export async function signIn(
     user: {
       id: user.id,
       email: user.email,
-      name: user.name,
+      name: user.name || user.username || '',
       role: user.role,
-      image: user.image
+      image: user.image || null
     }
   };
 }

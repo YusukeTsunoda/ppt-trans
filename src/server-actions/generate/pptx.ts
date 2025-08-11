@@ -62,16 +62,6 @@ const batchGenerateSchema = z.object({
   priority: z.enum(['low', 'normal', 'high']).default('normal'),
 });
 
-// 生成ジョブのステータススキーマ
-const generationJobSchema = z.object({
-  id: z.string().uuid(),
-  fileId: z.string().uuid(),
-  status: z.enum(['pending', 'processing', 'completed', 'failed']),
-  progress: z.number().min(0).max(100),
-  outputFileUrl: z.string().optional(),
-  error: z.string().optional(),
-});
-
 /**
  * PPTXファイルを生成
  */
@@ -121,7 +111,7 @@ export async function generatePptx(formData: FormData) {
     if (file.user.id !== session.user.id) {
       throw new AppError(
         'Forbidden',
-        ErrorCodes.AUTH_FORBIDDEN,
+        ErrorCodes.AUTH_UNAUTHORIZED,
         403,
         true,
         'このファイルへのアクセス権限がありません'
@@ -499,7 +489,7 @@ export async function getGenerationJobStatus(jobId: string) {
     if (job.userId !== session.user.id) {
       throw new AppError(
         'Forbidden',
-        ErrorCodes.AUTH_FORBIDDEN,
+        ErrorCodes.AUTH_UNAUTHORIZED,
         403,
         true,
         'このジョブへのアクセス権限がありません'
@@ -571,7 +561,7 @@ export async function cancelGenerationJob(jobId: string) {
     if (job.userId !== session.user.id) {
       throw new AppError(
         'Forbidden',
-        ErrorCodes.AUTH_FORBIDDEN,
+        ErrorCodes.AUTH_UNAUTHORIZED,
         403,
         true,
         'このジョブへのアクセス権限がありません'

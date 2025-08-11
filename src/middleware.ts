@@ -1,12 +1,12 @@
 import { withAuth } from 'next-auth/middleware';
 import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import type { NextRequestWithAuth } from 'next-auth/middleware';
 // レート制限はEdge Runtimeで使用できないため、APIルート内で実装
 // XSSProtectionはEdge Runtimeで使用できないため、CSPは直接設定
 // loggerはEdge Runtimeでの使用を避ける
 
 export default withAuth(
-  async function middleware(req: NextRequest & { nextauth?: { token?: unknown } }) {
+  async function middleware(req: NextRequestWithAuth) {
     const token = req.nextauth?.token;
     const pathname = req.nextUrl.pathname;
     const response = NextResponse.next();
@@ -27,7 +27,7 @@ export default withAuth(
       
       // Admin routes require admin role
       if (pathname.startsWith('/admin')) {
-        if (!token || (token.role !== 'ADMIN' && token.role !== 'SUPER_ADMIN')) {
+        if (!token || ((token as any).role !== 'ADMIN' && (token as any).role !== 'SUPER_ADMIN')) {
           return NextResponse.redirect(new URL('/login', req.url));
         }
       }

@@ -9,6 +9,7 @@ import logger from '@/lib/logger';
 // グローバルな状態を管理（複数インスタンスの防止）
 let globalLastRenewalTime = 0;
 let globalRenewalInProgress = false;
+let globalInstanceCount = 0;
 
 interface SessionConfig {
   warningTime?: number; // セッション期限切れ警告を表示する時間（ミリ秒）
@@ -26,7 +27,7 @@ export function useSessionManager(config: SessionConfig = {}) {
     autoRenew = true
   } = config;
 
-  const { data: session, status, update } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
   const { showToast } = useToast();
   
@@ -44,7 +45,6 @@ export function useSessionManager(config: SessionConfig = {}) {
   const sessionRef = useRef(session);
   const routerRef = useRef(router);
   const showToastRef = useRef(showToast);
-  const updateRef = useRef(update);
   const autoRenewRef = useRef(autoRenew);
   const warningTimeRef = useRef(warningTime);
   const isWarningShownRef = useRef(isWarningShown);
@@ -54,7 +54,6 @@ export function useSessionManager(config: SessionConfig = {}) {
     sessionRef.current = session;
     routerRef.current = router;
     showToastRef.current = showToast;
-    updateRef.current = update;
     autoRenewRef.current = autoRenew;
     warningTimeRef.current = warningTime;
     isWarningShownRef.current = isWarningShown;
@@ -121,8 +120,10 @@ export function useSessionManager(config: SessionConfig = {}) {
 
       const data = await response.json();
       
-      // NextAuthのセッションを更新
-      await updateRef.current();
+      // NextAuthのupdate()は呼び出さない
+      // update()自体が再レンダリングやセッション再フェッチを引き起こし、
+      // ループの原因となる可能性があるため
+      // サーバー側でセッションが更新されているので十分
       
       setIsWarningShown(false);
       setShowRenewDialog(false);
@@ -194,11 +195,13 @@ export function useSessionManager(config: SessionConfig = {}) {
       );
     }
 
-    // 自動更新が有効で、最近アクティビティがある場合
-    // かつ、最後の更新から5分以上経過している場合のみ更新
-    const activityRecent = now - lastActivityRef.current < 30000;
-    const renewalNotRecent = now - lastRenewRef.current > 300000;
-    const expiringPeriod = remaining < 600000 && remaining > 0;
+    // 自動更新の条件：
+    // 1. 最近のアクティビティがある（5分以内）
+    // 2. 最後の更新から十分時間が経過（30分以上）
+    // 3. セッション期限が近い（10分以内）
+    const activityRecent = now - lastActivityRef.current < 300000; // 5分以内のアクティビティ
+    const renewalNotRecent = now - lastRenewRef.current > 1800000; // 30分以上経過
+    const expiringPeriod = remaining < 600000 && remaining > 0; // 10分以内に期限切れ
     
     logger.debug(`[checkSessionExpiry] Auto-renewal conditions:`, {
       autoRenew: autoRenewRef.current,
@@ -231,6 +234,15 @@ export function useSessionManager(config: SessionConfig = {}) {
 
   // マウント状態を管理
   useEffect(() => {
+    // インスタンス数を増やす
+    globalInstanceCount++;
+    logger.debug(`SessionManager instance created (total: ${globalInstanceCount})`);
+    
+    // 複数インスタンスの警告
+    if (globalInstanceCount > 1) {
+      logger.warn(`Multiple SessionManager instances detected: ${globalInstanceCount}. Only one instance should be active.`);
+    }
+    
     // マウント完了を少し遅延させる
     const timer = setTimeout(() => {
       isMountedRef.current = true;
@@ -240,58 +252,53 @@ export function useSessionManager(config: SessionConfig = {}) {
     return () => {
       clearTimeout(timer);
       isMountedRef.current = false;
+      globalInstanceCount--;
+      logger.debug(`SessionManager instance destroyed (remaining: ${globalInstanceCount})`);
     };
   }, []);
 
-  // セッションチェックを定期実行
+  // セッションチェックを定期実行（マウント時に一度だけ設定）
   useEffect(() => {
-    logger.debug(`[useEffect] Session check setup:`, {
-      status,
-      hasSession: !!session,
-      sessionExpires: session?.expires,
-      isMounted: isMountedRef.current,
-      autoRenew,
-      checkInterval: `${checkInterval}ms`
-    });
+    // StrictModeの二重実行を検出
+    const effectId = Math.random().toString(36).substring(2, 11);
+    logger.debug(`[useEffect ${effectId}] Session check setup - MOUNT ONLY`);
     
-    // 自動更新が無効の場合は何もしない
-    if (!autoRenew) {
-      logger.debug('[useEffect] Auto-renewal is disabled for this instance');
+    // 既にタイマーが動作中の場合はスキップ（StrictMode対策）
+    if (checkIntervalRef.current) {
+      logger.debug(`[useEffect ${effectId}] Timer already running, skipping setup`);
       return;
     }
     
-    if (status === 'authenticated' && isMountedRef.current) {
-      // 既存のインターバルをクリア
-      if (checkIntervalRef.current) {
-        logger.warn('[useEffect] Clearing existing interval before setting new one');
-        clearInterval(checkIntervalRef.current);
-      }
+    // sessionの存在チェックのみ（isMountedRefチェックを削除）
+    if (sessionRef.current) {
+      // 初回チェックを完全に無効化（ループ防止のため）
+      // 定期チェックのみで十分
       
-      // セッションがあることを確認してからチェックを開始
-      if (session) {
-        // 初回チェック（マウント後のみ）
-        logger.info('[useEffect] Running initial session check');
-        checkSessionExpiry();
-
-        // 定期チェックを設定
-        checkIntervalRef.current = setInterval(() => {
-          logger.info(`[setInterval] Running scheduled check (${checkInterval}ms interval)`);
+      // 定期チェックを設定（固定間隔：60秒）
+      const FIXED_INTERVAL = 60000; // 60秒固定
+      checkIntervalRef.current = setInterval(() => {
+        logger.info(`[setInterval] Running scheduled check (${FIXED_INTERVAL}ms interval)`);
+        // autoRenewRefを使用して最新の設定を参照
+        if (autoRenewRef.current) {
           checkSessionExpiry();
-        }, checkInterval);
-        logger.info(`[useEffect] Session check interval started: ${checkInterval}ms`);
-      }
+        }
+      }, FIXED_INTERVAL);
+      logger.info(`[useEffect] Session check interval started: ${FIXED_INTERVAL}ms`);
     }
 
     return () => {
+      logger.debug(`[useEffect ${effectId}] Cleanup started`);
       if (checkIntervalRef.current) {
         clearInterval(checkIntervalRef.current);
-        logger.debug('[useEffect cleanup] Session check interval cleared');
+        checkIntervalRef.current = null;  // 明示的にnullを設定
+        logger.debug(`[useEffect ${effectId}] Session check interval cleared`);
       }
       if (warningTimeoutRef.current) {
         clearTimeout(warningTimeoutRef.current);
+        warningTimeoutRef.current = null;
       }
     };
-  }, [status, checkInterval, autoRenew]); // sessionとcheckSessionExpiryを削除して無限ループを防ぐ
+  }, []); // 依存配列を空にして、マウント時に一度だけ実行
 
   return {
     isAuthenticated: status === 'authenticated',

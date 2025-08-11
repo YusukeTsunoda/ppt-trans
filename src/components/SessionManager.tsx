@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import { useSessionManager, SessionRenewalDialog } from '@/hooks/useSessionManager';
 import logger from '@/lib/logger';
 
@@ -9,8 +9,12 @@ import logger from '@/lib/logger';
 let globalManagerId: string | null = null;
 
 export function SessionManager() {
-  const instanceIdRef = useRef<string>(Math.random().toString(36).substr(2, 9));
-  const [isActive, setIsActive] = useState(false);
+  const instanceIdRef = useRef<string>(Math.random().toString(36).substring(2, 11));
+  // isActiveの初期値を決定（グローバル変数を直接チェック）
+  const [isActive, setIsActive] = useState(() => !globalManagerId);
+  
+  // 再マウントを検出するログ
+  logger.warn(`<<<<< SessionManager Component MOUNTED/RE-RENDERED (instance: ${instanceIdRef.current}, isActive: ${isActive}) >>>>>`);
   
   useEffect(() => {
     const instanceId = instanceIdRef.current;
@@ -27,6 +31,7 @@ export function SessionManager() {
     }
     
     return () => {
+      logger.error(`<<<<< SessionManager Component UNMOUNTING (instance: ${instanceId}) >>>>>`);
       // このインスタンスがアクティブだった場合のみグローバルIDをクリア
       if (globalManagerId === instanceId) {
         globalManagerId = null;
@@ -37,19 +42,22 @@ export function SessionManager() {
     };
   }, []);
   
+  // useMemoでconfig objectの参照を固定化（再レンダリング対策）
+  const sessionConfig = useMemo(() => ({
+    warningTime: 5 * 60 * 1000, // 5分前に警告
+    checkInterval: 60 * 1000, // 1分ごとにチェック
+    autoRenew: isActive // このインスタンスがアクティブな場合のみ自動更新
+  }), [isActive]);
+
   const {
     showRenewDialog,
     timeRemaining,
     renewSession,
     handleDismissWarning
-  } = useSessionManager({
-    warningTime: 5 * 60 * 1000, // 5分前に警告
-    checkInterval: 60 * 1000, // 1分ごとにチェック
-    autoRenew: isActive // このインスタンスがアクティブな場合のみ自動更新
-  });
+  } = useSessionManager(sessionConfig);
 
-  // アクティブでない場合は何もレンダリングしない
-  if (!isActive) return null;
+  // 条件付きレンダリングを削除（再マウントループを防ぐ）
+  // isActiveに関係なくダイアログは常にレンダリング（表示/非表示はisOpenで制御）
 
   return (
     <SessionRenewalDialog

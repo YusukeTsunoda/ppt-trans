@@ -45,6 +45,15 @@ export async function setUploadProgressAction(
     }
     
     const redis = getRedisClient();
+    
+    // Redisが利用できない場合はスキップ
+    if (!redis) {
+      logger.warn('Redis not available, skipping upload progress tracking');
+      return {
+        success: true
+      };
+    }
+    
     const key = `upload:progress:${session.user.id}:${uploadId}`;
     
     // 既存の進捗データを取得
@@ -116,6 +125,24 @@ export async function getUploadProgressAction(
     }
     
     const redis = getRedisClient();
+    
+    // Redisが利用できない場合はデフォルト値を返す
+    if (!redis) {
+      return {
+        success: true,
+        progress: {
+          uploadId,
+          fileName: '',
+          fileSize: 0,
+          uploadedBytes: 0,
+          progress: 0,
+          status: 'processing',
+          startedAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        }
+      };
+    }
+    
     const key = `upload:progress:${session.user.id}:${uploadId}`;
     
     const data = await redis.get(key);
@@ -162,6 +189,15 @@ export async function getActiveUploadsAction(): Promise<{
     }
     
     const redis = getRedisClient();
+    
+    // Redisが利用できない場合は空の配列を返す
+    if (!redis) {
+      return {
+        success: true,
+        uploads: []
+      };
+    }
+    
     const pattern = `upload:progress:${session.user.id}:*`;
     
     // パターンにマッチするキーを取得
@@ -225,6 +261,14 @@ export async function clearUploadProgressAction(
     }
     
     const redis = getRedisClient();
+    
+    // Redisが利用できない場合はスキップ
+    if (!redis) {
+      return {
+        success: true
+      };
+    }
+    
     const key = `upload:progress:${session.user.id}:${uploadId}`;
     
     await redis.del(key);
@@ -266,6 +310,15 @@ export async function updateUploadStepAction(
     }
     
     const redis = getRedisClient();
+    
+    // Redisが利用できない場合はスキップ
+    if (!redis) {
+      logger.warn('Redis not available, skipping step update');
+      return {
+        success: true
+      };
+    }
+    
     const key = `upload:progress:${session.user.id}:${uploadId}`;
     
     // 既存の進捗データを取得

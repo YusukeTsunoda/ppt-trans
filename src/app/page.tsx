@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { batchTranslate } from '@/server-actions/translate/process';
 import { uploadPptxAction } from '@/server-actions/files/upload';
 import { 
@@ -13,7 +13,7 @@ import { UserNav } from '@/components/UserNav';
 import { MobileNav } from '@/components/MobileNav';
 import { useResponsive } from '@/hooks/useResponsive';
 import { getSettings } from '@/lib/settings';
-import { addToHistory, updateHistoryItem, type TranslationHistoryItem } from '@/lib/history';
+import { addToHistory, updateHistoryItem } from '@/lib/history';
 import type { ProcessingResult } from '@/types';
 import type { Settings } from '@/lib/settings';
 import { ThemeDebug } from '@/components/ThemeDebug';
@@ -26,8 +26,6 @@ export default function HomePage() {
   const [showPreviews, setShowPreviews] = useState(false);
   const [isTranslating, setIsTranslating] = useState(false);
   const [targetLanguage, setTargetLanguage] = useState('Japanese');
-  const [showEditor, setShowEditor] = useState(false);
-  const [showPreviewScreen, setShowPreviewScreen] = useState(false);
   const [currentPage, setCurrentPage] = useState<'upload' | 'preview' | 'editor' | 'settings'>('upload');
   const [settings, setSettings] = useState<Settings>(getSettings());
   const [currentHistoryId, setCurrentHistoryId] = useState<string | null>(null);
@@ -73,7 +71,9 @@ export default function HomePage() {
       const result = await batchTranslate({
         texts: allTexts.map(t => ({ id: t.id, text: t.originalText })),
         targetLanguage: targetLanguage as any,
-        model: settings.translationModel as any
+        sourceLanguage: 'auto',
+        model: settings.translationModel as any,
+        batchSize: 10
       });
 
       if (!result.success) {
@@ -87,7 +87,7 @@ export default function HomePage() {
       updatedResult.slides = updatedResult.slides.map(slide => ({
         ...slide,
         texts: slide.texts.map(text => {
-          const translation = translations.find((t: { id: string; translatedText: string }) => t.id === text.id);
+          const translation = translations.find((t) => t && t.id === text.id);
           return {
             ...text,
             translated: translation ? translation.translatedText : text.translated
@@ -134,13 +134,16 @@ export default function HomePage() {
         throw new Error(uploadResult.error || 'ファイルの処理に失敗しました。');
       }
 
-      // TODO: ファイル処理の結果を取得するロジックを実装
-      const result: ProcessingResult = uploadResult.data as any;
+      // ファイル処理の結果を取得
+      const result: ProcessingResult = {
+        fileName: uploadResult.fileName || '',
+        slides: uploadResult.slides || [],
+        totalSlides: uploadResult.totalSlides || 0
+      };
       
       // Set the processing result and show preview screen
       setProcessingResult(result);
       setShowPreviews(true);
-      setShowPreviewScreen(true);  // 自動的にプレビュー画面へ遷移
       setCurrentPage('preview');  // サイドバーも更新
       
       console.log('Processing successful:', result);
@@ -169,16 +172,6 @@ export default function HomePage() {
   // ページナビゲーション処理
   const handlePageChange = (page: 'upload' | 'preview' | 'editor' | 'settings') => {
     setCurrentPage(page);
-    if (page === 'preview') {
-      setShowPreviewScreen(true);
-      setShowEditor(false);
-    } else if (page === 'editor') {
-      setShowEditor(true);
-      setShowPreviewScreen(false);
-    } else if (page === 'upload') {
-      setShowPreviewScreen(false);
-      setShowEditor(false);
-    }
   };
 
   // 設定変更処理
@@ -314,7 +307,7 @@ export default function HomePage() {
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <button
-                    onClick={() => setShowPreviewScreen(true)}
+                    onClick={() => setCurrentPage('preview')}
                     className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-1 transition-all duration-200 font-medium"
                   >
                     🖼️ プレビュー画面へ
@@ -348,7 +341,7 @@ export default function HomePage() {
                     )}
                   </button>
                   <button
-                    onClick={() => setShowEditor(true)}
+                    onClick={() => setCurrentPage('editor')}
                     disabled={processingResult.slides.reduce((total, slide) => total + slide.texts.length, 0) === 0}
                     className="px-4 py-2 text-sm bg-slate-700 text-white rounded-lg hover:bg-slate-800 disabled:bg-slate-400 disabled:cursor-not-allowed flex items-center gap-1 transition-all duration-200 font-medium"
                   >

@@ -23,7 +23,15 @@ export function ErrorMessage({
   const [isExpanded, setIsExpanded] = React.useState(false);
 
   // エラー情報の抽出
-  const getErrorInfo = () => {
+  type ErrorInfo = {
+    message: string;
+    code?: string;
+    isRetryable: boolean;
+    recovery?: string;
+    details?: any;
+  };
+
+  const getErrorInfo = (): ErrorInfo => {
     if (typeof error === 'string') {
       return {
         message: error,
@@ -35,11 +43,12 @@ export function ErrorMessage({
     }
 
     if (error instanceof AppError) {
+      const recoveryMessage = getRecoveryMessage(error.code as any, 'ja');
       return {
         message: error.userMessage,
         code: error.code,
         isRetryable: error.isRetryable(),
-        recovery: getRecoveryMessage(error.code as any, 'ja'),
+        recovery: recoveryMessage || undefined,
         details: error.details
       };
     }

@@ -178,7 +178,6 @@ export function EditorScreen({ data, onBack, historyId }: EditorScreenProps) {
             </div>
             <div className="flex gap-2">
               <DownloadButton
-                originalFileUrl={editedData.slides[0]?.originalFileUrl || ''}
                 editedSlides={editedData.slides}
                 onSuccess={handleDownloadSuccess}
                 onError={handleDownloadError}

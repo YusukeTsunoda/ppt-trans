@@ -15,7 +15,7 @@ interface RateLimitConfig {
 
 export class RateLimiter {
   private config: RateLimitConfig;
-  private redis = getRedisClient();
+  private redis: ReturnType<typeof getRedisClient>;
 
   constructor(config: RateLimitConfig) {
     this.config = {
@@ -26,6 +26,7 @@ export class RateLimiter {
       skipFailedRequests: false,
       ...config,
     };
+    this.redis = getRedisClient();
   }
 
   /**
@@ -64,6 +65,17 @@ export class RateLimiter {
     const key = this.generateKey(req);
     const now = Date.now();
     const windowStart = now - this.config.windowMs;
+    
+    // Redisが利用できない場合は常に通過させる
+    if (!this.redis) {
+      logger.debug('Redis not available, skipping rate limit check');
+      return {
+        success: true,
+        limit: this.config.max,
+        remaining: this.config.max,
+        reset: new Date(now + this.config.windowMs),
+      };
+    }
     
     try {
       // Redisトランザクションで原子的に処理

@@ -1,4 +1,5 @@
 import DOMPurify from 'isomorphic-dompurify';
+import type { Config } from 'dompurify';
 import logger from '@/lib/logger';
 
 /**
@@ -8,19 +9,21 @@ export class XSSProtection {
   /**
    * HTML文字列をサニタイズ
    */
-  static sanitizeHTML(dirty: string, options?: DOMPurify.Config): string {
+  static sanitizeHTML(dirty: string, options?: Config): string {
     try {
       // デフォルト設定
-      const defaultConfig = {
+      const defaultConfig: Config = {
         ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a', 'p', 'br', 'ul', 'ol', 'li'],
         ALLOWED_ATTR: ['href', 'target', 'rel'],
         ALLOW_DATA_ATTR: false,
         FORBID_TAGS: ['script', 'style', 'iframe', 'object', 'embed', 'form'],
         FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover'],
-        ...options,
       };
       
-      const clean = DOMPurify.sanitize(dirty, defaultConfig) as string;
+      // オプションがある場合はマージ
+      const config: Config = options ? { ...defaultConfig, ...options } : defaultConfig;
+      
+      const clean = DOMPurify.sanitize(dirty, config) as string;
       
       // サニタイズで変更があった場合はログに記録
       if (clean !== dirty) {
@@ -126,7 +129,7 @@ export class XSSProtection {
    * SVGをサニタイズ
    */
   static sanitizeSVG(svgString: string): string {
-    const config: DOMPurify.Config = {
+    const config: Config = {
       USE_PROFILES: { svg: true },
       KEEP_CONTENT: false,
       FORBID_TAGS: ['script', 'animate', 'animateTransform', 'set'],
@@ -194,7 +197,7 @@ export class XSSProtection {
  */
 export function useSanitizedHTML(
   dirty: string,
-  options?: DOMPurify.Config
+  options?: Config
 ): { __html: string } {
   const sanitized = XSSProtection.sanitizeHTML(dirty, options);
   return { __html: sanitized };
