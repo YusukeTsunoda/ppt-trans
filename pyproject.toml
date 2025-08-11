@@ -1,0 +1,45 @@
+[project]
+name = "pptx-translator"
+version = "0.1.0"
+description = "PowerPoint to Image Converter using LibreOffice + pdf2image"
+authors = [
+    {name = "PPTranslator Team"}
+]
+dependencies = [
+    "python-pptx>=0.6.21",
+    "Pillow>=10.0.0",
+    "requests>=2.31.0",
+    "pdf2image>=1.17.0",
+    "supabase>=1.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "black>=23.0.0",
+    "flake8>=6.0.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["scripts"]
+
+[tool.uv]
+dev-dependencies = [
+    "pytest>=7.0.0",
+    "black>=23.0.0",
+    "flake8>=6.0.0",
+]
+
+[tool.black]
+line-length = 88
+target-version = ['py38']
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
