@@ -5,6 +5,8 @@ import { join } from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '../../../../lib/supabaseClient';
 import type { SlideData, ProcessingResult } from '@/types';
+import { requireAuth, logUserAction } from '@/lib/auth-helpers';
+import prisma from '@/lib/prisma';
 
 type ProcessPptxResponse = ProcessingResult;
 
@@ -14,6 +16,13 @@ interface ProcessingError {
 }
 
 export async function POST(request: NextRequest) {
+  // Authenticate user
+  const authResult = await requireAuth();
+  if (authResult instanceof NextResponse) {
+    return authResult;
+  }
+  const user = authResult;
+
   let tempDir: string | null = null;
   let tempPptxPath: string | null = null;
 
@@ -47,8 +56,8 @@ export async function POST(request: NextRequest) {
     tempPptxPath = join(tempDir, 'input.pptx');
     await writeFile(tempPptxPath, fileBuffer);
 
-    // Upload original file to Supabase
-    const originalFileName = `uploads/${tempId}.pptx`;
+    // Upload original file to Supabase with user ID
+    const originalFileName = `uploads/${user.id}/${tempId}.pptx`;
     
     // Check Supabase configuration
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
@@ -139,13 +148,43 @@ export async function POST(request: NextRequest) {
     // Process the PPTX file using Python script
     const processingResult = await processPptxWithPython(tempPptxPath, tempDir, tempId);
     
-    // Return the processed data
+    // Save file information to database
+    const fileRecord = await prisma.file.create({
+      data: {
+        userId: user.id,
+        fileName: file.name,
+        originalFileUrl,
+        fileSize: fileBuffer.length,
+        mimeType: file.type,
+        status: 'COMPLETED',
+        processedAt: new Date(),
+        totalSlides: processingResult.slides.length,
+      }
+    });
+
+    // Log user action
+    await logUserAction(
+      user.id,
+      'FILE_UPLOAD',
+      'file',
+      fileRecord.id,
+      {
+        fileName: file.name,
+        fileSize: fileBuffer.length,
+        slideCount: processingResult.slides.length
+      }
+    );
+    
+    // Return the processed data with file ID
     const response: ProcessPptxResponse = {
       slides: processingResult.slides.map(slide => ({
         ...slide,
         originalFileUrl
       })),
-      totalSlides: processingResult.slides.length
+      totalSlides: processingResult.slides.length,
+      fileName: file.name,
+      processedAt: new Date().toISOString(),
+      fileId: fileRecord.id
     };
 
     return NextResponse.json(response);
