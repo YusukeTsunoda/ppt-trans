@@ -336,7 +336,7 @@ export class FileUploadManager {
               fileId: response.fileId,
               url: response.url
             });
-          } catch (error) {
+          } catch {
             reject(new AppError(
               'Invalid server response',
               ErrorCodes.FILE_UPLOAD_FAILED,

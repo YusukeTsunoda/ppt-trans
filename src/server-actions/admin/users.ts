@@ -27,7 +27,7 @@ const updateUserSchema = z.object({
   email: z.string().email().optional(),
   role: z.enum(['USER', 'ADMIN']).optional(),
   isActive: z.boolean().optional(),
-  emailVerified: z.boolean().optional(),
+  // emailVerified: z.boolean().optional(), // Userモデルに存在しないためコメントアウト
 });
 
 // ユーザー作成のスキーマ
@@ -62,7 +62,7 @@ async function checkAdminPermission() {
   if (user?.role !== 'ADMIN') {
     throw new AppError(
       'Forbidden',
-      ErrorCodes.AUTH_FORBIDDEN,
+      ErrorCodes.AUTH_UNAUTHORIZED,
       403,
       true,
       '管理者権限が必要です'
@@ -124,10 +124,10 @@ export async function getUsers(params: z.infer<typeof searchUsersSchema>) {
         email: true,
         role: true,
         isActive: true,
-        emailVerified: true,
+        // emailVerified: true, // Userモデルに存在しないためコメントアウト
         createdAt: true,
         lastLoginAt: true,
-        avatarUrl: true,
+        // avatarUrl: true, // Userモデルに存在しないためコメントアウト
         _count: {
           select: {
             files: true,
@@ -146,7 +146,7 @@ export async function getUsers(params: z.infer<typeof searchUsersSchema>) {
     await prisma.auditLog.create({
       data: {
         userId: adminUserId,
-        action: 'VIEW',
+        action: 'USER_UPDATE', // ユーザー一覧の閲覧をUSER_UPDATEで記録
         entityType: 'users',
         entityId: 'list',
         metadata: {
@@ -180,7 +180,7 @@ export async function getUsers(params: z.infer<typeof searchUsersSchema>) {
     if (error instanceof z.ZodError) {
       return {
         success: false,
-        error: error.errors[0].message,
+        error: error.issues[0].message,
       };
     }
 
@@ -255,7 +255,7 @@ export async function getUserDetail(userId: string) {
     if (!user) {
       throw new AppError(
         'User not found',
-        ErrorCodes.NOT_FOUND,
+        ErrorCodes.AUTH_USER_NOT_FOUND,
         404,
         true,
         'ユーザーが見つかりません'
@@ -266,7 +266,7 @@ export async function getUserDetail(userId: string) {
     await prisma.auditLog.create({
       data: {
         userId: adminUserId,
-        action: 'VIEW',
+        action: 'USER_UPDATE', // ユーザー一覧の閲覧をUSER_UPDATEで記録
         entityType: 'user',
         entityId: userId,
         metadata: {
@@ -315,7 +315,7 @@ export async function updateUser(data: z.infer<typeof updateUserSchema>) {
     if (validatedData.userId === adminUserId && validatedData.role === 'USER') {
       throw new AppError(
         'Cannot demote self',
-        ErrorCodes.VALIDATION_ERROR,
+        ErrorCodes.VALIDATION_INVALID_FORMAT,
         400,
         true,
         '自分自身の管理者権限を解除することはできません'
@@ -336,7 +336,7 @@ export async function updateUser(data: z.infer<typeof updateUserSchema>) {
         email: true,
         role: true,
         isActive: true,
-        emailVerified: true,
+        // emailVerified: true, // Userモデルに存在しないためコメントアウト
       },
     });
 
@@ -344,7 +344,7 @@ export async function updateUser(data: z.infer<typeof updateUserSchema>) {
     await prisma.auditLog.create({
       data: {
         userId: adminUserId,
-        action: 'UPDATE',
+        action: 'USER_UPDATE',
         entityType: 'user',
         entityId: userId,
         metadata: {
@@ -372,7 +372,7 @@ export async function updateUser(data: z.infer<typeof updateUserSchema>) {
     if (error instanceof z.ZodError) {
       return {
         success: false,
-        error: error.errors[0].message,
+        error: error.issues[0].message,
       };
     }
 
@@ -419,7 +419,7 @@ export async function createUser(formData: FormData) {
     if (existingUser) {
       throw new AppError(
         'Email already exists',
-        ErrorCodes.VALIDATION_ERROR,
+        ErrorCodes.VALIDATION_INVALID_FORMAT,
         400,
         true,
         'このメールアドレスは既に登録されています'
@@ -427,17 +427,18 @@ export async function createUser(formData: FormData) {
     }
 
     // パスワードをハッシュ化
-    const bcrypt = require('bcryptjs');
-    const hashedPassword = await bcrypt.hash(validatedData.password, 10);
+    const { hash } = await import('bcryptjs');
+    const hashedPassword = await hash(validatedData.password, 10);
 
     // ユーザーを作成
     const newUser = await prisma.user.create({
       data: {
         name: validatedData.name,
         email: validatedData.email,
+        username: validatedData.email.split('@')[0], // メールアドレスからusernameを生成
         password: hashedPassword,
         role: validatedData.role,
-        emailVerified: true, // 管理者が作成したユーザーは確認済みとする
+        // emailVerified: true, // Userモデルに存在しないためコメントアウト // 管理者が作成したユーザーは確認済みとする
       },
       select: {
         id: true,
@@ -457,7 +458,7 @@ export async function createUser(formData: FormData) {
     await prisma.auditLog.create({
       data: {
         userId: adminUserId,
-        action: 'CREATE',
+        action: 'USER_CREATE',
         entityType: 'user',
         entityId: newUser.id,
         metadata: {
@@ -484,7 +485,7 @@ export async function createUser(formData: FormData) {
     if (error instanceof z.ZodError) {
       return {
         success: false,
-        error: error.errors[0].message,
+        error: error.issues[0].message,
       };
     }
 
@@ -515,7 +516,7 @@ export async function deleteUser(userId: string) {
     if (userId === adminUserId) {
       throw new AppError(
         'Cannot delete self',
-        ErrorCodes.VALIDATION_ERROR,
+        ErrorCodes.VALIDATION_INVALID_FORMAT,
         400,
         true,
         '自分自身を削除することはできません'
@@ -527,7 +528,7 @@ export async function deleteUser(userId: string) {
       where: { id: userId },
       data: {
         isActive: false,
-        deletedAt: new Date(),
+        // deletedAt: new Date(), // Userモデルに存在しないためコメントアウト
         email: `deleted_${userId}_${Date.now()}@deleted.com`, // メールアドレスを変更
       },
       select: {
@@ -540,7 +541,7 @@ export async function deleteUser(userId: string) {
     await prisma.auditLog.create({
       data: {
         userId: adminUserId,
-        action: 'DELETE',
+        action: 'USER_DELETE',
         entityType: 'user',
         entityId: userId,
         metadata: {
@@ -594,7 +595,7 @@ export async function terminateUserSessions(userId: string) {
     await prisma.auditLog.create({
       data: {
         userId: adminUserId,
-        action: 'DELETE',
+        action: 'USER_DELETE',
         entityType: 'sessions',
         entityId: userId,
         metadata: {
@@ -642,8 +643,8 @@ export async function resetUserPassword(userId: string) {
     const tempPassword = Math.random().toString(36).slice(-12) + 'Aa1!';
 
     // パスワードをハッシュ化
-    const bcrypt = require('bcryptjs');
-    const hashedPassword = await bcrypt.hash(tempPassword, 10);
+    const { hash } = await import('bcryptjs');
+    const hashedPassword = await hash(tempPassword, 10);
 
     // パスワードを更新
     const user = await prisma.user.update({
@@ -665,7 +666,7 @@ export async function resetUserPassword(userId: string) {
     await prisma.auditLog.create({
       data: {
         userId: adminUserId,
-        action: 'UPDATE',
+        action: 'USER_UPDATE',
         entityType: 'password',
         entityId: userId,
         metadata: {

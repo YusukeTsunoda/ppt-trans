@@ -7,11 +7,10 @@ import prisma from '@/lib/prisma';
 import { AppError } from '@/lib/errors/AppError';
 import { ErrorCodes } from '@/lib/errors/ErrorCodes';
 import logger from '@/lib/logger';
-import { readFile, stat, createReadStream } from 'fs/promises';
+import { readFile, stat } from 'fs/promises';
 import { join } from 'path';
 import { createHash } from 'crypto';
 import archiver from 'archiver';
-import { Readable } from 'stream';
 
 // ファイルダウンロードのスキーマ
 const downloadFileSchema = z.object({
@@ -87,7 +86,7 @@ export async function downloadFile(params: z.infer<typeof downloadFileSchema>) {
     if (!isOwner && !isAdmin && !isPublic) {
       throw new AppError(
         'Forbidden',
-        ErrorCodes.AUTH_FORBIDDEN,
+        ErrorCodes.AUTH_UNAUTHORIZED,
         403,
         true,
         'このファイルへのアクセス権限がありません'
@@ -292,7 +291,7 @@ export async function batchDownload(params: z.infer<typeof batchDownloadSchema>)
     if (unauthorizedFiles.length > 0) {
       throw new AppError(
         'Forbidden',
-        ErrorCodes.AUTH_FORBIDDEN,
+        ErrorCodes.AUTH_UNAUTHORIZED,
         403,
         true,
         `${unauthorizedFiles.length}個のファイルへのアクセス権限がありません`
@@ -453,7 +452,7 @@ export async function resumableDownload(params: z.infer<typeof resumableDownload
     if (!isOwner && !isAdmin && !isPublic) {
       throw new AppError(
         'Forbidden',
-        ErrorCodes.AUTH_FORBIDDEN,
+        ErrorCodes.AUTH_UNAUTHORIZED,
         403,
         true,
         'このファイルへのアクセス権限がありません'
@@ -610,7 +609,7 @@ export async function getDownloadStats(params: z.infer<typeof downloadStatsSchem
     if (file.user.id !== session.user.id && session.user.role !== 'ADMIN') {
       throw new AppError(
         'Forbidden',
-        ErrorCodes.AUTH_FORBIDDEN,
+        ErrorCodes.AUTH_UNAUTHORIZED,
         403,
         true,
         'この統計へのアクセス権限がありません'

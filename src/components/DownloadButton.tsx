@@ -9,7 +9,6 @@ import { ErrorCodes } from '@/lib/errors/ErrorCodes';
 import logger from '@/lib/logger';
 
 interface DownloadButtonProps {
-  originalFileUrl: string;
   editedSlides: any[];
   onSuccess?: (downloadUrl: string) => void;
   onError?: (error: Error) => void;
@@ -26,7 +25,6 @@ interface GenerationStatus {
 }
 
 export function DownloadButton({
-  originalFileUrl,
   editedSlides,
   onSuccess,
   onError,
@@ -58,12 +56,16 @@ export function DownloadButton({
       }
 
       const job = result.data;
+      
+      if (!job) {
+        throw new Error('Job data is missing');
+      }
 
       // ステータスを更新
       setGeneration(prev => ({
         ...prev,
         progress: job.progress || prev.progress,
-        message: job.message || prev.message
+        message: prev.message // messageはjobに含まれないので、前の状態を維持
       }));
 
       // ジョブが完了した場合
@@ -198,20 +200,6 @@ export function DownloadButton({
         message: 'ファイル生成を開始しています...'
       });
 
-      // APIに送信するデータを準備
-      const requestData = {
-        originalFileUrl,
-        editedSlides: editedSlides.map(slide => ({
-          pageNumber: slide.pageNumber,
-          texts: slide.texts.map((text: any) => ({
-            id: text.id,
-            original: text.original,
-            translated: text.translated
-          }))
-        })),
-        async: true // 非同期モードを使用
-      };
-
       // Server Actionを使用してファイルを生成
       const formData = new FormData();
       formData.append('fileId', 'temp-file-id'); // TODO: 実際のfileIdを使用
@@ -236,28 +224,26 @@ export function DownloadButton({
         );
       }
 
-      // 非同期モードの場合はジョブIDが返される
-      if (result.jobId) {
+      // ジョブIDが返される（常に非同期処理）
+      if (result.data?.jobId) {
+        const jobId = result.data.jobId;
+        
         setGeneration(prev => ({
           ...prev,
           status: 'polling',
-          jobId: result.jobId,
+          jobId: jobId,
           message: 'ファイルを生成中...'
         }));
 
         // ステータスのポーリングを開始（2秒ごと）
         const interval = setInterval(() => {
-          pollJobStatus(result.jobId);
+          pollJobStatus(jobId);
         }, 2000);
         
         setPollingInterval(interval);
 
         // 初回のポーリングを即座に実行
-        await pollJobStatus(result.jobId);
-
-      } else if (result.downloadUrl) {
-        // 同期モードの場合は即座にダウンロード
-        await startDownload(result.downloadUrl);
+        await pollJobStatus(jobId);
       }
 
     } catch (error: any) {

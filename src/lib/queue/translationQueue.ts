@@ -1,5 +1,5 @@
 import Bull from 'bull';
-import { getRedisClient, redisConfig, cacheKeys, cacheTTL } from './config';
+import { getRedisClient, redisConfig, cacheKeys, cacheTTL, isRedisAvailable } from './config';
 import logger from '@/lib/logger';
 
 // 翻訳ジョブの型定義
@@ -24,48 +24,67 @@ export interface TranslationJobResult {
   duration: number;
 }
 
-// 翻訳キューの作成
-export const translationQueue = new Bull<TranslationJobData>('translation', {
-  redis: redisConfig,
-  defaultJobOptions: {
-    removeOnComplete: 100, // 完了したジョブを100個まで保持
-    removeOnFail: 50, // 失敗したジョブを50個まで保持
-    attempts: 3,
-    backoff: {
-      type: 'exponential',
-      delay: 2000,
-    },
-  },
-});
+// 翻訳キューの作成（Redisが利用可能な場合のみ）
+let translationQueue: Bull.Queue<TranslationJobData> | null = null;
+
+if (isRedisAvailable()) {
+  try {
+    translationQueue = new Bull<TranslationJobData>('translation', {
+      redis: redisConfig,
+      defaultJobOptions: {
+        removeOnComplete: 100, // 完了したジョブを100個まで保持
+        removeOnFail: 50, // 失敗したジョブを50個まで保持
+        attempts: 3,
+        backoff: {
+          type: 'exponential',
+          delay: 2000,
+        },
+      },
+    });
+    logger.info('Translation queue initialized with Redis');
+  } catch (error) {
+    logger.warn('Failed to initialize translation queue with Redis', {
+      error: error instanceof Error ? error.message : String(error)
+    });
+    translationQueue = null;
+  }
+} else {
+  logger.info('Translation queue: Redis not available, using direct processing');
+}
+
+export { translationQueue };
 
 // キューイベントハンドラー
-translationQueue.on('completed', (job, result) => {
-  logger.info(`Translation job ${job.id} completed`, {
-    jobId: job.id,
-    cached: result.cached,
-    duration: result.duration,
+if (translationQueue) {
+  translationQueue.on('completed', (job, result) => {
+    logger.info(`Translation job ${job.id} completed`, {
+      jobId: job.id,
+      cached: result.cached,
+      duration: result.duration,
+    });
   });
-});
 
-translationQueue.on('failed', (job, err) => {
-  logger.error(`Translation job ${job?.id} failed`, {
-    jobId: job?.id,
-    error: err.message,
-    stack: err.stack,
+  translationQueue.on('failed', (job, err) => {
+    logger.error(`Translation job ${job?.id} failed`, {
+      jobId: job?.id,
+      error: err.message,
+      stack: err.stack,
+    });
   });
-});
 
-translationQueue.on('stalled', (job) => {
-  logger.warn(`Translation job ${job.id} stalled`, {
-    jobId: job.id,
+  translationQueue.on('stalled', (job) => {
+    logger.warn(`Translation job ${job.id} stalled`, {
+      jobId: job.id,
+    });
   });
-});
+}
 
 // ジョブプロセッサー
-translationQueue.process(5, async (job) => {
-  const startTime = Date.now();
-  const { texts, targetLanguage, model } = job.data;
-  const redis = getRedisClient();
+if (translationQueue) {
+  translationQueue.process(5, async (job) => {
+    const startTime = Date.now();
+    const { texts, targetLanguage, model } = job.data;
+    const redis = getRedisClient();
   
   try {
     const translations: Array<{ id: string; translatedText: string }> = [];
@@ -85,24 +104,29 @@ translationQueue.process(5, async (job) => {
     for (const batch of batches) {
       const batchTranslations = await Promise.all(
         batch.map(async (text) => {
-          // キャッシュチェック
-          const cacheKey = cacheKeys.translation(text.original, targetLanguage);
-          const cached = await redis.get(cacheKey);
-          
-          if (cached) {
-            cachedCount++;
-            return {
-              id: text.id,
-              translatedText: cached,
-            };
+          // Redisが利用可能な場合のみキャッシュチェック
+          if (redis) {
+            const cacheKey = cacheKeys.translation(text.original, targetLanguage);
+            const cached = await redis.get(cacheKey);
+            
+            if (cached) {
+              cachedCount++;
+              return {
+                id: text.id,
+                translatedText: cached,
+              };
+            }
           }
 
           // 実際の翻訳処理（キャッシュがない場合）
           // ここでは実際のAPIコールの代わりにシミュレート
           const translatedText = await translateText(text.original, targetLanguage, model);
           
-          // キャッシュに保存
-          await redis.setex(cacheKey, cacheTTL.translation, translatedText);
+          // Redisが利用可能な場合のみキャッシュに保存
+          if (redis) {
+            const cacheKey = cacheKeys.translation(text.original, targetLanguage);
+            await redis.setex(cacheKey, cacheTTL.translation, translatedText);
+          }
           
           return {
             id: text.id,
@@ -135,7 +159,8 @@ translationQueue.process(5, async (job) => {
     logger.error('Translation job processing error', error);
     throw error;
   }
-});
+  });
+}
 
 // 実際の翻訳関数（Anthropic APIを呼び出す）
 async function translateText(
@@ -168,7 +193,14 @@ async function translateText(
 // ジョブの追加
 export async function addTranslationJob(
   data: TranslationJobData
-): Promise<Bull.Job<TranslationJobData>> {
+): Promise<Bull.Job<TranslationJobData> | null> {
+  if (!translationQueue) {
+    logger.warn('Translation queue not available, processing directly');
+    // キューが利用できない場合は直接処理
+    // ここではダミーのジョブオブジェクトを返すか、nullを返す
+    return null;
+  }
+  
   try {
     const job = await translationQueue.add(data, {
       priority: data.metadata?.priority || 0,
@@ -189,6 +221,10 @@ export async function addTranslationJob(
 
 // ジョブステータスの取得
 export async function getJobStatus(jobId: string) {
+  if (!translationQueue) {
+    return null;
+  }
+  
   try {
     const job = await translationQueue.getJob(jobId);
     
@@ -218,6 +254,17 @@ export async function getJobStatus(jobId: string) {
 
 // キューの統計情報取得
 export async function getQueueStats() {
+  if (!translationQueue) {
+    return {
+      waiting: 0,
+      active: 0,
+      completed: 0,
+      failed: 0,
+      delayed: 0,
+      total: 0,
+    };
+  }
+  
   try {
     const [
       waitingCount,
@@ -249,6 +296,11 @@ export async function getQueueStats() {
 
 // キューのクリーンアップ
 export async function cleanQueue() {
+  if (!translationQueue) {
+    logger.info('Translation queue not available, skipping cleanup');
+    return;
+  }
+  
   try {
     await translationQueue.clean(24 * 60 * 60 * 1000); // 24時間以上前のジョブを削除
     await translationQueue.clean(24 * 60 * 60 * 1000, 'failed');

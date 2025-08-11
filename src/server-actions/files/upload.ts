@@ -14,7 +14,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { writeFile, unlink, mkdir } from 'fs/promises';
 import { join } from 'path';
 import { spawn } from 'child_process';
-import type { SlideData, ProcessingResult } from '@/types';
+import type { SlideData } from '@/types';
 import { setUploadProgressAction, updateUploadStepAction } from './upload-progress';
 
 export interface UploadState {
@@ -401,7 +401,7 @@ async function processPptxWithPython(
  * ポーリングベースの実装
  */
 export async function getUploadProgressAction(
-  uploadId: string
+  _uploadId: string
 ): Promise<{
   progress: number;
   status: 'uploading' | 'processing' | 'completed' | 'failed';

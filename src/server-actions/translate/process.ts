@@ -8,8 +8,6 @@ import { AppError } from '@/lib/errors/AppError';
 import { ErrorCodes } from '@/lib/errors/ErrorCodes';
 import logger from '@/lib/logger';
 import { Anthropic } from '@anthropic-ai/sdk';
-import { revalidatePath } from 'next/cache';
-import { ReadableStream } from 'stream/web';
 
 // 翻訳テキストのスキーマ
 const translateTextSchema = z.object({
@@ -43,18 +41,6 @@ const translatePptxSchema = z.object({
   translateTables: z.boolean().default(true),
   translateCharts: z.boolean().default(false),
   translateNotes: z.boolean().default(true),
-});
-
-// 翻訳ジョブのスキーマ
-const translationJobSchema = z.object({
-  fileId: z.string().uuid(),
-  status: z.enum(['pending', 'processing', 'completed', 'failed']),
-  progress: z.number().min(0).max(100),
-  totalSlides: z.number(),
-  processedSlides: z.number(),
-  totalTexts: z.number(),
-  processedTexts: z.number(),
-  errors: z.array(z.string()).optional(),
 });
 
 /**
@@ -407,7 +393,7 @@ export async function translatePptxFile(formData: FormData) {
     if (file.user.id !== session.user.id) {
       throw new AppError(
         'Forbidden',
-        ErrorCodes.AUTH_FORBIDDEN,
+        ErrorCodes.AUTH_UNAUTHORIZED,
         403,
         true,
         'このファイルへのアクセス権限がありません'
@@ -533,7 +519,7 @@ export async function getTranslationJobStatus(jobId: string) {
     if (job.userId !== session.user.id) {
       throw new AppError(
         'Forbidden',
-        ErrorCodes.AUTH_FORBIDDEN,
+        ErrorCodes.AUTH_UNAUTHORIZED,
         403,
         true,
         'このジョブへのアクセス権限がありません'
@@ -605,7 +591,7 @@ export async function cancelTranslationJob(jobId: string) {
     if (job.userId !== session.user.id) {
       throw new AppError(
         'Forbidden',
-        ErrorCodes.AUTH_FORBIDDEN,
+        ErrorCodes.AUTH_UNAUTHORIZED,
         403,
         true,
         'このジョブへのアクセス権限がありません'

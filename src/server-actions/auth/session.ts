@@ -2,8 +2,6 @@
 
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { AppError } from '@/lib/errors/AppError';
-import { ErrorCodes } from '@/lib/errors/ErrorCodes';
 import logger from '@/lib/logger';
 import prisma from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';

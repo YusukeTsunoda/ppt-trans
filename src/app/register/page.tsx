@@ -1,7 +1,8 @@
 'use client';
 
 import { registerAction } from '@/server-actions/auth/register';
-import { useFormState, useFormStatus } from 'react-dom';
+import { useFormStatus } from 'react-dom';
+import { useActionState } from 'react';
 import Link from 'next/link';
 import { ThemeToggle } from '@/components/ThemeToggle';
 
@@ -20,7 +21,7 @@ function SubmitButton() {
 }
 
 export default function RegisterPage() {
-  const [state, formAction] = useFormState(registerAction, null);
+  const [state, formAction] = useActionState(registerAction, null);
   
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">

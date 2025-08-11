@@ -1,11 +1,13 @@
 'use client';
 
 import { loginAction } from '@/server-actions/auth/login';
-import { useFormState, useFormStatus } from 'react-dom';
+import { useFormStatus } from 'react-dom';
+import { useActionState } from 'react';
 import Link from 'next/link';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { useSearchParams } from 'next/navigation';
-import { Suspense } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { Suspense, useEffect, useState } from 'react';
+import { signIn } from 'next-auth/react';
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -22,10 +24,28 @@ function SubmitButton() {
 }
 
 function LoginForm() {
-  const [state, formAction] = useFormState(loginAction, null);
+  const [state, formAction] = useActionState(loginAction, null);
   const searchParams = useSearchParams();
+  const router = useRouter();
   const registered = searchParams.get('registered') === 'true';
   const reset = searchParams.get('reset') === 'true';
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  
+  // Server Action成功後にNextAuthでログイン
+  useEffect(() => {
+    if (state?.success && email && password) {
+      signIn('credentials', {
+        email,
+        password,
+        redirect: false
+      }).then((result) => {
+        if (result?.ok) {
+          router.push('/');
+        }
+      });
+    }
+  }, [state, email, password, router]);
   
   return (
     <form action={formAction} className="mt-8 space-y-6">
@@ -64,6 +84,8 @@ function LoginForm() {
             type="email"
             autoComplete="email"
             required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-foreground rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm bg-background"
             placeholder="メールアドレス"
           />
@@ -78,6 +100,8 @@ function LoginForm() {
             type="password"
             autoComplete="current-password"
             required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
             className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-foreground rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm bg-background"
             placeholder="パスワード"
           />

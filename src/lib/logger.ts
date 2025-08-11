@@ -106,7 +106,7 @@ class Logger {
       category: getErrorCategory(error.code as ErrorCode),
       metadata: {
         ...metadata,
-        ...error.details,
+        ...(typeof error.details === 'object' && error.details !== null ? error.details : {}),
         statusCode: error.statusCode,
         isOperational: error.isOperational,
         userMessage: error.userMessage,
@@ -139,7 +139,7 @@ class Logger {
       entry.stack = error.stack;
       entry.metadata = {
         ...entry.metadata,
-        ...error.details,
+        ...(typeof error.details === 'object' && error.details !== null ? error.details : {}),
         statusCode: error.statusCode,
         isOperational: error.isOperational,
       };

@@ -9,7 +9,7 @@ import { headers } from 'next/headers';
 import { rateLimiters } from '@/lib/security/rateLimiter';
 import prisma from '@/lib/prisma';
 import { compare } from 'bcryptjs';
-import { signIn } from '@/lib/auth-client';
+// Server Actionsではsignінを直接使用できないため削除
 
 export interface LoginState {
   success: boolean;
@@ -72,32 +72,52 @@ export async function loginAction(
       };
     }
     
-    // 認証処理
-    const result = await signIn('credentials', {
-      email: validationResult.data.email,
-      password: validationResult.data.password,
-      redirect: false,
+    // データベースでユーザーを検索
+    const user = await prisma.user.findUnique({
+      where: { email: validationResult.data.email }
     });
     
-    if (result?.error) {
-      // 認証失敗
-      logger.warn('Login failed', { 
+    if (!user) {
+      logger.warn('Login failed - user not found', { 
         email,
-        error: result.error,
         duration: Date.now() - startTime
       });
       
-      let errorMessage = 'ログインに失敗しました';
-      
-      if (result.error === 'CredentialsSignin') {
-        errorMessage = 'メールアドレスまたはパスワードが正しくありません';
-      } else if (result.error === 'AccessDenied') {
-        errorMessage = 'アカウントがロックされています';
-      }
+      return {
+        success: false,
+        error: 'メールアドレスまたはパスワードが正しくありません',
+        timestamp: new Date().toISOString()
+      };
+    }
+    
+    // アカウントがアクティブか確認
+    if (!user.isActive) {
+      logger.warn('Login failed - account locked', { 
+        email,
+        userId: user.id,
+        duration: Date.now() - startTime
+      });
       
       return {
         success: false,
-        error: errorMessage,
+        error: 'アカウントがロックされています',
+        timestamp: new Date().toISOString()
+      };
+    }
+    
+    // パスワードを検証
+    const isPasswordValid = await compare(validationResult.data.password, user.passwordHash || '');
+    
+    if (!isPasswordValid) {
+      logger.warn('Login failed - invalid password', { 
+        email,
+        userId: user.id,
+        duration: Date.now() - startTime
+      });
+      
+      return {
+        success: false,
+        error: 'メールアドレスまたはパスワードが正しくありません',
         timestamp: new Date().toISOString()
       };
     }
@@ -105,14 +125,35 @@ export async function loginAction(
     // 認証成功
     logger.info('Login successful', { 
       email,
+      userId: user.id,
       duration: Date.now() - startTime
     });
     
-    // セッション情報を設定
-    if (remember) {
-      // Remember Me機能の実装
-      // セッションの有効期限を延長
-    }
+    // 最終ログイン時刻を更新
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { lastLoginAt: new Date() }
+    });
+    
+    // 監査ログを記録
+    await prisma.auditLog.create({
+      data: {
+        userId: user.id,
+        action: 'LOGIN',
+        entityType: 'user',
+        entityId: user.id,
+        metadata: {
+          email,
+          remember
+        }
+      }
+    });
+    
+    // 成功を返す（クライアント側でsignInを実行）
+    return {
+      success: true,
+      timestamp: new Date().toISOString()
+    };
     
   } catch (error) {
     // 予期しないエラー
@@ -134,9 +175,6 @@ export async function loginAction(
       timestamp: new Date().toISOString()
     };
   }
-  
-  // 成功時はリダイレクト
-  redirect('/');
 }
 
 /**
