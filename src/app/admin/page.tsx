@@ -1,8 +1,8 @@
 import { Suspense } from 'react';
 import { redirect } from 'next/navigation';
-import { getCurrentUser } from '@/server-actions/admin/auth';
-import { getDashboardStats, getAuditLogs } from '@/server-actions/admin/stats';
-import { getUsers } from '@/server-actions/admin/users';
+import { getCurrentUser } from '@/lib/server-actions/admin/auth';
+import { getDashboardStats, getAuditLogs } from '@/lib/server-actions/admin/stats';
+import { getUsers } from '@/lib/server-actions/admin/users';
 import AdminDashboardClient from './AdminDashboardClient';
 
 async function AdminDashboardServer() {
@@ -16,7 +16,7 @@ async function AdminDashboardServer() {
   const [statsResult, usersResult, auditLogsResult] = await Promise.all([
     getDashboardStats(),
     getUsers({ limit: 10 }),
-    getAuditLogs({ limit: 20 }),
+    getAuditLogs(),
   ]);
 
   return (

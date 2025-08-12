@@ -50,10 +50,18 @@ ANTHROPIC_API_KEY=your_anthropic_api_key
 
 6. **開発サーバーを起動**
 ```bash
+# デフォルト (ポート3000)
 npm run dev
+
+# 複数ポートでの起動も可能
+npm run dev:3001  # ポート3001
+npm run dev:3002  # ポート3002
 ```
 
-アプリケーションは `http://localhost:3000` で利用できます。
+アプリケーションは以下のURLで利用できます：
+- `http://localhost:3000` (デフォルト)
+- `http://localhost:3001` (複数ポート対応)
+- `http://localhost:3002` (複数ポート対応)
 
 ## 開発
 

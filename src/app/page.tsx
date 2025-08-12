@@ -1,8 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { batchTranslate } from '@/server-actions/translate/process';
-import { uploadPptxAction } from '@/server-actions/files/upload';
+import { useState, useEffect, useActionState } from 'react';
+import { uploadPptxAction, batchTranslate } from '@/app/actions';
+import type { UploadResult } from '@/lib/server-actions/files/upload';
+import type { TranslationResult } from '@/lib/server-actions/translate/batch';
+import { createInitialState, type ServerActionState } from '@/lib/server-actions/types';
 import { 
   DynamicEditorScreen, 
   DynamicPreviewScreen, 
@@ -16,258 +18,100 @@ import { getSettings } from '@/lib/settings';
 import { addToHistory, updateHistoryItem } from '@/lib/history';
 import type { ProcessingResult } from '@/types';
 import type { Settings } from '@/lib/settings';
-import { ThemeDebug } from '@/components/ThemeDebug';
 import { ProgressIndicator, type ProgressStep } from '@/components/ProgressIndicator';
 
+// 初期状態の定義（型安全）
+const initialUploadState: ServerActionState<UploadResult> = createInitialState<UploadResult>();
+const initialTranslationState: ServerActionState<TranslationResult> = createInitialState<TranslationResult>();
+
 export default function HomePage() {
-  const [file, setFile] = useState<File | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [processingResult, setProcessingResult] = useState<ProcessingResult | null>(null);
-  const [showPreviews, setShowPreviews] = useState(false);
-  const [isTranslating, setIsTranslating] = useState(false);
+  // アップロード用のuseActionState（isPending付き）
+  const [uploadState, uploadFormAction, isUploadPending] = useActionState(
+    uploadPptxAction,
+    initialUploadState
+  );
+  
+  // 翻訳用のuseActionState（isPending付き）
+  const [translationState, translateFormAction, isTranslationPending] = useActionState(
+    batchTranslate,
+    initialTranslationState
+  );
+  
   const [targetLanguage, setTargetLanguage] = useState('Japanese');
-  const [translationProgress, setTranslationProgress] = useState({
-    current: 0,
-    total: 0,
-    status: 'idle' as 'idle' | 'processing' | 'completed' | 'error',
-    message: '',
-    steps: [] as ProgressStep[]
-  });
   const [currentPage, setCurrentPage] = useState<'upload' | 'preview' | 'editor' | 'settings'>('upload');
   const [settings, setSettings] = useState<Settings>(getSettings());
   const [currentHistoryId, setCurrentHistoryId] = useState<string | null>(null);
-  const [isMounted, setIsMounted] = useState(false);
   const responsive = useResponsive();
-
-  // クライアントでのみ実行
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
-    if (selectedFile) {
-      if (selectedFile.type !== 'application/vnd.openxmlformats-officedocument.presentationml.presentation') {
-        setError('PowerPoint (.pptx) ファイルを選択してください。');
-        setFile(null);
-      } else {
-        setFile(selectedFile);
-        setError(null);
-      }
-    }
-  };
-
-  const handleTranslate = async () => {
-    if (!processingResult) return;
-
-    setIsTranslating(true);
-    setError(null);
-
-    try {
-      // すべてのスライドからテキストを収集
-      const allTexts: { id: string; originalText: string }[] = [];
-      processingResult.slides.forEach(slide => {
-        slide.texts.forEach(text => {
-          allTexts.push({
-            id: text.id,
-            originalText: text.original
-          });
-        });
-      });
-
-      // 進捗情報を初期化
-      setTranslationProgress({
-        current: 0,
-        total: allTexts.length,
-        status: 'processing',
-        message: '翻訳を開始しています...',
-        steps: [
-          { name: 'テキストの前処理', status: 'completed' },
-          { name: 'Claude APIへのリクエスト送信', status: 'in_progress' },
-          { name: '翻訳結果の反映', status: 'pending' }
-        ]
-      });
-
-      if (allTexts.length === 0) {
-        setError('翻訳するテキストがありません。');
-        return;
-      }
-
-      // バッチサイズを設定（進捗表示のため小さくする）
-      const batchSize = 5;
-      const batches = [];
-      for (let i = 0; i < allTexts.length; i += batchSize) {
-        batches.push(allTexts.slice(i, i + batchSize));
-      }
-
-      // 各バッチを順次処理して進捗を更新
-      const translations: any[] = [];
-      for (let i = 0; i < batches.length; i++) {
-        const batch = batches[i];
-        
-        // 進捗を更新
-        setTranslationProgress(prev => ({
-          ...prev,
-          current: i * batchSize,
-          message: `翻訳中... (バッチ ${i + 1}/${batches.length})`,
-          steps: prev.steps.map((step, idx) => 
-            idx === 1 ? { ...step, progress: Math.round((i / batches.length) * 100) } : step
-          )
-        }));
-
-        // Server Actionを使用して翻訳
-        const result = await batchTranslate({
-          texts: batch.map(t => ({ id: t.id, text: t.originalText })),
-          targetLanguage: targetLanguage as any,
-          sourceLanguage: 'auto',
-          model: settings.translationModel as any,
-          batchSize: batch.length
-        });
-
-        if (!result.success) {
-          throw new Error(result.error || '翻訳に失敗しました。');
-        }
-
-        translations.push(...(result.data?.translations || []));
-      }
-
-      // 進捗を完了状態に更新
-      setTranslationProgress(prev => ({
-        ...prev,
-        current: allTexts.length,
-        status: 'processing',
-        message: '翻訳結果を反映中...',
-        steps: prev.steps.map((step, idx) => {
-          if (idx === 1) return { ...step, status: 'completed' as const, progress: 100 };
-          if (idx === 2) return { ...step, status: 'in_progress' as const };
-          return step;
-        })
-      }));
-
-
-      // 翻訳結果をprocessingResultに反映
-      const updatedResult = { ...processingResult };
-      updatedResult.slides = updatedResult.slides.map(slide => ({
+  
+  // 派生状態（useEffectではなく直接計算）
+  const processingResult = uploadState?.data?.slides ? {
+    fileName: uploadState.data.fileName || '',
+    slides: translationState?.success && translationState?.data ? 
+      // 翻訳結果がある場合はマージ
+      uploadState.data.slides.map((slide, slideIndex) => ({
         ...slide,
-        texts: slide.texts.map(text => {
-          const translation = translations.find((t) => t && t.id === text.id);
+        texts: slide.texts.map((text, textIndex) => {
+          const globalIndex = uploadState.data!.slides
+            .slice(0, slideIndex)
+            .reduce((sum, s) => sum + s.texts.length, 0) + textIndex;
           return {
             ...text,
-            translated: translation ? translation.translatedText : text.translated
+            translated: translationState.data!.translatedTexts?.[globalIndex] || null
           };
         })
-      }));
-
-      setProcessingResult(updatedResult);
-      console.log('Translation successful:', translations);
-
-      // 進捗を完了状態に更新
-      setTranslationProgress({
-        current: allTexts.length,
-        total: allTexts.length,
-        status: 'completed',
-        message: '翻訳が完了しました！',
-        steps: [
-          { name: 'テキストの前処理', status: 'completed' },
-          { name: 'Claude APIへのリクエスト送信', status: 'completed' },
-          { name: '翻訳結果の反映', status: 'completed' }
-        ]
-      });
-
-      // 履歴を更新（翻訳完了）
-      if (currentHistoryId) {
-        updateHistoryItem(currentHistoryId, {
-          status: 'translated',
-          textCount: allTexts.length,
-        });
-      }
-
-    } catch (err) {
-      console.error('Translation error:', err);
-      const errorMessage = err instanceof Error ? err.message : '翻訳中にエラーが発生しました。';
-      setError(errorMessage);
-      
-      // 進捗をエラー状態に更新
-      setTranslationProgress(prev => ({
-        ...prev,
-        status: 'error',
-        message: errorMessage,
-        steps: prev.steps.map(step => 
-          step.status === 'in_progress' ? { ...step, status: 'failed' as const } : step
-        )
-      }));
-    } finally {
-      setIsTranslating(false);
-      // 3秒後に進捗表示をリセット
-      setTimeout(() => {
-        setTranslationProgress({
-          current: 0,
-          total: 0,
-          status: 'idle',
-          message: '',
-          steps: []
-        });
-      }, 3000);
-    }
+      })) : 
+      // 翻訳結果がない場合はそのまま
+      uploadState.data.slides || [],
+    totalSlides: uploadState.data.totalSlides || 0
+  } as ProcessingResult : null;
+  
+  const showPreviews = !!processingResult;
+  const error = uploadState?.message && !uploadState?.success ? uploadState.message : 
+                 translationState?.message && !translationState?.success ? translationState.message : null;
+  
+  // 翻訳の進捗状態を計算（派生状態）
+  const translationProgress = translationState?.data ? {
+    current: translationState.data.count || 0,
+    total: translationState.data.count || 0,
+    status: translationState.success ? 'completed' as const : 
+            translationState.message && !translationState.success ? 'error' as const : 'idle' as const,
+    message: translationState.message || '',
+    steps: [
+      { name: 'テキストの前処理', status: 'completed' as const },
+      { name: `${targetLanguage}への翻訳処理`, status: translationState.success ? 'completed' as const : 'pending' as const },
+      { name: '翻訳結果の反映', status: translationState.success ? 'completed' as const : 'pending' as const }
+    ] as ProgressStep[]
+  } : {
+    current: 0,
+    total: 0,
+    status: 'idle' as const,
+    message: '',
+    steps: [] as ProgressStep[]
   };
-
-  const handleUpload = async () => {
-    if (!file) return;
-    
-    setIsUploading(true);
-    setError(null);
-    setProcessingResult(null);
-    setShowPreviews(false);
-
-    try {
-      // Server Actionを使用してファイルをアップロード
-      const formData = new FormData();
-      formData.append('file', file);
-
-      const uploadResult = await uploadPptxAction(null, formData);
-      
-      console.log('Upload result:', uploadResult);
-
-      if (!uploadResult.success) {
-        console.error('Upload failed:', uploadResult.error);
-        throw new Error(uploadResult.error || 'ファイルの処理に失敗しました。');
-      }
-
-      // ファイル処理の結果を取得
-      const result: ProcessingResult = {
-        fileName: uploadResult.fileName || '',
-        slides: uploadResult.slides || [],
-        totalSlides: uploadResult.totalSlides || 0
-      };
-      
-      // Set the processing result and show preview screen
-      setProcessingResult(result);
-      setShowPreviews(true);
-      setCurrentPage('preview');  // サイドバーも更新
-      
-      console.log('Processing successful:', result);
-      
-      // 履歴に追加
+  
+  // 履歴の追加（状態が変化したときに実行）
+  useEffect(() => {
+    if (uploadState?.success && uploadState?.data && !currentHistoryId) {
       const historyItem = addToHistory({
-        fileName: file.name,
-        originalFileUrl: result.slides[0]?.originalFileUrl,
+        fileName: uploadState.data.fileName || '',
+        originalFileUrl: uploadState.data.slides?.[0]?.originalFileUrl,
         targetLanguage: targetLanguage,
-        slideCount: result.totalSlides,
-        textCount: result.slides.reduce((total, slide) => total + slide.texts.length, 0),
+        slideCount: uploadState.data.totalSlides || 0,
+        textCount: uploadState.data.slides?.reduce((total: number, slide: any) => total + (slide.texts?.length || 0), 0) || 0,
         translationModel: settings.translationModel,
         status: 'uploaded',
       });
       setCurrentHistoryId(historyItem.id);
-
-    } catch (err) {
-      console.error('Processing error:', err);
-      const errorMessage = err instanceof Error ? err.message : 'ファイル処理中にエラーが発生しました。';
-      setError(errorMessage);
-    } finally {
-      setIsUploading(false);
+      setCurrentPage('preview');
     }
-  };
+  }, [uploadState, currentHistoryId, targetLanguage, settings.translationModel]);
+  
+  // 翻訳完了時の履歴更新
+  useEffect(() => {
+    if (translationState?.success && currentHistoryId) {
+      updateHistoryItem(currentHistoryId, { status: 'translated' });
+    }
+  }, [translationState, currentHistoryId]);
 
   // ページナビゲーション処理
   const handlePageChange = (page: 'upload' | 'preview' | 'editor' | 'settings') => {
@@ -279,13 +123,16 @@ export default function HomePage() {
     setSettings(newSettings);
   };
 
+  // サーバーサイドレンダリング中はすぐにマウントする
+  // Next.js 15では不要なため削除
+
   return (
     <div className="flex h-screen bg-slate-50 dark:bg-slate-900">
         {/* モバイルナビゲーション */}
-        {isMounted && responsive.isMobile && <MobileNav />}
+        {responsive.isMobile && <MobileNav />}
         
         {/* デスクトップサイドバー */}
-        {isMounted && !responsive.isMobile && (
+        {!responsive.isMobile && (
           <Sidebar 
             currentPage={currentPage}
             onPageChange={handlePageChange}
@@ -306,7 +153,9 @@ export default function HomePage() {
             data={processingResult} 
             onBack={() => handlePageChange('upload')}
             onDataUpdate={(updatedData) => {
-              setProcessingResult(updatedData);
+              // データ更新はServer Action経由で行うため、ここでは何もしない
+              // 将来的にはServer Actionを呼び出す処理を追加
+              console.log('Data update requested:', updatedData);
             }}
             historyId={currentHistoryId}
           />
@@ -344,43 +193,52 @@ export default function HomePage() {
               <div className="text-center">
                 <p className="text-slate-600 dark:text-slate-400">.pptxファイルをアップロードして変換を開始します。</p>
               </div>
-              <div className="flex flex-col items-center space-y-4">
-                <input
-                  type="file"
-                  onChange={handleFileChange}
-                  accept=".pptx,application/vnd.openxmlformats-officedocument.presentationml.presentation"
-                  className="block w-full text-sm text-slate-600 dark:text-slate-400
-                    file:mr-4 file:py-2 file:px-4
-                    file:rounded-lg file:border-0
-                    file:text-sm file:font-semibold
-                    file:bg-blue-50 dark:file:bg-blue-900/30 file:text-blue-700 dark:file:text-blue-300
-                    hover:file:bg-blue-100 dark:hover:file:bg-blue-900/50 file:transition-all file:duration-200"
-                />
-                {file && <p className="text-sm text-slate-600 dark:text-slate-400">選択中のファイル: {file.name}</p>}
-                {error && <p className="text-sm text-red-600">{error}</p>}
-              </div>
-              <button
-                onClick={handleUpload}
-                disabled={!file || isUploading}
-                className="w-full px-4 py-2 text-white bg-blue-600 rounded-lg
-                  hover:bg-blue-700 focus:outline-none focus:ring-2
-                  focus:ring-offset-2 focus:ring-blue-500
-                  disabled:bg-slate-400 disabled:cursor-not-allowed
-                  transition-all duration-200 font-medium"
-              >
-                {isUploading ? '処理中...' : '変換を開始'}
-              </button>
+              <form action={uploadFormAction} className="space-y-4">
+                <div className="flex flex-col items-center space-y-4">
+                  <input
+                    type="file"
+                    name="file"
+                    accept=".pptx,application/vnd.openxmlformats-officedocument.presentationml.presentation"
+                    required
+                    className="block w-full text-sm text-slate-600 dark:text-slate-400
+                      file:mr-4 file:py-2 file:px-4
+                      file:rounded-lg file:border-0
+                      file:text-sm file:font-semibold
+                      file:bg-blue-50 dark:file:bg-blue-900/30 file:text-blue-700 dark:file:text-blue-300
+                      hover:file:bg-blue-100 dark:hover:file:bg-blue-900/50 file:transition-all file:duration-200"
+                  />
+                  {error && <p className="text-sm text-red-600">{error}</p>}
+                </div>
+                <button 
+                  type="submit"
+                  disabled={isUploadPending}
+                  className="w-full px-4 py-2 text-white bg-blue-600 rounded-lg
+                    hover:bg-blue-700 focus:outline-none focus:ring-2
+                    focus:ring-offset-2 focus:ring-blue-500
+                    disabled:bg-slate-400 disabled:cursor-not-allowed
+                    transition-all duration-200 font-medium"
+                >
+                  {isUploadPending ? (
+                    <>
+                      <span className="animate-spin inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full mr-2"></span>
+                      処理中...
+                    </>
+                  ) : (
+                    '変換を開始'
+                  )}
+                </button>
+              </form>
             </div>
           </div>
               )}
 
-              {/* Processing Status */}
-              {isUploading && (
+              {/* Processing Status - isPendingを使用 */}
+              {isUploadPending && (
           <div className="max-w-lg mx-auto mt-8">
             <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-xl p-4">
               <div className="flex items-center">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-                <p className="ml-3 text-blue-700 font-medium">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mr-3"></div>
+                <p className="text-blue-700 font-medium">
                   PowerPointファイルを変換中です...
                   <br />
                   <span className="text-sm text-blue-600">
@@ -412,34 +270,50 @@ export default function HomePage() {
                   >
                     🖼️ プレビュー画面へ
                   </button>
-                  <select
-                    value={targetLanguage}
-                    onChange={(e) => setTargetLanguage(e.target.value)}
-                    className="px-3 py-2 text-sm text-slate-900 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-                    disabled={isTranslating}
-                  >
-                    <option value="Japanese">日本語</option>
-                    <option value="English">英語</option>
-                    <option value="Chinese">中国語</option>
-                    <option value="Korean">韓国語</option>
-                    <option value="Spanish">スペイン語</option>
-                    <option value="French">フランス語</option>
-                    <option value="German">ドイツ語</option>
-                  </select>
-                  <button
-                    onClick={handleTranslate}
-                    disabled={isTranslating || processingResult.slides.reduce((total, slide) => total + slide.texts.length, 0) === 0}
-                    className="px-4 py-2 text-sm bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:bg-slate-400 disabled:cursor-not-allowed flex items-center gap-1 transition-all duration-200 font-medium"
-                  >
-                    {isTranslating ? (
-                      <>
-                        <span className="animate-spin inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full"></span>
-                        翻訳中...
-                      </>
-                    ) : (
-                      <>🌐 翻訳</>
-                    )}
-                  </button>
+                  
+                  {/* 翻訳フォーム */}
+                  <form action={translateFormAction} className="flex gap-2 items-center">
+                    <select
+                      name="targetLang"
+                      value={targetLanguage}
+                      onChange={(e) => setTargetLanguage(e.target.value)}
+                      className="px-3 py-2 text-sm text-slate-900 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                      disabled={isTranslationPending}
+                    >
+                      <option value="Japanese">日本語</option>
+                      <option value="English">英語</option>
+                      <option value="Chinese">中国語</option>
+                      <option value="Korean">韓国語</option>
+                      <option value="Spanish">スペイン語</option>
+                      <option value="French">フランス語</option>
+                      <option value="German">ドイツ語</option>
+                    </select>
+                    <input type="hidden" name="sourceLang" value="auto" />
+                    <input 
+                      type="hidden" 
+                      name="texts" 
+                      value={JSON.stringify(
+                        processingResult?.slides.flatMap(slide => 
+                          slide.texts.filter(text => text.original.trim().length > 0)
+                            .map(text => text.original)
+                        ) || []
+                      )} 
+                    />
+                    <button
+                      type="submit"
+                      disabled={isTranslationPending || !processingResult || processingResult.slides.reduce((total, slide) => total + slide.texts.length, 0) === 0}
+                      className="px-4 py-2 text-sm bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:bg-slate-400 disabled:cursor-not-allowed flex items-center gap-1 transition-all duration-200 font-medium"
+                    >
+                      {isTranslationPending ? (
+                        <>
+                          <span className="animate-spin inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full"></span>
+                          翻訳中...
+                        </>
+                      ) : (
+                        <>🌐 翻訳</>
+                      )}
+                    </button>
+                  </form>
                   <button
                     onClick={() => setCurrentPage('editor')}
                     disabled={processingResult.slides.reduce((total, slide) => total + slide.texts.length, 0) === 0}
@@ -455,10 +329,12 @@ export default function HomePage() {
                   </button>
                   <button
                     onClick={() => {
-                      setShowPreviews(false);
-                      setProcessingResult(null);
-                      setFile(null);
-                      setError(null);
+                      // ページをアップロード画面に戻す
+                      setCurrentPage('upload');
+                      // 履歴IDをリセット
+                      setCurrentHistoryId(null);
+                      // ブラウザをリロードして状態をリセット
+                      window.location.reload();
                     }}
                     className="px-4 py-2 text-sm bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-all duration-200 font-medium"
                   >
@@ -467,15 +343,19 @@ export default function HomePage() {
                 </div>
               </div>
               
-              {/* 翻訳進捗表示 */}
-              {isTranslating && translationProgress.status === 'processing' && (
+              {/* 翻訳進捗表示 - isPendingを使用 */}
+              {isTranslationPending && (
                 <div className="mb-6">
                   <ProgressIndicator
-                    current={translationProgress.current}
-                    total={translationProgress.total}
-                    status={translationProgress.status}
-                    message={translationProgress.message}
-                    steps={translationProgress.steps}
+                    current={0}
+                    total={processingResult?.slides.reduce((total, slide) => total + slide.texts.length, 0) || 0}
+                    status="processing"
+                    message={`${targetLanguage}への翻訳を処理中...`}
+                    steps={[
+                      { name: 'テキストの前処理', status: 'completed' },
+                      { name: `${targetLanguage}への翻訳処理`, status: 'in_progress' },
+                      { name: '翻訳結果の反映', status: 'pending' }
+                    ]}
                     showDetails={true}
                   />
                 </div>
@@ -586,7 +466,6 @@ export default function HomePage() {
           </div>
         )}
       </div>
-      <ThemeDebug />
     </div>
   );
 }

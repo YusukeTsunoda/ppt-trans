@@ -2,37 +2,21 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { formatDistanceToNow } from 'date-fns';
-import { ja } from 'date-fns/locale';
-import { updateProfileSettings } from '@/server-actions/profile/get';
+import { updateProfileSettings } from '@/lib/server-actions/profile/get';
+
+import type { ProfileData } from '@/lib/server-actions/profile/get';
 
 interface ProfileClientProps {
-  initialProfile: {
-    id: string;
-    email: string;
-    username: string;
-    role: string;
-    createdAt: string;
-    lastLoginAt: string | null;
-    settings: {
-      translationModel: string;
-      targetLanguage: string;
-      batchSize: number;
-      autoSave: boolean;
-      theme: string;
-    };
-    stats: {
-      totalFiles: number;
-      totalTranslations: number;
-      totalSlides: number;
-      storageUsed: number;
-    };
-  };
+  initialProfile: ProfileData;
 }
 
 export default function ProfileClient({ initialProfile }: ProfileClientProps) {
   const [isEditing, setIsEditing] = useState(false);
-  const [settings, setSettings] = useState(initialProfile.settings);
+  const [settings, setSettings] = useState(initialProfile.settings || {
+    translationModel: 'claude-3-haiku',
+    targetLanguage: 'ja',
+    batchSize: 5
+  });
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState('');
 
@@ -40,25 +24,28 @@ export default function ProfileClient({ initialProfile }: ProfileClientProps) {
     setIsSaving(true);
     setMessage('');
     
-    const result = await updateProfileSettings(settings);
+    // Server ActionはFormDataと初期状態を期待
+    const formData = new FormData();
+    formData.append('settings', JSON.stringify(settings));
+    
+    const initialState = {
+      success: false,
+      message: '',
+      timestamp: Date.now()
+    };
+    
+    const result = await updateProfileSettings(initialState, formData);
     
     if (result.success) {
       setMessage('設定を保存しました');
       setIsEditing(false);
     } else {
-      setMessage(result.error || '設定の保存に失敗しました');
+      setMessage(result.message || '設定の保存に失敗しました');
     }
     
     setIsSaving(false);
   };
 
-  const formatBytes = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
-  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -117,15 +104,10 @@ export default function ProfileClient({ initialProfile }: ProfileClientProps) {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-500 dark:text-gray-400">
-                最終ログイン
+                ファイル数
               </label>
               <p className="mt-1 text-foreground">
-                {initialProfile.lastLoginAt 
-                  ? formatDistanceToNow(new Date(initialProfile.lastLoginAt), { 
-                      addSuffix: true, 
-                      locale: ja 
-                    })
-                  : '未ログイン'}
+                {initialProfile.filesCount} 件
               </p>
             </div>
           </div>
@@ -136,34 +118,34 @@ export default function ProfileClient({ initialProfile }: ProfileClientProps) {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="text-center">
               <div className="text-2xl font-semibold text-foreground">
-                {initialProfile.stats.totalFiles}
+                {initialProfile.filesCount}
               </div>
               <div className="text-sm text-gray-600 dark:text-gray-400">
-                ファイル
+                アップロードファイル
               </div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-semibold text-foreground">
-                {initialProfile.stats.totalTranslations}
+                {initialProfile.role === 'ADMIN' ? '管理者' : 'ユーザー'}
               </div>
               <div className="text-sm text-gray-600 dark:text-gray-400">
-                翻訳
+                ロール
               </div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-semibold text-foreground">
-                {initialProfile.stats.totalSlides}
+                {settings.targetLanguage || 'ja'}
               </div>
               <div className="text-sm text-gray-600 dark:text-gray-400">
-                スライド
+                ターゲット言語
               </div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-semibold text-foreground">
-                {formatBytes(initialProfile.stats.storageUsed)}
+                {settings.batchSize || 5}
               </div>
               <div className="text-sm text-gray-600 dark:text-gray-400">
-                ストレージ
+                バッチサイズ
               </div>
             </div>
           </div>
@@ -184,7 +166,11 @@ export default function ProfileClient({ initialProfile }: ProfileClientProps) {
                 <button
                   onClick={() => {
                     setIsEditing(false);
-                    setSettings(initialProfile.settings);
+                    setSettings(initialProfile.settings || {
+                      translationModel: 'claude-3-haiku',
+                      targetLanguage: 'ja',
+                      batchSize: 5
+                    });
                   }}
                   className="px-4 py-2 text-sm bg-gray-600 text-white rounded-lg hover:bg-gray-700"
                 >
@@ -275,49 +261,6 @@ export default function ProfileClient({ initialProfile }: ProfileClientProps) {
               )}
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
-                自動保存
-              </label>
-              {isEditing ? (
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={settings.autoSave}
-                    onChange={(e) => setSettings({ ...settings, autoSave: e.target.checked })}
-                    className="rounded border-gray-300 dark:border-gray-600"
-                  />
-                  <span className="text-foreground">
-                    {settings.autoSave ? '有効' : '無効'}
-                  </span>
-                </div>
-              ) : (
-                <p className="text-foreground">
-                  {settings.autoSave ? '有効' : '無効'}
-                </p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
-                テーマ
-              </label>
-              {isEditing ? (
-                <select
-                  value={settings.theme}
-                  onChange={(e) => setSettings({ ...settings, theme: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-background"
-                >
-                  <option value="light">ライト</option>
-                  <option value="dark">ダーク</option>
-                  <option value="system">システム</option>
-                </select>
-              ) : (
-                <p className="text-foreground">
-                  {settings.theme === 'light' ? 'ライト' : settings.theme === 'dark' ? 'ダーク' : 'システム'}
-                </p>
-              )}
-            </div>
           </div>
         </div>
       </div>

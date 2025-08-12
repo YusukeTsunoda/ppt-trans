@@ -5,7 +5,9 @@ import { updateHistoryItem } from '@/lib/history';
 import { DownloadButton } from '@/components/DownloadButton';
 import { useToast } from '@/components/Toast';
 import { useResponsive } from '@/hooks/useResponsive';
-import { generatePptx } from '@/server-actions/generate/pptx';
+import { generatePptx, type GeneratePptxResult } from '@/lib/server-actions/generate/pptx';
+import { type ServerActionState } from '@/lib/server-actions/types';
+import { GenerationProgress } from '@/components/GenerationProgress';
 import type { EditorScreenProps } from '@/types';
 
 export function EditorScreen({ data, onBack, historyId }: EditorScreenProps) {
@@ -15,6 +17,8 @@ export function EditorScreen({ data, onBack, historyId }: EditorScreenProps) {
   const [selectedSlide, setSelectedSlide] = useState(0);
   const [isEditing, setIsEditing] = useState<string | null>(null);
   const [_isSaving, _setIsSaving] = useState(false);
+  const [generationJobId, setGenerationJobId] = useState<string | null>(null);
+  const [showProgress, setShowProgress] = useState(false);
 
   // 翻訳テキストを編集
   const handleTextEdit = (slideIndex: number, textId: string, newTranslation: string) => {
@@ -31,15 +35,33 @@ export function EditorScreen({ data, onBack, historyId }: EditorScreenProps) {
   // 編集内容を保存してダウンロード（Server Action版）
   const _handleDownload = async () => {
     _setIsSaving(true);
+    
+    // エラーメッセージの詳細化
+    const logError = (stage: string, error: any) => {
+      console.error(`[EditorScreen] ${stage}:`, error);
+      const errorMessage = error instanceof Error ? error.message : '不明なエラー';
+      showToast(`${stage}: ${errorMessage}`, 'error');
+    };
+
     try {
       // 最初のスライドから元のファイルURLを取得
       const originalFileUrl = editedData.slides[0]?.originalFileUrl;
       if (!originalFileUrl) {
-        throw new Error('元のファイルURLが見つかりません');
+        logError('ファイル検証エラー', new Error('元のファイルURLが見つかりません'));
+        return;
+      }
+
+      // テキストの存在確認
+      const totalTexts = editedData.slides.reduce((sum, slide) => sum + slide.texts.length, 0);
+      if (totalTexts === 0) {
+        logError('データ検証エラー', new Error('翻訳するテキストがありません'));
+        return;
       }
 
       // Server Actionに送信するデータを準備
       const requestData = {
+        fileId: 'temp-file-id', // TODO: 実際のfileIdを設定
+        translationId: 'temp-translation-id', // TODO: 実際のtranslationIdを設定
         originalFileUrl,
         editedSlides: editedData.slides.map(slide => ({
           pageNumber: slide.pageNumber,
@@ -51,105 +73,149 @@ export function EditorScreen({ data, onBack, historyId }: EditorScreenProps) {
         }))
       };
 
-      console.log('Generating translated PPTX with Server Action...', requestData);
+      console.log('[EditorScreen] Generating translated PPTX...', {
+        slideCount: requestData.editedSlides.length,
+        textCount: totalTexts
+      });
+
+      // 進捗表示
+      showToast('PPTXファイルを生成中...', 'info');
 
       // Server Actionを使用してPPTXファイルを生成
-      const result = await generatePptx(requestData);
+      const formData = new FormData();
+      formData.append('fileId', requestData.fileId || '');
+      formData.append('translationId', requestData.translationId || '');
+      const initialState: ServerActionState<GeneratePptxResult> = { success: false, message: '', timestamp: Date.now() };
+      const result = await generatePptx(initialState, formData);
 
       if (!result.success) {
-        throw new Error(result.error || 'PPTXファイルの生成に失敗しました');
+        logError('PPTX生成エラー', new Error(result.message || 'PPTXファイルの生成に失敗しました'));
+        return;
       }
 
-      console.log('PPTX generation result:', result);
+      console.log('[EditorScreen] PPTX generation successful:', result);
 
       // ダウンロード処理
-      if (result.downloadUrl) {
-        // ブラウザがCORSを処理できる場合は直接ダウンロード
-        try {
-          const fileResponse = await fetch(result.downloadUrl);
-          if (fileResponse.ok) {
-            const blob = await fileResponse.blob();
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = result.fileName || 'translated_presentation.pptx';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
-            
-            // 履歴を更新（ダウンロード完了）
-            if (historyId) {
-              await updateHistoryItem(historyId, {
-                status: 'downloaded',
-                translatedFileUrl: result.downloadUrl,
-              });
-            }
-            
-            // 成功通知
-            showToast('翻訳版のPPTXファイルをダウンロードしました', 'success');
-            return;
+      if (!result.data?.downloadUrl) {
+        logError('ダウンロードエラー', new Error('ダウンロードURLが取得できませんでした'));
+        return;
+      }
+
+      // ダウンロード方法を試行
+      let downloadSuccessful = false;
+
+      // 方法1: Fetch APIを使用した直接ダウンロード
+      try {
+        const fileResponse = await fetch(result.data.downloadUrl);
+        if (fileResponse.ok) {
+          const blob = await fileResponse.blob();
+          
+          // ファイルサイズの確認
+          if (blob.size === 0) {
+            throw new Error('生成されたファイルが空です');
           }
-        } catch (corsError) {
-          console.log('Direct download failed, trying fallback method...', corsError);
+          
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = result.data.fileName || 'translated_presentation.pptx';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(url);
+          
+          downloadSuccessful = true;
+          console.log('[EditorScreen] Download successful via fetch');
+        } else {
+          throw new Error(`HTTPエラー: ${fileResponse.status}`);
         }
-        
-        // CORS エラーの場合はリンククリックでダウンロード
-        const downloadLink = document.createElement('a');
-        downloadLink.href = result.downloadUrl;
-        downloadLink.download = result.fileName || 'translated_presentation.pptx';
-        downloadLink.target = '_blank';
-        document.body.appendChild(downloadLink);
-        downloadLink.click();
-        document.body.removeChild(downloadLink);
-        
+      } catch (fetchError) {
+        console.warn('[EditorScreen] Fetch download failed, trying fallback...', fetchError);
+      }
+      
+      // 方法2: 直接リンクでダウンロード（フォールバック）
+      if (!downloadSuccessful) {
+        try {
+          const downloadLink = document.createElement('a');
+          downloadLink.href = result.data.downloadUrl;
+          downloadLink.download = result.data.fileName || 'translated_presentation.pptx';
+          downloadLink.target = '_blank';
+          document.body.appendChild(downloadLink);
+          downloadLink.click();
+          document.body.removeChild(downloadLink);
+          
+          downloadSuccessful = true;
+          console.log('[EditorScreen] Download initiated via direct link');
+        } catch (linkError) {
+          console.error('[EditorScreen] Direct link download failed:', linkError);
+        }
+      }
+      
+      // ダウンロード成功時の処理
+      if (downloadSuccessful) {
         // 履歴を更新（ダウンロード完了）
         if (historyId) {
-          await updateHistoryItem(historyId, {
+          updateHistoryItem(historyId, {
             status: 'downloaded',
-            translatedFileUrl: result.downloadUrl,
+            translatedFileUrl: result.data.downloadUrl,
+            completedAt: new Date().toISOString()
           });
         }
         
         showToast('翻訳版のPPTXファイルをダウンロードしました', 'success');
       } else {
-        throw new Error('ダウンロードURLが取得できませんでした');
+        throw new Error('すべてのダウンロード方法が失敗しました');
       }
       
     } catch (error) {
-      console.error('Download error:', error);
-      showToast(
-        `ダウンロードに失敗しました: ${error instanceof Error ? error.message : '不明なエラー'}`,
-        'error'
-      );
+      console.error('[EditorScreen] Download error:', error);
+      const errorMessage = error instanceof Error ? error.message : '不明なエラー';
+      
+      // 履歴を更新（失敗）
+      if (historyId) {
+        updateHistoryItem(historyId, {
+          status: 'failed',
+          completedAt: new Date().toISOString()
+        });
+      }
+      
+      showToast(`ダウンロードに失敗しました: ${errorMessage}`, 'error');
     } finally {
       _setIsSaving(false);
     }
   };
 
   // ダウンロード成功時の処理（新規追加）
-  const handleDownloadSuccess = async (downloadUrl: string) => {
+  const handleDownloadSuccess = (downloadUrl: string) => {
     // 履歴を更新（成功）
     if (historyId) {
-      await updateHistoryItem(historyId, {
+      updateHistoryItem(historyId, {
         status: 'downloaded',
         translatedFileUrl: downloadUrl,
         completedAt: new Date().toISOString()
       });
     }
     showToast('翻訳済みファイルのダウンロードが完了しました', 'success');
+    
+    // 進捗表示を非表示
+    setShowProgress(false);
+    setGenerationJobId(null);
   };
 
   // ダウンロードエラー時の処理（新規追加）
-  const handleDownloadError = async (error: Error) => {
+  const handleDownloadError = (error: Error) => {
     // 履歴を更新（失敗）
     if (historyId) {
-      await updateHistoryItem(historyId, {
+      updateHistoryItem(historyId, {
         status: 'failed',
         completedAt: new Date().toISOString(),
       });
     }
     showToast(`ダウンロードに失敗しました: ${error.message}`, 'error');
+    
+    // 進捗表示を非表示
+    setShowProgress(false);
+    setGenerationJobId(null);
   };
 
   const currentSlide = editedData.slides[selectedSlide];
@@ -182,6 +248,23 @@ export function EditorScreen({ data, onBack, historyId }: EditorScreenProps) {
             </div>
           </div>
         </div>
+
+        {/* 生成進捗表示 */}
+        {showProgress && (
+          <div className="mb-6">
+            <GenerationProgress
+              jobId={generationJobId || undefined}
+              onComplete={(result) => {
+                if (result.downloadUrl) {
+                  handleDownloadSuccess(result.downloadUrl);
+                }
+              }}
+              onError={(error) => {
+                handleDownloadError(new Error(error));
+              }}
+            />
+          </div>
+        )}
 
         <div className={`grid ${responsive.isMobile ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-3'} gap-6`}>
           {/* 左側：スライドプレビュー */}

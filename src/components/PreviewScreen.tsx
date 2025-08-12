@@ -5,8 +5,6 @@ import type { ProcessingResult, SlideData } from '@/types';
 import { getSettings } from '@/lib/settings';
 import { updateHistoryItem } from '@/lib/history';
 import { useResponsive } from '@/hooks/useResponsive';
-import { generatePptx } from '@/server-actions/generate/pptx';
-import { translateBatch } from '@/server-actions/translate/batch';
 
 // CSSアニメーションをグローバルスタイルとして追加
 const globalStyles = `
@@ -110,12 +108,21 @@ export function PreviewScreen({ data, onBack, onDataUpdate, historyId }: Preview
       for (let i = 0; i < batches.length; i++) {
         const batch = batches[i];
         
-        // Server Actionを使用して翻訳
-        const result = await translateBatch({
-          texts: batch,
-          targetLanguage: targetLanguage,
-          model: settings.translationModel
+        // API Route経由で翻訳
+        const response = await fetch('/api/translate/batch-simple', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            texts: batch,
+            sourceLanguage: 'auto', // 自動検出
+            targetLanguage: targetLanguage,
+            model: settings.translationModel
+          }),
         });
+
+        const result = await response.json();
 
         if (!result.success) {
           throw new Error(result.error || '翻訳に失敗しました。');
@@ -288,8 +295,16 @@ export function PreviewScreen({ data, onBack, onDataUpdate, historyId }: Preview
 
       console.log('Generating translated PPTX...', requestData);
 
-      // Server Actionを使用してPPTXファイルを生成
-      const result = await generatePptx(requestData);
+      // API Route経由でPPTXファイルを生成
+      const response = await fetch('/api/generate/pptx', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestData),
+      });
+
+      const result = await response.json();
       
       if (!result.success) {
         throw new Error(result.error || 'PPTXファイルの生成に失敗しました');

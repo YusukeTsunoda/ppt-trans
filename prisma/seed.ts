@@ -23,7 +23,7 @@ async function main() {
     data: {
       email: 'admin@example.com',
       username: 'admin',
-      passwordHash: adminPassword,
+      password: adminPassword,  // passwordHashからpasswordに変更
       role: Role.ADMIN,
       isActive: true,
       settings: {
@@ -50,7 +50,7 @@ async function main() {
     data: {
       email: 'user1@example.com',
       username: 'testuser1',
-      passwordHash: user1Password,
+      password: user1Password,  // passwordHashからpasswordに変更
       role: Role.USER,
       isActive: true,
       settings: {
@@ -77,7 +77,7 @@ async function main() {
     data: {
       email: 'user2@example.com',
       username: 'testuser2',
-      passwordHash: user2Password,
+      password: user2Password,  // passwordHashからpasswordに変更
       role: Role.USER,
       isActive: true,
       settings: {

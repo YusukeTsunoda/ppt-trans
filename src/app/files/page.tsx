@@ -5,9 +5,11 @@ import { useState, useEffect, useTransition, useOptimistic } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { downloadFile } from '@/lib/downloadUtils';
-import { listFilesAction, type FileWithTranslations } from '@/server-actions/files/list';
-import { deleteFileAction } from '@/server-actions/files/delete';
+import { listFilesAction, type FileWithTranslations, type ListFilesResult } from '@/lib/server-actions/files/list';
+import { deleteFileAction, type DeleteFileResult } from '@/lib/server-actions/files/delete';
+import { type ServerActionState } from '@/lib/server-actions/types';
 import { Loader2, Trash2, Download, FileText, AlertCircle } from 'lucide-react';
+import { DashboardLayout } from '@/components/DashboardLayout';
 
 // date-fnsを動的インポート
 const formatDate = (date: Date): string => {
@@ -57,17 +59,25 @@ export default function FilesPage() {
     setError(null);
     
     try {
-      const result = await listFilesAction({
-        page: 1,
-        pageSize: 50,
-        sortBy: 'createdAt',
-        sortOrder: 'desc'
-      });
+      // Server ActionはFormDataと初期状態を期待
+      const formData = new FormData();
+      formData.append('page', '1');
+      formData.append('pageSize', '50');
+      formData.append('sortBy', 'createdAt');
+      formData.append('sortOrder', 'desc');
       
-      if (result.success && result.files) {
-        setFiles(result.files);
+      const initialState: ServerActionState<ListFilesResult> = {
+        success: false,
+        message: '',
+        timestamp: Date.now()
+      };
+      
+      const result = await listFilesAction(initialState, formData);
+      
+      if (result.success && result.data?.files) {
+        setFiles(result.data.files);
       } else {
-        setError(result.error || 'ファイルの取得に失敗しました');
+        setError(result.message || 'ファイルの取得に失敗しました');
       }
     } catch (error) {
       console.error('Error fetching files:', error);
@@ -92,7 +102,17 @@ export default function FilesPage() {
     });
 
     try {
-      const result = await deleteFileAction(fileId);
+      // Server ActionはFormDataと初期状態を期待
+      const formData = new FormData();
+      formData.append('fileId', fileId);
+      
+      const initialState: ServerActionState<DeleteFileResult> = {
+        success: false,
+        message: '',
+        timestamp: Date.now()
+      };
+      
+      const result = await deleteFileAction(initialState, formData);
       
       if (result.success) {
         setMessage('ファイルを削除しました');
@@ -100,7 +120,7 @@ export default function FilesPage() {
         setFiles(prev => prev.filter(f => f.id !== fileId));
       } else {
         // 削除に失敗した場合は元に戻す
-        setError(result.error || 'ファイルの削除に失敗しました');
+        setError(result.message || 'ファイルの削除に失敗しました');
         await fetchFiles(); // リストを再取得
       }
     } catch (error) {
@@ -166,13 +186,14 @@ export default function FilesPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-7xl">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">ファイル管理</h1>
-        <p className="text-gray-600 dark:text-gray-400">
-          アップロードしたファイルの一覧と管理
-        </p>
-      </div>
+    <DashboardLayout currentPage="files">
+      <div className="max-w-7xl">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold mb-2">ファイル管理</h1>
+          <p className="text-gray-600 dark:text-gray-400">
+            アップロードしたファイルの一覧と管理
+          </p>
+        </div>
 
       {/* メッセージ表示 */}
       {message && (
@@ -308,6 +329,7 @@ export default function FilesPage() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </DashboardLayout>
   );
 }

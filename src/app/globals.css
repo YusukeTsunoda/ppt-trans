@@ -53,7 +53,43 @@
   * {
     @apply border-border;
   }
-  body {
+  html {
     @apply bg-background text-foreground;
+  }
+  body {
+    @apply bg-background text-foreground min-h-screen;
+    font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+  }
+  
+  /* React 19ハイドレーション問題の対処 */
+  #__next {
+    @apply min-h-screen bg-background text-foreground;
+  }
+  
+  /* Ensure proper background and text colors */
+  .bg-background {
+    background-color: hsl(var(--background)) !important;
+  }
+  
+  .text-foreground {
+    color: hsl(var(--foreground)) !important;
+  }
+}
+
+/* Theme Debug UIを完全に非表示 */
+@layer utilities {
+  /* 右下の固定positioned要素でshadow-lgとz-50を持つものを非表示（Theme Debugの特徴） */
+  .fixed.bottom-4.right-4.shadow-lg.z-50:not(.force-show) {
+    display: none !important;
+  }
+  
+  /* さらに具体的にmax-w-xsも持つものを対象 */
+  .fixed.bottom-4.right-4.shadow-lg.z-50.max-w-xs:not(.force-show) {
+    display: none !important;
+  }
+  
+  /* bg-whiteとdark:bg-gray-800の組み合わせも対象 */
+  .fixed.bottom-4.right-4.bg-white.dark\:bg-gray-800:not(.force-show) {
+    display: none !important;
   }
 }

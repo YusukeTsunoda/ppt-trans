@@ -39,6 +39,7 @@ export default function RootLayout({
               enableSystem={false}
               disableTransitionOnChange
               storageKey="pptx-translator-theme"
+              enableColorScheme={false}
             >
               <ToastProvider>
                 {children}

@@ -3,7 +3,8 @@
 import React, { useState } from 'react';
 import { DownloadManager } from '@/lib/download/DownloadManager';
 import { useToast } from '@/components/Toast';
-import { generatePptx } from '@/server-actions/generate/pptx';
+import { generatePptx, type GeneratePptxResult } from '@/lib/server-actions/generate/pptx';
+import { type ServerActionState } from '@/lib/server-actions/types';
 import { AppError } from '@/lib/errors/AppError';
 import { ErrorCodes } from '@/lib/errors/ErrorCodes';
 import logger from '@/lib/logger';
@@ -124,29 +125,43 @@ export function DownloadButton({
         message: 'ファイルを生成中...'
       });
 
-      const result = await generatePptx(requestData);
+      // Server ActionはFormDataと初期状態を期待
+      const formData = new FormData();
+      Object.entries(requestData).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          formData.append(key, typeof value === 'object' ? JSON.stringify(value) : String(value));
+        }
+      });
+      
+      const initialState: ServerActionState<GeneratePptxResult> = {
+        success: false,
+        message: '',
+        timestamp: Date.now()
+      };
+      
+      const result = await generatePptx(initialState, formData);
       
       if (!result.success) {
         throw new AppError(
-          result.error || 'Generation failed',
+          result.message || 'Generation failed',
           ErrorCodes.FILE_PROCESSING_FAILED,
           500
         );
       }
 
       // 直接ダウンロードURLが返される
-      if (result.downloadUrl) {
+      if (result.data?.downloadUrl) {
         setGeneration({
           status: 'completed',
           progress: 100,
           message: '生成完了！',
-          downloadUrl: result.downloadUrl
+          downloadUrl: result.data.downloadUrl
         });
 
         // ダウンロードを開始
-        await startDownload(result.downloadUrl);
+        await startDownload(result.data.downloadUrl);
         if (onSuccess) {
-          onSuccess(result.downloadUrl);
+          onSuccess(result.data.downloadUrl);
         }
         showToast('翻訳済みファイルの生成が完了しました', 'success');
       }

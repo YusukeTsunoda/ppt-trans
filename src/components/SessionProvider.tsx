@@ -9,10 +9,9 @@ export default function SessionProvider({
 }) {
   return (
     <NextAuthSessionProvider
-      // セッションの自動更新を無効化
-      // useSessionManagerで独自のセッション管理を行うため
-      refetchInterval={0} // 自動更新を無効化
-      refetchOnWindowFocus={false} // ウィンドウフォーカス時の更新を無効化
+      // セッションの適切な更新設定
+      refetchInterval={5 * 60} // 5分ごとに更新
+      refetchOnWindowFocus={true} // ウィンドウフォーカス時の更新を有効化
     >
       {children}
     </NextAuthSessionProvider>

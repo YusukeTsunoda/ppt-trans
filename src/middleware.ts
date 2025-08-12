@@ -47,7 +47,10 @@ export default withAuth(
         if (
           pathname === '/login' ||
           pathname === '/register' ||
-          pathname.startsWith('/api/auth')
+          pathname === '/test-login' ||
+          pathname.startsWith('/api/auth') ||
+          pathname.startsWith('/api/translate') ||  // 翻訳APIは認証不要（内部でAPIキーを使用）
+          pathname.startsWith('/api/generate')      // 生成APIは認証不要（一時的）
         ) {
           return true;
         }

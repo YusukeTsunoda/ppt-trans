@@ -51,17 +51,9 @@ export function SettingsScreen({ onSettingsChange }: SettingsScreenProps) {
   // テーマを同期（mountedになった後）
   useEffect(() => {
     if (mounted && settings.theme) {
-      console.log('Setting theme to:', settings.theme);
       setTheme(settings.theme);
     }
   }, [mounted, settings.theme, setTheme]);
-
-  // デバッグ: 現在のテーマ状態を確認
-  useEffect(() => {
-    console.log('Current theme from useTheme:', theme);
-    console.log('Current settings.theme:', settings.theme);
-    console.log('Is mounted:', mounted);
-  }, [theme, settings.theme, mounted]);
 
   const handleSave = () => {
     setIsSaving(true);
