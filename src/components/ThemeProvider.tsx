@@ -26,10 +26,7 @@ export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
   const themeProps = {
     ...props,
     enableColorScheme: false,
-    // デバッグ関連のプロパティを無効化
-    ...(process.env.NODE_ENV === 'production' && {
-      disableTransitionOnChange: true
-    })
+    disableTransitionOnChange: true
   };
 
   return <NextThemesProvider {...themeProps}>{children}</NextThemesProvider>;

@@ -179,7 +179,7 @@ export default function ProfileClient({ initialProfile }: ProfileClientProps) {
                 <button
                   onClick={handleSaveSettings}
                   disabled={isSaving}
-                  className="px-4 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+                  className="px-4 py-2 text-sm bg-accent-600 text-white rounded-lg hover:bg-accent-700 disabled:opacity-50"
                 >
                   {isSaving ? '保存中...' : '保存'}
                 </button>
@@ -191,7 +191,7 @@ export default function ProfileClient({ initialProfile }: ProfileClientProps) {
             <div className={`mb-4 p-3 rounded-lg text-sm ${
               message.includes('失敗') || message.includes('エラー')
                 ? 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400'
-                : 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400'
+                : 'bg-accent-100 text-accent-700 dark:bg-accent-900/20 dark:text-accent-400'
             }`}>
               {message}
             </div>

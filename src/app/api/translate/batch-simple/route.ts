@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import logger from '@/lib/logger';
+import { verifyApiAuth, checkRateLimit } from '@/lib/auth/api-auth';
 
 interface TranslationRequest {
   texts: Array<{
@@ -13,6 +14,25 @@ interface TranslationRequest {
 }
 
 export async function POST(request: NextRequest) {
+  // 認証チェック
+  const authResult = await verifyApiAuth(request);
+  if (!authResult.isAuthenticated) {
+    return authResult.error!;
+  }
+
+  // レート制限チェック（1分あたり30リクエスト）
+  const rateLimitResult = checkRateLimit(authResult.user!.id, 30, 60000);
+  if (!rateLimitResult.allowed) {
+    logger.warn('Rate limit exceeded', { userId: authResult.user!.id });
+    return NextResponse.json(
+      { 
+        success: false,
+        error: 'Rate limit exceeded. Please try again later.' 
+      },
+      { status: 429 }
+    );
+  }
+
   try {
     const body: TranslationRequest = await request.json();
     const { 

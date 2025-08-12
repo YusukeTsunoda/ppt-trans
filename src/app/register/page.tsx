@@ -57,8 +57,8 @@ export default function RegisterPage() {
         <form action={formAction} className="mt-8 space-y-6">
           {/* 成功メッセージ */}
           {state.success && state.message && (
-            <div className="rounded-md bg-green-50 dark:bg-green-900/20 p-4">
-              <p className="text-sm text-green-800 dark:text-green-400">
+            <div className="rounded-md bg-accent-50 dark:bg-accent-900/20 p-4">
+              <p className="text-sm text-accent-800 dark:text-accent-400">
                 {state.message}
               </p>
             </div>

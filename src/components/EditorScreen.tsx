@@ -313,7 +313,7 @@ export function EditorScreen({ data, onBack, historyId }: EditorScreenProps) {
                   return (
                     <div
                       key={text.id}
-                      className="absolute border-2 border-blue-500 cursor-pointer transition-all duration-200 rounded"
+                      className="absolute border-2 border-primary-500 cursor-pointer transition-all duration-200 rounded"
                       style={{
                         left: `${(text.position.x / slideWidth) * 100}%`,
                         top: `${(text.position.y / slideHeight) * 100}%`,
@@ -337,7 +337,7 @@ export function EditorScreen({ data, onBack, historyId }: EditorScreenProps) {
                     onClick={() => setSelectedSlide(index)}
                     className={`flex-shrink-0 w-24 h-16 rounded-lg border-2 overflow-hidden transition-all duration-200 ${
                       index === selectedSlide
-                        ? 'border-blue-600 ring-2 ring-blue-400 shadow-md'
+                        ? 'border-primary-600 ring-2 ring-primary-400 shadow-md'
                         : 'border-slate-300 hover:border-slate-400'
                     }`}
                   >
@@ -356,7 +356,7 @@ export function EditorScreen({ data, onBack, historyId }: EditorScreenProps) {
           <div className="lg:col-span-1">
             <div className={`bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 ${responsive.isMobile ? '' : 'sticky top-6'}`}>
               <h2 className="text-xl font-semibold mb-4 text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                 </svg>
                 テキスト編集
@@ -369,7 +369,7 @@ export function EditorScreen({ data, onBack, historyId }: EditorScreenProps) {
                       key={text.id}
                       className={`p-4 border rounded-lg transition-all duration-200 cursor-pointer ${
                         isEditing === text.id
-                          ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-md'
+                          ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 shadow-md'
                           : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 bg-white dark:bg-slate-800'
                       }`}
                       onClick={() => setIsEditing(text.id)}
@@ -392,7 +392,7 @@ export function EditorScreen({ data, onBack, historyId }: EditorScreenProps) {
                             <textarea
                               value={text.translated}
                               onChange={(e) => handleTextEdit(selectedSlide, text.id, e.target.value)}
-                              className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-700 transition-all duration-200"
+                              className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-700 transition-all duration-200"
                               rows={3}
                               autoFocus
                             />
@@ -402,7 +402,7 @@ export function EditorScreen({ data, onBack, historyId }: EditorScreenProps) {
                                   e.stopPropagation();
                                   setIsEditing(null);
                                 }}
-                                className="px-3 py-1 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-all duration-200 font-medium"
+                                className="px-3 py-1 bg-primary-600 text-white text-sm rounded-lg hover:bg-primary-700 transition-all duration-200 font-medium"
                               >
                                 完了
                               </button>

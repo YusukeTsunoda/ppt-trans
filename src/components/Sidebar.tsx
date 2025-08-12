@@ -57,19 +57,19 @@ export function Sidebar({ currentPage, onPageChange, hasData }: SidebarProps) {
   ];
 
   return (
-    <div className={`${isExpanded ? 'w-64' : 'w-16'} bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 h-screen transition-all duration-300 flex flex-col`}>
+    <div className={`${isExpanded ? 'w-64' : 'w-16'} bg-white dark:bg-secondary-800 border-r border-secondary-200 dark:border-secondary-700 h-screen transition-all duration-300 flex flex-col`}>
       {/* ヘッダー */}
-      <div className="p-4 border-b border-slate-200 dark:border-slate-700">
+      <div className="p-4 border-b border-secondary-200 dark:border-secondary-700">
         <div className="flex items-center justify-between">
           {isExpanded && (
-            <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">PPTX翻訳</h2>
+            <h2 className="text-xl font-bold text-secondary-900 dark:text-secondary-100">PPTX翻訳</h2>
           )}
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+            className="p-2 rounded-lg hover:bg-secondary-100 dark:hover:bg-secondary-700 transition-colors"
           >
             <svg 
-              className={`w-5 h-5 text-slate-600 dark:text-slate-400 transition-transform ${isExpanded ? '' : 'rotate-180'}`} 
+              className={`w-5 h-5 text-secondary-600 dark:text-secondary-400 transition-transform ${isExpanded ? '' : 'rotate-180'}`} 
               fill="none" 
               stroke="currentColor" 
               viewBox="0 0 24 24"
@@ -91,10 +91,10 @@ export function Sidebar({ currentPage, onPageChange, hasData }: SidebarProps) {
                 className={`
                   w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all
                   ${currentPage === item.id 
-                    ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-700' 
+                    ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 border border-primary-200 dark:border-primary-700' 
                     : item.enabled 
-                      ? 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-100' 
-                      : 'text-slate-400 dark:text-slate-500 cursor-not-allowed'
+                      ? 'text-secondary-700 dark:text-secondary-300 hover:bg-secondary-50 dark:hover:bg-secondary-700 hover:text-secondary-900 dark:hover:text-secondary-100' 
+                      : 'text-secondary-400 dark:text-secondary-500 cursor-not-allowed'
                   }
                 `}
               >
@@ -110,8 +110,8 @@ export function Sidebar({ currentPage, onPageChange, hasData }: SidebarProps) {
 
       {/* フッター */}
       {isExpanded && (
-        <div className="p-4 border-t border-slate-200 dark:border-slate-700">
-          <div className="text-xs text-slate-500 dark:text-slate-400">
+        <div className="p-4 border-t border-secondary-200 dark:border-secondary-700">
+          <div className="text-xs text-secondary-500 dark:text-secondary-400">
             <p>Version 1.0.0</p>
             <p className="mt-1">© 2024 PPTX Translator</p>
           </div>

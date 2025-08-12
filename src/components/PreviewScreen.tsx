@@ -400,7 +400,7 @@ export function PreviewScreen({ data, onBack, onDataUpdate, historyId }: Preview
               <select
                 value={targetLanguage}
                 onChange={(e) => setTargetLanguage(e.target.value)}
-                className="px-3 py-2 text-sm text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                className="px-3 py-2 text-sm text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200"
                 disabled={isTranslating}
               >
                 <option value="Japanese">日本語</option>
@@ -414,7 +414,7 @@ export function PreviewScreen({ data, onBack, onDataUpdate, historyId }: Preview
               <button
                 onClick={() => handleTranslate(false)}
                 disabled={isTranslating || !hasTexts}
-                className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-slate-400 disabled:cursor-not-allowed flex items-center gap-2 transition-all duration-200 hover:shadow-md"
+                className="px-4 py-2 text-sm bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:bg-slate-400 disabled:cursor-not-allowed flex items-center gap-2 transition-all duration-200 hover:shadow-md"
               >
                 {isTranslating ? (
                   <>
@@ -433,7 +433,7 @@ export function PreviewScreen({ data, onBack, onDataUpdate, historyId }: Preview
               <button
                 onClick={() => handleTranslate(true)}
                 disabled={isTranslating}
-                className="px-4 py-2 text-sm bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:bg-slate-400 disabled:cursor-not-allowed flex items-center gap-2 transition-all duration-200 hover:shadow-md"
+                className="px-4 py-2 text-sm bg-accent-600 text-white rounded-lg hover:bg-accent-700 disabled:bg-slate-400 disabled:cursor-not-allowed flex items-center gap-2 transition-all duration-200 hover:shadow-md"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -443,7 +443,7 @@ export function PreviewScreen({ data, onBack, onDataUpdate, historyId }: Preview
               <button
                 onClick={handleDownload}
                 disabled={isDownloading}
-                className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-slate-400 disabled:cursor-not-allowed flex items-center gap-2 transition-all duration-200 hover:shadow-md"
+                className="px-4 py-2 text-sm bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:bg-slate-400 disabled:cursor-not-allowed flex items-center gap-2 transition-all duration-200 hover:shadow-md"
               >
                 {isDownloading ? (
                   <>
@@ -472,7 +472,7 @@ export function PreviewScreen({ data, onBack, onDataUpdate, historyId }: Preview
                 key={slide.pageNumber}
                 onClick={() => setCurrentSlideIndex(index)}
                 className={`relative flex-shrink-0 transition-all duration-200 ${
-                  index === currentSlideIndex ? 'ring-2 ring-blue-500 rounded-lg shadow-md' : 'hover:shadow-sm'
+                  index === currentSlideIndex ? 'ring-2 ring-primary-500 rounded-lg shadow-md' : 'hover:shadow-sm'
                 }`}
               >
                 <div className="w-32 h-20 bg-slate-100 rounded-lg overflow-hidden border border-slate-200">
@@ -489,7 +489,7 @@ export function PreviewScreen({ data, onBack, onDataUpdate, historyId }: Preview
                   </p>
                 </div>
                 {slide.texts.some(t => t.translated) && (
-                  <div className="absolute top-1 right-1 w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center">
+                  <div className="absolute top-1 right-1 w-5 h-5 bg-accent-500 rounded-full flex items-center justify-center">
                     <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
@@ -502,25 +502,25 @@ export function PreviewScreen({ data, onBack, onDataUpdate, historyId }: Preview
 
         {/* 翻訳進捗表示 */}
         {isTranslating && translationProgress.total > 0 && (
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
+          <div className="bg-primary-50 border border-primary-200 rounded-xl p-4 mb-4">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
-                <span className="animate-spin inline-block w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full"></span>
-                <p className="text-blue-700 font-medium">
+                <span className="animate-spin inline-block w-4 h-4 border-2 border-primary-600 border-t-transparent rounded-full"></span>
+                <p className="text-primary-700 font-medium">
                   翻訳中... {translationProgress.current} / {translationProgress.total} 件
                 </p>
               </div>
-              <span className="text-blue-600 font-bold">
+              <span className="text-primary-600 font-bold">
                 {Math.round((translationProgress.current / translationProgress.total) * 100)}%
               </span>
             </div>
-            <div className="w-full bg-blue-100 rounded-full h-2.5">
+            <div className="w-full bg-primary-100 rounded-full h-2.5">
               <div 
-                className="bg-blue-600 h-2.5 rounded-full transition-all duration-300 ease-out"
+                className="bg-primary-600 h-2.5 rounded-full transition-all duration-300 ease-out"
                 style={{ width: `${(translationProgress.current / translationProgress.total) * 100}%` }}
               ></div>
             </div>
-            <p className="text-xs text-blue-600 mt-2">
+            <p className="text-xs text-primary-600 mt-2">
               予想残り時間: 約{Math.ceil((translationProgress.total - translationProgress.current) * 2)}秒
             </p>
           </div>
@@ -682,7 +682,7 @@ export function PreviewScreen({ data, onBack, onDataUpdate, historyId }: Preview
                   onClick={() => setCurrentSlideIndex(index)}
                   className={`w-8 h-8 text-xs rounded-lg transition-all duration-200 ${
                     index === currentSlideIndex
-                      ? 'bg-blue-600 text-white shadow-md'
+                      ? 'bg-primary-600 text-white shadow-md'
                       : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600'
                   }`}
                 >
@@ -696,7 +696,7 @@ export function PreviewScreen({ data, onBack, onDataUpdate, historyId }: Preview
         {/* テキストペア表示 - スライド下に配置 */}
         <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 md:p-6 border border-slate-200 dark:border-slate-700">
           <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
-            <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
             テキスト内容 ({currentSlide?.texts.length || 0} 項目)
@@ -708,13 +708,13 @@ export function PreviewScreen({ data, onBack, onDataUpdate, historyId }: Preview
               <div className={`grid ${responsive.isMobile ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-2'} gap-4 lg:gap-6 mb-4 border-b border-slate-200 dark:border-slate-700 pb-3`}>
                 <div>
                   <h3 className="text-base font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                    <span className="w-2 h-2 bg-blue-600 rounded-full"></span>
+                    <span className="w-2 h-2 bg-primary-600 rounded-full"></span>
                     原文
                   </h3>
                 </div>
                 <div>
                   <h3 className="text-base font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                    <span className="w-2 h-2 bg-emerald-600 rounded-full"></span>
+                    <span className="w-2 h-2 bg-accent-600 rounded-full"></span>
                     翻訳
                   </h3>
                 </div>
@@ -728,13 +728,13 @@ export function PreviewScreen({ data, onBack, onDataUpdate, historyId }: Preview
                       {/* 原文 */}
                       <div 
                         onClick={() => handleTextClick(text.id)}
-                        className={`border rounded-lg p-4 hover:shadow-md transition-all duration-200 bg-white dark:bg-slate-800 hover:border-blue-400 dark:hover:border-blue-500 cursor-pointer ${
-                          highlightedTextId === text.id ? 'border-blue-500 shadow-lg bg-blue-50 dark:bg-blue-900/20' : 'border-slate-300 dark:border-slate-600'
+                        className={`border rounded-lg p-4 hover:shadow-md transition-all duration-200 bg-white dark:bg-slate-800 hover:border-primary-400 dark:hover:border-primary-500 cursor-pointer ${
+                          highlightedTextId === text.id ? 'border-primary-500 shadow-lg bg-primary-50 dark:bg-primary-900/20' : 'border-slate-300 dark:border-slate-600'
                         }`}
                         title="クリックして位置を表示"
                       >
                         <div className="flex items-start gap-3">
-                          <span className="flex-shrink-0 w-8 h-8 bg-blue-600 text-white rounded-lg flex items-center justify-center text-sm font-bold shadow-sm">
+                          <span className="flex-shrink-0 w-8 h-8 bg-primary-600 text-white rounded-lg flex items-center justify-center text-sm font-bold shadow-sm">
                             {index + 1}
                           </span>
                           <div className="flex-1">
@@ -742,7 +742,7 @@ export function PreviewScreen({ data, onBack, onDataUpdate, historyId }: Preview
                               {text.original}
                             </p>
                             {text.type === 'table_cell' && (
-                              <span className="text-xs text-blue-600 mt-1 inline-flex items-center gap-1">
+                              <span className="text-xs text-primary-600 mt-1 inline-flex items-center gap-1">
                                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                                 </svg>
@@ -750,7 +750,7 @@ export function PreviewScreen({ data, onBack, onDataUpdate, historyId }: Preview
                               </span>
                             )}
                             {highlightedTextId === text.id && (
-                              <span className="text-xs text-blue-600 mt-1 inline-flex items-center gap-1">
+                              <span className="text-xs text-primary-600 mt-1 inline-flex items-center gap-1">
                                 <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                                   <path fillRule="evenodd" d="M10 2a8 8 0 100 16 8 8 0 000-16zM7 9a1 1 0 000 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
                                 </svg>
@@ -765,15 +765,15 @@ export function PreviewScreen({ data, onBack, onDataUpdate, historyId }: Preview
                       <div 
                         className={`border rounded-lg p-4 hover:shadow-md transition-all duration-200 ${
                           highlightedTextId === text.id 
-                            ? 'border-blue-500 shadow-lg' 
+                            ? 'border-primary-500 shadow-lg' 
                             : text.translated 
-                              ? 'border-emerald-200 dark:border-emerald-700 hover:border-emerald-300 dark:hover:border-emerald-600' 
+                              ? 'border-accent-200 dark:border-accent-700 hover:border-accent-300 dark:hover:border-accent-600' 
                               : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
                         } ${
                           highlightedTextId === text.id 
-                            ? 'bg-blue-50 dark:bg-blue-900/20' 
+                            ? 'bg-primary-50 dark:bg-primary-900/20' 
                             : text.translated 
-                              ? 'bg-emerald-50 dark:bg-emerald-900/10' 
+                              ? 'bg-accent-50 dark:bg-accent-900/10' 
                               : 'bg-white dark:bg-slate-800'
                         }`}
                       >
@@ -781,7 +781,7 @@ export function PreviewScreen({ data, onBack, onDataUpdate, historyId }: Preview
                           <button
                             onClick={() => handleTextClick(text.id)}
                             className={`flex-shrink-0 w-8 h-8 text-white rounded-lg flex items-center justify-center text-sm font-bold shadow-sm cursor-pointer hover:opacity-90 transition-opacity ${
-                              text.translated ? 'bg-emerald-600' : 'bg-slate-400'
+                              text.translated ? 'bg-accent-600' : 'bg-slate-400'
                             }`}
                             title="クリックして位置を表示"
                           >
@@ -794,7 +794,7 @@ export function PreviewScreen({ data, onBack, onDataUpdate, historyId }: Preview
                                 <textarea
                                   value={editingText}
                                   onChange={(e) => setEditingText(e.target.value)}
-                                  className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-700 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                  className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-700 resize-none focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                                   rows={3}
                                   autoFocus
                                   placeholder="翻訳文を入力..."
@@ -802,7 +802,7 @@ export function PreviewScreen({ data, onBack, onDataUpdate, historyId }: Preview
                                 <div className="flex gap-2">
                                   <button
                                     onClick={handleSaveEdit}
-                                    className="px-3 py-1 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 transition-all duration-200 font-medium"
+                                    className="px-3 py-1 bg-primary-600 text-white text-xs rounded-lg hover:bg-primary-700 transition-all duration-200 font-medium"
                                   >
                                     保存
                                   </button>
@@ -823,7 +823,7 @@ export function PreviewScreen({ data, onBack, onDataUpdate, historyId }: Preview
                                       {text.translated}
                                     </p>
                                     <div className="flex items-center gap-2 mt-2">
-                                      <span className="text-xs text-emerald-700 dark:text-emerald-400 inline-flex items-center gap-1 font-medium">
+                                      <span className="text-xs text-accent-700 dark:text-accent-400 inline-flex items-center gap-1 font-medium">
                                         <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                                         </svg>
@@ -831,7 +831,7 @@ export function PreviewScreen({ data, onBack, onDataUpdate, historyId }: Preview
                                       </span>
                                       <button
                                         onClick={() => handleStartEdit(text.id, text.translated)}
-                                        className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 inline-flex items-center gap-1 font-medium transition-colors"
+                                        className="text-xs text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 inline-flex items-center gap-1 font-medium transition-colors"
                                       >
                                         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -847,7 +847,7 @@ export function PreviewScreen({ data, onBack, onDataUpdate, historyId }: Preview
                                     </p>
                                     <button
                                       onClick={() => handleStartEdit(text.id, '')}
-                                      className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 inline-flex items-center gap-1 font-medium mt-2 transition-colors"
+                                      className="text-xs text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 inline-flex items-center gap-1 font-medium mt-2 transition-colors"
                                     >
                                       <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />

@@ -38,19 +38,19 @@ export default function AdminDashboardClient({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground">管理者ダッシュボード</h1>
-          <p className="mt-2 text-gray-600 dark:text-gray-400">
+          <p className="mt-2 text-secondary-600 dark:text-secondary-400">
             システム全体の状況を監視・管理
           </p>
         </div>
 
-        <div className="border-b border-gray-200 dark:border-gray-700 mb-6">
+        <div className="border-b border-secondary-200 dark:border-secondary-700 mb-6">
           <nav className="-mb-px flex space-x-8">
             <button
               onClick={() => setActiveTab('stats')}
               className={`py-2 px-1 border-b-2 font-medium text-sm ${
                 activeTab === 'stats'
-                  ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                  ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                  : 'border-transparent text-secondary-500 hover:text-secondary-700 dark:text-secondary-400 dark:hover:text-secondary-300'
               }`}
             >
               統計情報
@@ -59,8 +59,8 @@ export default function AdminDashboardClient({
               onClick={() => setActiveTab('users')}
               className={`py-2 px-1 border-b-2 font-medium text-sm ${
                 activeTab === 'users'
-                  ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                  ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                  : 'border-transparent text-secondary-500 hover:text-secondary-700 dark:text-secondary-400 dark:hover:text-secondary-300'
               }`}
             >
               ユーザー管理
@@ -69,8 +69,8 @@ export default function AdminDashboardClient({
               onClick={() => setActiveTab('activities')}
               className={`py-2 px-1 border-b-2 font-medium text-sm ${
                 activeTab === 'activities'
-                  ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                  ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                  : 'border-transparent text-secondary-500 hover:text-secondary-700 dark:text-secondary-400 dark:hover:text-secondary-300'
               }`}
             >
               アクティビティログ
@@ -80,8 +80,8 @@ export default function AdminDashboardClient({
 
         {activeTab === 'stats' && initialStats && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-              <div className="text-sm font-medium text-gray-500 dark:text-gray-400">
+            <div className="bg-white dark:bg-secondary-800 rounded-lg shadow p-6">
+              <div className="text-sm font-medium text-secondary-500 dark:text-secondary-400">
                 総ユーザー数
               </div>
               <div className="mt-2 text-3xl font-semibold text-foreground">
@@ -89,22 +89,22 @@ export default function AdminDashboardClient({
               </div>
               {initialStats.overview?.userGrowthRate !== undefined && (
                 <div className={`text-sm mt-1 ${
-                  initialStats.overview.userGrowthRate > 0 ? 'text-green-600' : 'text-red-600'
+                  initialStats.overview.userGrowthRate > 0 ? 'text-accent-600' : 'text-red-600'
                 }`}>
                   {initialStats.overview.userGrowthRate > 0 ? '+' : ''}{initialStats.overview.userGrowthRate}%
                 </div>
               )}
             </div>
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-              <div className="text-sm font-medium text-gray-500 dark:text-gray-400">
+            <div className="bg-white dark:bg-secondary-800 rounded-lg shadow p-6">
+              <div className="text-sm font-medium text-secondary-500 dark:text-secondary-400">
                 アクティブユーザー
               </div>
               <div className="mt-2 text-3xl font-semibold text-foreground">
                 {initialStats.overview?.activeUsers || 0}
               </div>
             </div>
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-              <div className="text-sm font-medium text-gray-500 dark:text-gray-400">
+            <div className="bg-white dark:bg-secondary-800 rounded-lg shadow p-6">
+              <div className="text-sm font-medium text-secondary-500 dark:text-secondary-400">
                 総ファイル数
               </div>
               <div className="mt-2 text-3xl font-semibold text-foreground">
@@ -112,14 +112,14 @@ export default function AdminDashboardClient({
               </div>
               {initialStats.files?.fileGrowthRate !== undefined && (
                 <div className={`text-sm mt-1 ${
-                  initialStats.files.fileGrowthRate > 0 ? 'text-green-600' : 'text-red-600'
+                  initialStats.files.fileGrowthRate > 0 ? 'text-accent-600' : 'text-red-600'
                 }`}>
                   {initialStats.files.fileGrowthRate > 0 ? '+' : ''}{initialStats.files.fileGrowthRate}%
                 </div>
               )}
             </div>
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-              <div className="text-sm font-medium text-gray-500 dark:text-gray-400">
+            <div className="bg-white dark:bg-secondary-800 rounded-lg shadow p-6">
+              <div className="text-sm font-medium text-secondary-500 dark:text-secondary-400">
                 総翻訳数
               </div>
               <div className="mt-2 text-3xl font-semibold text-foreground">
@@ -130,28 +130,28 @@ export default function AdminDashboardClient({
         )}
 
         {activeTab === 'users' && (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-              <thead className="bg-gray-50 dark:bg-gray-900">
+          <div className="bg-white dark:bg-secondary-800 rounded-lg shadow overflow-hidden">
+            <table className="min-w-full divide-y divide-secondary-200 dark:divide-secondary-700">
+              <thead className="bg-secondary-50 dark:bg-secondary-900">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase tracking-wider">
                     ユーザー
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase tracking-wider">
                     ロール
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase tracking-wider">
                     ファイル数
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase tracking-wider">
                     最終ログイン
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-secondary-500 dark:text-secondary-400 uppercase tracking-wider">
                     ステータス
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+              <tbody className="bg-white dark:bg-secondary-800 divide-y divide-secondary-200 dark:divide-secondary-700">
                 {initialUsers.map((user: any) => (
                   <tr key={user.id}>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -159,7 +159,7 @@ export default function AdminDashboardClient({
                         <div className="text-sm font-medium text-foreground">
                           {user.name || 'Unknown'}
                         </div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400">
+                        <div className="text-sm text-secondary-500 dark:text-secondary-400">
                           {user.email}
                         </div>
                       </div>
@@ -168,7 +168,7 @@ export default function AdminDashboardClient({
                       <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                         user.role === 'ADMIN' 
                           ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'
-                          : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                          : 'bg-secondary-100 text-secondary-800 dark:bg-secondary-700 dark:text-secondary-300'
                       }`}>
                         {user.role}
                       </span>
@@ -176,7 +176,7 @@ export default function AdminDashboardClient({
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
                       {user._count?.files || user._count?.translations || 0}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-secondary-500 dark:text-secondary-400">
                       {user.lastLoginAt 
                         ? formatDistanceToNow(new Date(user.lastLoginAt), { 
                             addSuffix: true, 
@@ -187,7 +187,7 @@ export default function AdminDashboardClient({
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                         user.isActive
-                          ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                          ? 'bg-accent-100 text-accent-800 dark:bg-accent-900 dark:text-accent-200'
                           : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
                       }`}>
                         {user.isActive ? 'アクティブ' : '無効'}
@@ -201,11 +201,11 @@ export default function AdminDashboardClient({
         )}
 
         {activeTab === 'activities' && (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-            <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+          <div className="bg-white dark:bg-secondary-800 rounded-lg shadow overflow-hidden">
+            <div className="px-4 py-3 border-b border-secondary-200 dark:border-secondary-700">
               <h3 className="text-lg font-medium text-foreground">最近のアクティビティ</h3>
             </div>
-            <ul className="divide-y divide-gray-200 dark:divide-gray-700">
+            <ul className="divide-y divide-secondary-200 dark:divide-secondary-700">
               {initialActivities.map((activity: any) => (
                 <li key={activity.id} className="px-4 py-3">
                   <div className="flex items-center space-x-4">
@@ -213,11 +213,11 @@ export default function AdminDashboardClient({
                       <p className="text-sm font-medium text-foreground truncate">
                         {activity.user?.name || activity.user?.email || 'Unknown User'}
                       </p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        {getActionLabel(activity.action)} - {activity.entityType}
+                      <p className="text-sm text-secondary-500 dark:text-secondary-400">
+                        {getActionLabel(activity.action)} - {activity.targetType || 'N/A'}
                       </p>
                     </div>
-                    <div className="text-sm text-gray-500 dark:text-gray-400">
+                    <div className="text-sm text-secondary-500 dark:text-secondary-400">
                       {formatDistanceToNow(new Date(activity.createdAt), { 
                         addSuffix: true, 
                         locale: ja 

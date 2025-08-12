@@ -30,12 +30,24 @@ export async function getProfile(
 ): Promise<ServerActionState<ProfileData>> {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    
+    console.log('Session in getProfile:', JSON.stringify(session, null, 2));
+    
+    if (!session?.user) {
+      console.error('No session user found');
       return createErrorState('ログインが必要です');
+    }
+    
+    const userId = (session.user as any).id;
+    console.log('User ID from session:', userId);
+    
+    if (!userId) {
+      console.error('No user ID in session');
+      return createErrorState('ユーザーIDが取得できません');
     }
 
     const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: userId },
       select: {
         id: true,
         email: true,
@@ -59,6 +71,7 @@ export async function getProfile(
     });
 
     if (!user) {
+      console.error('User not found for ID:', userId);
       return createErrorState('ユーザーが見つかりません');
     }
 
@@ -85,6 +98,7 @@ export async function getProfile(
     );
   } catch (error) {
     logger.error('Get profile error', error);
+    console.error('Error in getProfile:', error);
     return createErrorState('プロフィール取得中にエラーが発生しました');
   }
 }

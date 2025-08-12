@@ -137,13 +137,13 @@ export function GenerationProgress({ jobId, onComplete, onError }: GenerationPro
       case 'pending':
         return 'text-yellow-600 bg-yellow-50 border-yellow-200';
       case 'processing':
-        return 'text-blue-600 bg-blue-50 border-blue-200';
+        return 'text-primary-600 bg-primary-50 border-primary-200';
       case 'completed':
         return 'text-green-600 bg-green-50 border-green-200';
       case 'failed':
         return 'text-red-600 bg-red-50 border-red-200';
       case 'cancelled':
-        return 'text-gray-600 bg-gray-50 border-gray-200';
+        return 'text-secondary-600 bg-secondary-50 border-secondary-200';
       default:
         return 'text-slate-600 bg-slate-50 border-slate-200';
     }
@@ -178,9 +178,9 @@ export function GenerationProgress({ jobId, onComplete, onError }: GenerationPro
       {/* プログレスバー */}
       {state.status === 'processing' && (
         <div className="relative">
-          <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+          <div className="w-full bg-secondary-200 rounded-full h-3 overflow-hidden">
             <div 
-              className="h-full bg-gradient-to-r from-blue-400 to-blue-600 rounded-full transition-all duration-500 ease-out"
+              className="h-full bg-gradient-to-r from-primary-400 to-primary-600 rounded-full transition-all duration-500 ease-out"
               style={{ width: `${state.progress}%` }}
             >
               <div className="h-full bg-white/20 animate-pulse"></div>
@@ -188,7 +188,7 @@ export function GenerationProgress({ jobId, onComplete, onError }: GenerationPro
           </div>
           
           {/* 進捗インジケーター */}
-          <div className="mt-3 flex justify-between text-xs text-gray-500">
+          <div className="mt-3 flex justify-between text-xs text-secondary-500">
             <span>読み込み</span>
             <span>解析</span>
             <span>適用</span>
@@ -210,7 +210,7 @@ export function GenerationProgress({ jobId, onComplete, onError }: GenerationPro
           </button>
           <button
             onClick={() => setState({ ...state, status: 'idle' })}
-            className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+            className="px-4 py-2 bg-secondary-600 text-white rounded-lg hover:bg-secondary-700 transition-colors"
           >
             閉じる
           </button>

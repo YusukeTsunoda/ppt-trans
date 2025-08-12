@@ -155,7 +155,7 @@ export default function FilesPage() {
     const statusStyles = {
       PENDING: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
       PROCESSING: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
-      COMPLETED: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+      COMPLETED: 'bg-accent-100 text-accent-800 dark:bg-accent-900 dark:text-accent-200',
       FAILED: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
     };
 
@@ -197,7 +197,7 @@ export default function FilesPage() {
 
       {/* メッセージ表示 */}
       {message && (
-        <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg text-green-800 dark:bg-green-900/20 dark:border-green-800 dark:text-green-200">
+        <div className="mb-6 p-4 bg-accent-50 border border-accent-200 rounded-lg text-accent-800 dark:bg-accent-900/20 dark:border-accent-800 dark:text-accent-200">
           {message}
         </div>
       )}
@@ -287,7 +287,7 @@ export default function FilesPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
                       {file.translations.length > 0 ? (
-                        <span className="text-green-600 dark:text-green-400">
+                        <span className="text-accent-600 dark:text-accent-400">
                           {file.translations.length} 件の翻訳
                         </span>
                       ) : (

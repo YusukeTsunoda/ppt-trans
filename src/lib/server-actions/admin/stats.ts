@@ -20,13 +20,41 @@ export async function getDashboardStats() {
       prisma.translation.count(),
     ]);
 
+    // 30日前のデータを取得して成長率を計算
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    const [
+      previousUsers,
+      previousFiles,
+    ] = await Promise.all([
+      prisma.user.count({ where: { createdAt: { lt: thirtyDaysAgo } } }),
+      prisma.file.count({ where: { createdAt: { lt: thirtyDaysAgo } } }),
+    ]);
+
+    const userGrowthRate = previousUsers > 0 
+      ? Math.round(((totalUsers - previousUsers) / previousUsers) * 100)
+      : 0;
+    
+    const fileGrowthRate = previousFiles > 0
+      ? Math.round(((totalFiles - previousFiles) / previousFiles) * 100)
+      : 0;
+
     return {
       success: true,
       data: {
-        totalUsers,
-        activeUsers,
-        totalFiles,
-        totalTranslations,
+        overview: {
+          totalUsers,
+          activeUsers,
+          userGrowthRate,
+        },
+        files: {
+          totalFiles,
+          fileGrowthRate,
+        },
+        usage: {
+          totalTranslations,
+        },
       },
     };
   } catch (error) {

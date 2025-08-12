@@ -160,7 +160,7 @@ function ToastItem({
     switch (toast.type) {
       case 'success':
         return (
-          <svg className="h-6 w-6 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="h-6 w-6 text-accent-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         );
@@ -178,7 +178,7 @@ function ToastItem({
         );
       case 'info':
         return (
-          <svg className="h-6 w-6 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="h-6 w-6 text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         );
@@ -188,13 +188,13 @@ function ToastItem({
   const getBackgroundColor = () => {
     switch (toast.type) {
       case 'success':
-        return 'bg-green-50 dark:bg-green-900';
+        return 'bg-accent-50 dark:bg-accent-900';
       case 'error':
         return 'bg-red-50 dark:bg-red-900';
       case 'warning':
         return 'bg-yellow-50 dark:bg-yellow-900';
       case 'info':
-        return 'bg-blue-50 dark:bg-blue-900';
+        return 'bg-primary-50 dark:bg-primary-900';
     }
   };
 
@@ -213,12 +213,12 @@ function ToastItem({
           <div className="flex-shrink-0">{getIcon()}</div>
           
           <div className="ml-3 w-0 flex-1 pt-0.5">
-            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+            <p className="text-sm font-medium text-secondary-900 dark:text-secondary-100">
               {toast.title}
             </p>
             
             {toast.message && (
-              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              <p className="mt-1 text-sm text-secondary-500 dark:text-secondary-400">
                 {toast.message}
               </p>
             )}
@@ -237,7 +237,7 @@ function ToastItem({
           
           <div className="ml-4 flex-shrink-0 flex">
             <button
-              className="rounded-md inline-flex text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              className="rounded-md inline-flex text-secondary-400 hover:text-secondary-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
               onClick={handleDismiss}
             >
               <span className="sr-only">閉じる</span>

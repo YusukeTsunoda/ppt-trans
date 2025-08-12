@@ -306,8 +306,8 @@ export function StreamingUpload({
               file:mr-4 file:py-2 file:px-4
               file:rounded-lg file:border-0
               file:text-sm file:font-semibold
-              file:bg-blue-50 dark:file:bg-blue-900/30 file:text-blue-700 dark:file:text-blue-300
-              hover:file:bg-blue-100 dark:hover:file:bg-blue-900/50 file:transition-all file:duration-200
+              file:bg-primary-50 dark:file:bg-primary-900/30 file:text-primary-700 dark:file:text-primary-300
+              hover:file:bg-primary-100 dark:hover:file:bg-primary-900/50 file:transition-all file:duration-200
               disabled:opacity-50 disabled:cursor-not-allowed"
           />
           {file && (
@@ -326,9 +326,9 @@ export function StreamingUpload({
             </div>
 
             <div className="relative">
-              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
+              <div className="w-full bg-secondary-200 dark:bg-secondary-700 rounded-full h-3 overflow-hidden">
                 <div 
-                  className="h-full bg-gradient-to-r from-blue-400 to-blue-600 rounded-full transition-all duration-300"
+                  className="h-full bg-gradient-to-r from-primary-400 to-primary-600 rounded-full transition-all duration-300"
                   style={{ width: `${progress.progress}%` }}
                 >
                   <div className="h-full bg-white/20 animate-pulse"></div>
@@ -361,7 +361,7 @@ export function StreamingUpload({
 
             {/* ステータスメッセージ */}
             {progress.status === 'uploading' && (
-              <p className="text-sm text-blue-600 dark:text-blue-400">
+              <p className="text-sm text-primary-600 dark:text-primary-400">
                 📤 ファイルをアップロード中...
               </p>
             )}
@@ -371,7 +371,7 @@ export function StreamingUpload({
               </p>
             )}
             {progress.status === 'completed' && (
-              <p className="text-sm text-green-600 dark:text-green-400">
+              <p className="text-sm text-accent-600 dark:text-accent-400">
                 ✅ アップロード完了
               </p>
             )}
@@ -388,9 +388,9 @@ export function StreamingUpload({
           <button
             onClick={uploadFileInChunks}
             disabled={!file || isUploading}
-            className="flex-1 px-4 py-2 text-white bg-blue-600 rounded-lg
-              hover:bg-blue-700 focus:outline-none focus:ring-2
-              focus:ring-offset-2 focus:ring-blue-500
+            className="flex-1 px-4 py-2 text-white bg-primary-600 rounded-lg
+              hover:bg-primary-700 focus:outline-none focus:ring-2
+              focus:ring-offset-2 focus:ring-primary-500
               disabled:bg-slate-400 disabled:cursor-not-allowed
               transition-all duration-200 font-medium"
           >

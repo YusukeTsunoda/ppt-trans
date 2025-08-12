@@ -6,6 +6,7 @@ import fs from 'fs/promises';
 import { v4 as uuidv4 } from 'uuid';
 import logger from '@/lib/logger';
 import { supabase } from '@/lib/supabaseClient';
+import { verifyApiAuth, checkRateLimit } from '@/lib/auth/api-auth';
 
 const execAsync = promisify(exec);
 
@@ -26,6 +27,25 @@ interface GenerateRequest {
 }
 
 export async function POST(request: NextRequest) {
+  // 認証チェック
+  const authResult = await verifyApiAuth(request);
+  if (!authResult.isAuthenticated) {
+    return authResult.error!;
+  }
+
+  // レート制限チェック（1分あたり10リクエスト - 生成は重い処理のため少なめに）
+  const rateLimitResult = checkRateLimit(authResult.user!.id, 10, 60000);
+  if (!rateLimitResult.allowed) {
+    logger.warn('Rate limit exceeded for PPTX generation', { userId: authResult.user!.id });
+    return NextResponse.json(
+      { 
+        success: false,
+        error: 'Rate limit exceeded. Please try again later.' 
+      },
+      { status: 429 }
+    );
+  }
+  
   let tempDir: string | null = null;
   
   try {
@@ -131,7 +151,7 @@ export async function POST(request: NextRequest) {
       outputFilePath
     });
 
-    const { stdout, stderr } = await execAsync(
+    const { stderr } = await execAsync(
       `${pythonCmd} "${scriptPath}" --input "${originalFilePath}" --translations "${translationFile}" --output "${outputFilePath}"`,
       {
         maxBuffer: 1024 * 1024 * 10, // 10MB
@@ -161,7 +181,7 @@ export async function POST(request: NextRequest) {
         const fileName = `translated_${tempId}.pptx`;
         
         // Supabaseにアップロード
-        const { data, error } = await supabase.storage
+        const { error } = await supabase.storage
           .from('presentations')
           .upload(fileName, fileBuffer, {
             contentType: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
@@ -234,7 +254,7 @@ export async function POST(request: NextRequest) {
 }
 
 // OPTIONS リクエストのサポート（CORS対応）
-export async function OPTIONS(request: NextRequest) {
+export async function OPTIONS(_request: NextRequest) {
   return new NextResponse(null, {
     status: 200,
     headers: {

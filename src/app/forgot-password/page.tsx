@@ -41,7 +41,7 @@ export default function ForgotPasswordPage() {
 
         <div className="max-w-md w-full space-y-8 p-8">
           <div className="text-center">
-            <svg className="mx-auto h-12 w-12 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="mx-auto h-12 w-12 text-accent-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <h2 className="mt-6 text-center text-3xl font-extrabold text-foreground">

@@ -199,7 +199,7 @@ export function SettingsScreen({ onSettingsChange }: SettingsScreenProps) {
         {/* 翻訳設定 */}
         <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 mb-6">
           <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
-            <svg className="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
             </svg>
             翻訳設定
@@ -214,7 +214,7 @@ export function SettingsScreen({ onSettingsChange }: SettingsScreenProps) {
               <select
                 value={settings.translationModel}
                 onChange={(e) => setSettings({ ...settings, translationModel: e.target.value as TranslationModel })}
-                className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-700"
+                className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-700"
               >
                 <option value="claude-3-haiku-20240307">
                   Claude 3 Haiku (高速・低コスト)
@@ -240,7 +240,7 @@ export function SettingsScreen({ onSettingsChange }: SettingsScreenProps) {
                 max="20"
                 value={settings.batchSize}
                 onChange={(e) => setSettings({ ...settings, batchSize: parseInt(e.target.value) || 5 })}
-                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-slate-900"
+                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all text-slate-900"
               />
               <p className="mt-1 text-xs text-slate-500">
                 大きい値にすると翻訳が速くなりますが、エラーが発生しやすくなる可能性があります。
@@ -252,7 +252,7 @@ export function SettingsScreen({ onSettingsChange }: SettingsScreenProps) {
         {/* アプリケーション設定 */}
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
           <h2 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
-            <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
             </svg>
             アプリケーション設定
@@ -273,7 +273,7 @@ export function SettingsScreen({ onSettingsChange }: SettingsScreenProps) {
                 onClick={() => setSettings({ ...settings, autoSave: !settings.autoSave })}
                 className={`
                   relative inline-flex h-6 w-11 items-center rounded-full transition-colors
-                  ${settings.autoSave ? 'bg-blue-600' : 'bg-slate-300'}
+                  ${settings.autoSave ? 'bg-primary-600' : 'bg-slate-300'}
                 `}
               >
                 <span
@@ -302,7 +302,7 @@ export function SettingsScreen({ onSettingsChange }: SettingsScreenProps) {
                   className={`
                     flex-1 px-4 py-2 rounded-lg border transition-all
                     ${theme === 'light' 
-                      ? 'bg-blue-50 border-blue-300 text-blue-700' 
+                      ? 'bg-primary-50 border-primary-300 text-primary-700' 
                       : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
                     }
                   `}
@@ -323,7 +323,7 @@ export function SettingsScreen({ onSettingsChange }: SettingsScreenProps) {
                   className={`
                     flex-1 px-4 py-2 rounded-lg border transition-all
                     ${theme === 'dark' 
-                      ? 'bg-slate-800 border-blue-600 text-blue-400' 
+                      ? 'bg-slate-800 border-primary-600 text-primary-400' 
                       : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
                     }
                   `}
@@ -344,7 +344,7 @@ export function SettingsScreen({ onSettingsChange }: SettingsScreenProps) {
               <select
                 value={settings.language}
                 onChange={(e) => setSettings({ ...settings, language: e.target.value as 'ja' | 'en' })}
-                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-slate-900"
+                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all text-slate-900"
               >
                 <option value="ja">日本語</option>
                 <option value="en">English</option>
@@ -357,7 +357,7 @@ export function SettingsScreen({ onSettingsChange }: SettingsScreenProps) {
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
-              <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               翻訳履歴
@@ -433,8 +433,8 @@ export function SettingsScreen({ onSettingsChange }: SettingsScreenProps) {
                       </p>
                       <div className="mt-2">
                         <span className={`text-xs px-2 py-1 rounded-full inline-flex items-center gap-1 ${
-                          item.status === 'downloaded' ? 'bg-emerald-100 text-emerald-700' :
-                          item.status === 'translated' ? 'bg-blue-100 text-blue-700' :
+                          item.status === 'downloaded' ? 'bg-accent-100 text-accent-700' :
+                          item.status === 'translated' ? 'bg-primary-100 text-primary-700' :
                           item.status === 'translating' ? 'bg-yellow-100 text-yellow-700' :
                           'bg-slate-100 text-slate-700'
                         }`}>
@@ -476,12 +476,12 @@ export function SettingsScreen({ onSettingsChange }: SettingsScreenProps) {
                           }
                         }}
                         disabled={!item.originalFileUrl || downloadingItems.has(`${item.id}-original`)}
-                        className="w-full px-3 py-1.5 text-xs bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-1.5 border border-blue-200 hover:border-blue-300 disabled:border-slate-200 shadow-sm hover:shadow-md"
+                        className="w-full px-3 py-1.5 text-xs bg-primary-50 text-primary-700 rounded-lg hover:bg-primary-100 disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-1.5 border border-primary-200 hover:border-primary-300 disabled:border-slate-200 shadow-sm hover:shadow-md"
                         title="元のファイルをダウンロード"
                       >
                         {downloadingItems.has(`${item.id}-original`) ? (
                           <>
-                            <span className="animate-spin inline-block w-3.5 h-3.5 border-2 border-blue-600 border-t-transparent rounded-full"></span>
+                            <span className="animate-spin inline-block w-3.5 h-3.5 border-2 border-primary-600 border-t-transparent rounded-full"></span>
                             ダウンロード中...
                           </>
                         ) : (
@@ -500,12 +500,12 @@ export function SettingsScreen({ onSettingsChange }: SettingsScreenProps) {
                           }
                         }}
                         disabled={!item.translatedFileUrl || downloadingItems.has(`${item.id}-translated`)}
-                        className="w-full px-3 py-1.5 text-xs bg-emerald-50 text-emerald-700 rounded-lg hover:bg-emerald-100 disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-1.5 border border-emerald-200 hover:border-emerald-300 disabled:border-slate-200 shadow-sm hover:shadow-md"
+                        className="w-full px-3 py-1.5 text-xs bg-accent-50 text-accent-700 rounded-lg hover:bg-accent-100 disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-1.5 border border-accent-200 hover:border-accent-300 disabled:border-slate-200 shadow-sm hover:shadow-md"
                         title="翻訳済みファイルをダウンロード"
                       >
                         {downloadingItems.has(`${item.id}-translated`) ? (
                           <>
-                            <span className="animate-spin inline-block w-3.5 h-3.5 border-2 border-emerald-600 border-t-transparent rounded-full"></span>
+                            <span className="animate-spin inline-block w-3.5 h-3.5 border-2 border-accent-600 border-t-transparent rounded-full"></span>
                             ダウンロード中...
                           </>
                         ) : (
@@ -552,14 +552,14 @@ export function SettingsScreen({ onSettingsChange }: SettingsScreenProps) {
           </button>
           <div className="flex gap-2 items-center">
             {saveMessage && (
-              <span className={`text-sm ${saveMessage.includes('失敗') ? 'text-red-600' : 'text-green-600'}`}>
+              <span className={`text-sm ${saveMessage.includes('失敗') ? 'text-red-600' : 'text-accent-600'}`}>
                 {saveMessage}
               </span>
             )}
             <button
               onClick={handleSave}
               disabled={isSaving}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-slate-400 disabled:cursor-not-allowed transition-all flex items-center gap-2"
+              className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:bg-slate-400 disabled:cursor-not-allowed transition-all flex items-center gap-2"
             >
               {isSaving ? (
                 <>
