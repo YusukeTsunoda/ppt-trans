@@ -18,8 +18,12 @@ import traceback
 try:
     from pptx import Presentation
     from pptx.util import Pt
-except ImportError:
-    print("Error: python-pptx package is not installed. Please run: pip install python-pptx", file=sys.stderr)
+    from pptx.enum.text import MSO_AUTO_SIZE
+except ImportError as e:
+    # デバッグ情報を出力
+    print(f"Error: python-pptx package is not installed. Import error: {e}", file=sys.stderr)
+    print(f"Python executable: {sys.executable}", file=sys.stderr)
+    print(f"Python path: {sys.path}", file=sys.stderr)
     sys.exit(1)
 
 def read_translation_data(translations_path: str) -> Dict[str, Any]:
@@ -62,7 +66,7 @@ def download_file_from_url(url: str, output_path: str) -> None:
         raise
 
 def replace_text_in_shape(shape, text_map: Dict[str, str]) -> None:
-    """シェイプ内のテキストを置換"""
+    """シェイプ内のテキストを置換（解決策A: Runレベルでの直接置換 + 解決策C: 自動調整制御）"""
     if not hasattr(shape, 'text_frame'):
         return
     
@@ -70,37 +74,46 @@ def replace_text_in_shape(shape, text_map: Dict[str, str]) -> None:
     if text_frame is None:
         return
     
-    # テキスト全体を取得
-    original_text = text_frame.text.strip()
+    # 解決策C: 自動サイズ調整を無効化（テキストボックスのサイズ維持）
+    original_auto_size = None
+    try:
+        original_auto_size = text_frame.auto_size
+        text_frame.auto_size = MSO_AUTO_SIZE.NONE
+    except:
+        # auto_sizeプロパティがない場合は無視
+        pass
     
-    # テキストマップに存在する場合は置換
-    if original_text in text_map:
-        translated_text = text_map[original_text]
+    # 解決策A: 段落ごとにRunレベルで直接置換
+    for paragraph in text_frame.paragraphs:
+        # 段落内の全てのrunのテキストを結合
+        original_text = "".join(run.text for run in paragraph.runs).strip()
         
-        # 元のフォーマットを保持しながらテキストを置換
-        if text_frame.paragraphs:
-            # 最初の段落のフォーマットを保持
-            first_paragraph = text_frame.paragraphs[0]
+        # 空の段落はスキップ
+        if not original_text:
+            continue
+        
+        # テキストマップに存在する場合は置換
+        if original_text in text_map:
+            translated_text = text_map[original_text]
             
-            # すべての段落をクリア
-            text_frame.clear()
-            
-            # 新しいテキストを設定
-            p = text_frame.add_paragraph()
-            p.text = translated_text
-            
-            # フォーマットをコピー（可能な範囲で）
-            if first_paragraph.runs:
-                first_run = first_paragraph.runs[0]
-                if p.runs:
-                    run = p.runs[0]
-                    try:
-                        run.font.name = first_run.font.name
-                        run.font.size = first_run.font.size
-                        run.font.bold = first_run.font.bold
-                        run.font.italic = first_run.font.italic
-                    except:
-                        pass  # フォーマットのコピーに失敗しても継続
+            # 最初のrunに翻訳済みテキストを設定（書式を維持）
+            if paragraph.runs:
+                # 最初のrunに全ての翻訳テキストを設定
+                # これにより、フォントサイズ、色、太字などの書式が維持される
+                paragraph.runs[0].text = translated_text
+                
+                # 2つ目以降のrunは空にする（書式の重複を避ける）
+                for i in range(1, len(paragraph.runs)):
+                    paragraph.runs[i].text = ""
+            else:
+                # runが存在しない場合は新規作成（稀なケース）
+                run = paragraph.add_run()
+                run.text = translated_text
+    
+    # 必要に応じて自動サイズ調整の設定を元に戻す（オプション）
+    # ただし、通常は無効化したままの方が安定する
+    # if original_auto_size is not None:
+    #     text_frame.auto_size = original_auto_size
 
 def process_slide(slide, slide_translations: List[Dict[str, Any]]) -> None:
     """スライド内のテキストを翻訳データで置換"""
@@ -117,11 +130,34 @@ def process_slide(slide, slide_translations: List[Dict[str, Any]]) -> None:
         # テキストフレームを持つシェイプの処理
         replace_text_in_shape(shape, text_map)
         
-        # テーブルの処理
+        # テーブルの処理（同じ方法でテキストを置換）
         if shape.has_table:
             for row in shape.table.rows:
                 for cell in row.cells:
-                    replace_text_in_shape(cell, text_map)
+                    # セルも同じ方法で処理
+                    if hasattr(cell, 'text_frame') and cell.text_frame:
+                        text_frame = cell.text_frame
+                        
+                        # 自動サイズ調整を無効化
+                        try:
+                            text_frame.auto_size = MSO_AUTO_SIZE.NONE
+                        except:
+                            pass
+                        
+                        # 段落ごとに処理
+                        for paragraph in text_frame.paragraphs:
+                            original_text = "".join(run.text for run in paragraph.runs).strip()
+                            
+                            if original_text and original_text in text_map:
+                                translated_text = text_map[original_text]
+                                
+                                if paragraph.runs:
+                                    paragraph.runs[0].text = translated_text
+                                    for i in range(1, len(paragraph.runs)):
+                                        paragraph.runs[i].text = ""
+                                else:
+                                    run = paragraph.add_run()
+                                    run.text = translated_text
         
         # グループシェイプの処理
         if hasattr(shape, 'shapes'):

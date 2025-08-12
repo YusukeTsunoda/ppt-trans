@@ -107,10 +107,24 @@ class PPTXTranslator:
         style = TextStyle()
         
         try:
+            # フォント名を取得
             if run.font.name:
                 style.font_name = run.font.name
+            
+            # フォントサイズを確実に取得（継承されている場合も考慮）
             if run.font.size:
                 style.font_size = run.font.size
+            elif hasattr(run, '_element'):
+                # XMLから直接サイズを取得する試み
+                try:
+                    rPr = run._element.get_or_add_rPr()
+                    sz = rPr.find('.//a:sz', namespaces={'a': 'http://schemas.openxmlformats.org/drawingml/2006/main'})
+                    if sz is not None and 'val' in sz.attrib:
+                        # PowerPointのフォントサイズは100倍で保存されている
+                        style.font_size = Pt(int(sz.attrib['val']) / 100)
+                except:
+                    pass
+            
             if run.font.bold is not None:
                 style.bold = run.font.bold
             if run.font.italic is not None:
@@ -225,16 +239,26 @@ class PPTXTranslator:
                         # 最初のランのスタイルを保持
                         first_run_style = self.extract_text_style(paragraph.runs[0])
                         
+                        # フォントサイズをログ出力（デバッグ用）
+                        if first_run_style.font_size:
+                            logger.debug(f"Original font size: {first_run_style.font_size}")
+                        
                         # すべてのランをクリア
                         for i, run in enumerate(paragraph.runs):
                             if i == 0:
                                 run.text = new_text
-                                # スタイルを復元
+                                # スタイルを復元（フォントサイズを優先的に設定）
+                                if first_run_style.font_size:
+                                    run.font.size = first_run_style.font_size
                                 first_run_style.apply_to_run(run)
                                 
                                 # 日本語フォントの設定
                                 if is_japanese and not first_run_style.font_name:
                                     run.font.name = "游ゴシック"  # デフォルト日本語フォント
+                                
+                                # 設定後のフォントサイズを確認
+                                if run.font.size:
+                                    logger.debug(f"Applied font size: {run.font.size}")
                             else:
                                 run.text = ""
                     else:
