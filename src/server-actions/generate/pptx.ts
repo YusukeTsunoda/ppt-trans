@@ -682,7 +682,14 @@ export async function generatePptx(data: {
       })
     );
 
-    const command = `python3 "${pythonScript}" --input "${data.originalFileUrl}" --translations "${translationDataPath}" --output "${outputPath}"`;
+    // uvが使える場合はuvを使い、なければpython3を使う
+    let command: string;
+    try {
+      await execAsync('which uv');
+      command = `uv run python "${pythonScript}" --input "${data.originalFileUrl}" --translations "${translationDataPath}" --output "${outputPath}"`;
+    } catch {
+      command = `python3 "${pythonScript}" --input "${data.originalFileUrl}" --translations "${translationDataPath}" --output "${outputPath}"`;
+    }
 
     logger.info('Executing PPTX generation command', { command });
 
@@ -836,7 +843,14 @@ async function processGenerationJob(jobId: string) {
     const outputPath = join(tempDir, 'output.pptx');
     
     const metadata = JSON.parse(job.originalText || '{}');
-    const command = `python3 "${pythonScript}" --input "${job.file.originalFileUrl}" --output "${outputPath}" --texts '${JSON.stringify(metadata.translatedTexts)}' --options '${JSON.stringify(metadata.options || {})}'`;
+    // uvが使える場合はuvを使い、なければpython3を使う
+    let command: string;
+    try {
+      await execAsync('which uv');
+      command = `uv run python "${pythonScript}" --input "${job.file.originalFileUrl}" --output "${outputPath}" --texts '${JSON.stringify(metadata.translatedTexts)}' --options '${JSON.stringify(metadata.options || {})}'`;
+    } catch {
+      command = `python3 "${pythonScript}" --input "${job.file.originalFileUrl}" --output "${outputPath}" --texts '${JSON.stringify(metadata.translatedTexts)}' --options '${JSON.stringify(metadata.options || {})}'`;
+    }
 
     // 進捗を更新
     await prisma.translation.update({

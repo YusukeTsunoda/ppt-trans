@@ -61,10 +61,19 @@ function getDateRange(period: z.infer<typeof periodSchema>, customStart?: string
   let endDate: Date = now;
 
   if (customStart && customEnd) {
-    return {
-      startDate: new Date(customStart),
-      endDate: new Date(customEnd),
-    };
+    const customStartDate = new Date(customStart);
+    const customEndDate = new Date(customEnd);
+    
+    // 日付が無効な場合はデフォルトの期間を使用
+    if (isNaN(customStartDate.getTime()) || isNaN(customEndDate.getTime())) {
+      startDate = startOfMonth(now);
+      endDate = endOfMonth(now);
+    } else {
+      startDate = customStartDate;
+      endDate = customEndDate;
+    }
+    
+    return { startDate, endDate };
   }
 
   switch (period) {
@@ -110,6 +119,22 @@ export async function getDashboardStats(params?: z.infer<typeof getStatsSchema>)
       validatedParams.startDate,
       validatedParams.endDate
     );
+    
+    // 日付が有効かチェック
+    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+      logger.error('Invalid date range', { 
+        params: validatedParams,
+        startDate: startDate.toString(),
+        endDate: endDate.toString()
+      });
+      throw new AppError(
+        'Invalid date range',
+        ErrorCodes.VALIDATION_INVALID_FORMAT,
+        400,
+        true,
+        '無効な日付範囲が指定されました'
+      );
+    }
 
     // 並列でデータを取得
     const [
