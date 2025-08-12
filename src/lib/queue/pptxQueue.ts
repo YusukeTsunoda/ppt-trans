@@ -99,7 +99,7 @@ pptxQueue.process(2, async (job) => { // 同時に2つまで処理
 async function processPPTX(
   job: Bull.Job<PPTXJobData>,
   fileUrl: string,
-  metadata?: PPTXJobData['metadata']
+  _metadata?: PPTXJobData['metadata']
 ): Promise<PPTXJobResult> {
   const scriptPath = path.join(process.cwd(), 'scripts', 'process_pptx.py');
   
@@ -108,7 +108,7 @@ async function processPPTX(
     await job.progress(10);
     
     // Pythonスクリプトを実行
-    const { stdout, stderr } = await execAsync(
+    const { stdout: _stdout, stderr } = await execAsync(
       `python3 "${scriptPath}" "${fileUrl}"`,
       {
         maxBuffer: 1024 * 1024 * 10, // 10MB
@@ -123,7 +123,7 @@ async function processPPTX(
     // 進捗更新: 処理完了
     await job.progress(90);
     
-    const result = JSON.parse(stdout);
+    const result = JSON.parse(_stdout);
     
     // 進捗更新: 完了
     await job.progress(100);
@@ -172,7 +172,7 @@ async function generatePPTX(
     
     // Pythonスクリプトを実行
     const outputFile = path.join(outputDir, `translated_${job.id}.pptx`);
-    const { stdout, stderr } = await execAsync(
+    const { stdout: _stdout, stderr } = await execAsync(
       `python3 "${scriptPath}" "${inputFile}" "${outputFile}"`,
       {
         maxBuffer: 1024 * 1024 * 10, // 10MB

@@ -128,7 +128,7 @@ export async function signIn(
 /**
  * Server-side sign out function
  */
-export async function signOut(options?: { redirect?: boolean }) {
+export async function signOut(_options?: { redirect?: boolean }) {
   // Server Actions don't have access to cookies directly
   // This needs to be handled by the client
   return { success: true };

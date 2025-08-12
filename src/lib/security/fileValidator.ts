@@ -197,8 +197,8 @@ export class FileValidator {
   /**
    * MIMEタイプを検出
    */
-  private static detectMimeType(buffer: Buffer): Promise<string> {
-    return new Promise((resolve, reject) => {
+  private static detectMimeType(_buffer: Buffer): Promise<string> {
+    return new Promise((resolve, _reject) => {
       // TODO: stream-mmmagicライブラリを追加またはfile-typeなどの代替ライブラリを使用
       // 現在は仮の実装
       resolve('application/octet-stream');
@@ -275,9 +275,9 @@ export class FileValidator {
   /**
    * ZIPボム攻撃をチェック
    */
-  static async checkZipBomb(buffer: Buffer): Promise<boolean> {
+  static async checkZipBomb(_buffer: Buffer): Promise<boolean> {
     // PPTXファイルはZIP形式なので、展開後のサイズをチェック
-    const compressionRatio = 100; // 圧縮率の閾値
+    const _compressionRatio = 100; // 圧縮率の閾値
     
     // 簡易的なチェック（実際はunzipライブラリを使用）
     // const uncompressedSize = await this.getUncompressedSize(buffer);

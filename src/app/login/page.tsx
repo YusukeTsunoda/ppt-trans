@@ -35,17 +35,21 @@ function LoginForm() {
   // Server Action成功後にNextAuthでログイン
   useEffect(() => {
     if (state?.success && email && password) {
+      const callbackUrl = searchParams.get('callbackUrl') || '/';
       signIn('credentials', {
         email,
         password,
-        redirect: false
+        redirect: false,
+        callbackUrl
       }).then((result) => {
         if (result?.ok) {
-          router.push('/');
+          router.push(callbackUrl);
+        } else if (result?.error) {
+          console.error('NextAuth login error:', result.error);
         }
       });
     }
-  }, [state, email, password, router]);
+  }, [state, email, password, router, searchParams]);
   
   return (
     <form action={formAction} className="mt-8 space-y-6">

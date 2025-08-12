@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { DownloadManager } from '@/lib/download/DownloadManager';
 import { useToast } from '@/components/Toast';
-import { generatePptx, getGenerationJobStatus } from '@/server-actions/generate/pptx';
+import { generatePptx } from '@/server-actions/generate/pptx';
 import { AppError } from '@/lib/errors/AppError';
 import { ErrorCodes } from '@/lib/errors/ErrorCodes';
 import logger from '@/lib/logger';
@@ -35,107 +35,6 @@ export function DownloadButton({
     status: 'idle',
     progress: 0
   });
-  const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
-
-  // コンポーネントのクリーンアップ
-  useEffect(() => {
-    return () => {
-      if (pollingInterval) {
-        clearInterval(pollingInterval);
-      }
-    };
-  }, [pollingInterval]);
-
-  // ジョブステータスをポーリング
-  const pollJobStatus = async (jobId: string) => {
-    try {
-      const result = await getGenerationJobStatus(jobId);
-      
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to get job status');
-      }
-
-      const job = result.data;
-      
-      if (!job) {
-        throw new Error('Job data is missing');
-      }
-
-      // ステータスを更新
-      setGeneration(prev => ({
-        ...prev,
-        progress: job.progress || prev.progress,
-        message: prev.message // messageはjobに含まれないので、前の状態を維持
-      }));
-
-      // ジョブが完了した場合
-      if (job.status === 'completed') {
-        if (pollingInterval) {
-          clearInterval(pollingInterval);
-          setPollingInterval(null);
-        }
-
-        setGeneration({
-          status: 'completed',
-          progress: 100,
-          message: '生成完了！',
-          downloadUrl: job.outputFileUrl
-        });
-
-        // ダウンロードを開始
-        if (job.outputFileUrl) {
-          await startDownload(job.outputFileUrl);
-          if (onSuccess) {
-            onSuccess(job.outputFileUrl);
-          }
-        }
-
-        showToast('翻訳済みファイルの生成が完了しました', 'success');
-      }
-
-      // ジョブが失敗した場合
-      if (job.status === 'failed') {
-        if (pollingInterval) {
-          clearInterval(pollingInterval);
-          setPollingInterval(null);
-        }
-
-        const error = new AppError(
-          job.error || 'Generation failed',
-          ErrorCodes.FILE_PROCESSING_FAILED,
-          500
-        );
-
-        setGeneration({
-          status: 'failed',
-          progress: 0,
-          error: job.error || 'ファイル生成に失敗しました'
-        });
-
-        if (onError) {
-          onError(error);
-        }
-
-        showToast(job.error || 'ファイル生成に失敗しました', 'error');
-      }
-
-    } catch (error) {
-      logger.error('Failed to poll job status', error);
-      
-      if (pollingInterval) {
-        clearInterval(pollingInterval);
-        setPollingInterval(null);
-      }
-
-      setGeneration({
-        status: 'failed',
-        progress: 0,
-        error: 'ステータスの取得に失敗しました'
-      });
-
-      showToast('ステータスの取得に失敗しました', 'error');
-    }
-  };
 
   // ファイルをダウンロード
   const startDownload = async (downloadUrl: string) => {
@@ -200,21 +99,32 @@ export function DownloadButton({
         message: 'ファイル生成を開始しています...'
       });
 
-      // Server Actionを使用してファイルを生成
-      const formData = new FormData();
-      formData.append('fileId', 'temp-file-id'); // TODO: 実際のfileIdを使用
-      formData.append('translatedTexts', JSON.stringify(
-        editedSlides.flatMap((slide: any) => 
-          slide.texts.map((text: any) => ({
-            slideNumber: slide.pageNumber,
-            textId: text.id,
-            originalText: text.original,
-            translatedText: text.translated
+      // 最初のスライドから元のファイルURLを取得
+      const originalFileUrl = editedSlides[0]?.originalFileUrl || '';
+      if (!originalFileUrl) {
+        throw new Error('元のファイルURLが見つかりません');
+      }
+
+      // Server Action用のデータを準備
+      const requestData = {
+        originalFileUrl,
+        editedSlides: editedSlides.map((slide: any) => ({
+          pageNumber: slide.pageNumber,
+          texts: slide.texts.map((text: any) => ({
+            id: text.id,
+            original: text.original,
+            translated: text.translated || text.original
           }))
-        )
-      ));
+        }))
+      };
       
-      const result = await generatePptx(formData);
+      setGeneration({
+        status: 'generating',
+        progress: 30,
+        message: 'ファイルを生成中...'
+      });
+
+      const result = await generatePptx(requestData);
       
       if (!result.success) {
         throw new AppError(
@@ -224,26 +134,21 @@ export function DownloadButton({
         );
       }
 
-      // ジョブIDが返される（常に非同期処理）
-      if (result.data?.jobId) {
-        const jobId = result.data.jobId;
-        
-        setGeneration(prev => ({
-          ...prev,
-          status: 'polling',
-          jobId: jobId,
-          message: 'ファイルを生成中...'
-        }));
+      // 直接ダウンロードURLが返される
+      if (result.downloadUrl) {
+        setGeneration({
+          status: 'completed',
+          progress: 100,
+          message: '生成完了！',
+          downloadUrl: result.downloadUrl
+        });
 
-        // ステータスのポーリングを開始（2秒ごと）
-        const interval = setInterval(() => {
-          pollJobStatus(jobId);
-        }, 2000);
-        
-        setPollingInterval(interval);
-
-        // 初回のポーリングを即座に実行
-        await pollJobStatus(jobId);
+        // ダウンロードを開始
+        await startDownload(result.downloadUrl);
+        if (onSuccess) {
+          onSuccess(result.downloadUrl);
+        }
+        showToast('翻訳済みファイルの生成が完了しました', 'success');
       }
 
     } catch (error: any) {
@@ -266,36 +171,15 @@ export function DownloadButton({
     }
   };
 
-  // ジョブをキャンセル
-  const handleCancel = async () => {
-    if (generation.jobId) {
-      try {
-        await fetch(`/api/generation-status/${generation.jobId}`, {
-          method: 'DELETE'
-        });
-
-        if (pollingInterval) {
-          clearInterval(pollingInterval);
-          setPollingInterval(null);
-        }
-
-        setGeneration({
-          status: 'idle',
-          progress: 0
-        });
-
-        showToast('ファイル生成をキャンセルしました', 'info');
-      } catch (error) {
-        logger.error('Failed to cancel job', error);
-      }
-    }
+  // キャンセル処理（現在は同期処理のためキャンセル不可）
+  const handleCancel = () => {
+    showToast('現在キャンセルはできません', 'warning');
   };
 
   // ボタンの表示内容を決定
   const getButtonContent = () => {
     switch (generation.status) {
       case 'generating':
-      case 'polling':
         return (
           <>
             <span className="animate-spin mr-2">⏳</span>

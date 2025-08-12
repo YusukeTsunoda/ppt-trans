@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { useTheme } from 'next-themes';
 import { getTranslationHistory, deleteHistoryItem, clearHistory, type TranslationHistoryItem } from '@/lib/history';
-import { downloadFile } from '@/lib/downloadUtils';
 import type { Settings, TranslationModel } from '@/lib/settings';
 
 interface SettingsScreenProps {

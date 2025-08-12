@@ -6,7 +6,7 @@ import { AppError } from '@/lib/errors/AppError';
 import { ErrorCodes } from '@/lib/errors/ErrorCodes';
 import logger from '@/lib/logger';
 import { headers } from 'next/headers';
-import { rateLimiters } from '@/lib/security/rateLimiter';
+import { checkServerActionRateLimit } from '@/lib/security/rateLimiter';
 import prisma from '@/lib/prisma';
 import { compare } from 'bcryptjs';
 // Server Actionsではsignінを直接使用できないため削除
@@ -28,14 +28,20 @@ export async function loginAction(
   const startTime = Date.now();
   
   try {
-    // レート制限チェック
+    // レート制限チェック（Server Actions用の新しい実装）
     const headersList = await headers();
-    const ip = headersList.get('x-forwarded-for') || 'unknown';
+    const ip = headersList.get('x-forwarded-for') || 
+               headersList.get('x-real-ip') || 
+               'unknown';
     
-    const rateLimitResult = await rateLimiters.auth.check({
-      headers: headersList,
-      nextUrl: { pathname: '/login' }
-    } as Parameters<typeof rateLimiters.auth.check>[0]);
+    const rateLimitResult = await checkServerActionRateLimit(
+      ip,
+      'login',
+      {
+        windowMs: 5 * 60 * 1000, // 5分
+        max: 5 // 最大5回の試行
+      }
+    );
     
     if (!rateLimitResult.success) {
       logger.warn('Login rate limit exceeded', { ip });

@@ -138,7 +138,7 @@ export async function uploadToSupabase(
     await ensureStorageBucket(bucketName);
 
     // ファイルのアップロード
-    const { data, error } = await supabase.storage
+    const { data: _data, error } = await supabase.storage
       .from(bucketName)
       .upload(path, file, {
         contentType: contentType || 'application/octet-stream',

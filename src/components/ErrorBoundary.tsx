@@ -4,7 +4,7 @@ import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { AppError } from '@/lib/errors/AppError';
 import { ErrorCodes } from '@/lib/errors/ErrorCodes';
 import logger from '@/lib/logger';
-import { getErrorMessage, getErrorMessageObject } from '@/lib/errors/ErrorMessages';
+import { getErrorMessageObject } from '@/lib/errors/ErrorMessages';
 
 interface Props {
   children: ReactNode;
@@ -167,13 +167,13 @@ export class ErrorBoundary extends Component<Props, State> {
   private getErrorDetails() {
     const error = this.state.error;
     if (error instanceof AppError) {
-      const messageObj = getErrorMessageObject(error.code);
+      const messageObj = getErrorMessageObject(error.code as any);
       return {
-        title: messageObj?.ja || 'エラーが発生しました',
-        description: error.userMessage || messageObj?.recovery?.ja || '申し訳ございません。予期しないエラーが発生しました。',
+        title: messageObj?.message || 'エラーが発生しました',
+        description: error.userMessage || messageObj?.solution || '申し訳ございません。予期しないエラーが発生しました。',
         code: error.code,
         isRetryable: error.isRetryable(),
-        recovery: messageObj?.recovery
+        recovery: messageObj?.solution
       };
     }
     
@@ -279,7 +279,7 @@ export class ErrorBoundary extends Component<Props, State> {
                       解決方法:
                     </h3>
                     <p className="text-sm text-blue-700 dark:text-blue-300">
-                      {errorDetails.recovery.ja}
+                      {errorDetails.recovery}
                     </p>
                   </div>
                 )}

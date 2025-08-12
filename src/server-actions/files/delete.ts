@@ -79,7 +79,7 @@ export async function deleteFileAction(
           .remove([filePath]);
         
         if (deleteError) {
-          logger.warn('Supabase file deletion error', deleteError);
+          logger.warn('Supabase file deletion error', deleteError as unknown as Record<string, unknown>);
         }
         
         // 翻訳済みファイルも削除

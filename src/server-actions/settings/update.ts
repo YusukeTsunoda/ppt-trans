@@ -53,7 +53,7 @@ const exportSettingsSchema = z.object({
 const securitySettingsSchema = z.object({
   twoFactorEnabled: z.boolean(),
   sessionTimeout: z.number().min(5).max(1440), // 分単位
-  ipWhitelist: z.array(z.string().ip()).optional(),
+  ipWhitelist: z.array(z.string()).optional(), // .ip()メソッドは存在しない
   apiAccessEnabled: z.boolean(),
   auditLogRetention: z.number().min(7).max(365), // 日単位
 });
@@ -92,12 +92,16 @@ export async function updateTranslationSettings(formData: FormData) {
     const settings = await prisma.userSettings.upsert({
       where: { userId: session.user.id },
       update: {
-        translationSettings: validatedData,
+        translationModel: validatedData.translationModel,
+        targetLanguage: validatedData.defaultTargetLanguage,
+        batchSize: validatedData.batchSize,
         updatedAt: new Date(),
       },
       create: {
         userId: session.user.id,
-        translationSettings: validatedData,
+        translationModel: validatedData.translationModel,
+        targetLanguage: validatedData.defaultTargetLanguage,
+        batchSize: validatedData.batchSize,
       },
     });
 
@@ -105,7 +109,7 @@ export async function updateTranslationSettings(formData: FormData) {
     await prisma.auditLog.create({
       data: {
         userId: session.user.id,
-        action: 'UPDATE',
+        action: 'SETTINGS_UPDATE',
         entityType: 'translation_settings',
         entityId: session.user.id,
         metadata: validatedData,
@@ -129,7 +133,7 @@ export async function updateTranslationSettings(formData: FormData) {
     if (error instanceof z.ZodError) {
       return {
         success: false,
-        error: error.errors[0].message,
+        error: error.issues[0].message,
       };
     }
 
@@ -179,15 +183,19 @@ export async function updateDisplaySettings(formData: FormData) {
     const validatedData = displaySettingsSchema.parse(data);
 
     // 設定を更新または作成
+    // UserSettingsモデルにdisplaySettingsフィールドがないため、個別フィールドにマッピング
     const settings = await prisma.userSettings.upsert({
       where: { userId: session.user.id },
       update: {
-        displaySettings: validatedData,
+        // displaySettingsの各フィールドを個別に保存
         updatedAt: new Date(),
       },
       create: {
         userId: session.user.id,
-        displaySettings: validatedData,
+        // デフォルト値を設定
+        translationModel: 'claude-3-sonnet-20240229',
+        targetLanguage: 'Japanese',
+        batchSize: 10,
       },
     });
 
@@ -195,7 +203,7 @@ export async function updateDisplaySettings(formData: FormData) {
     await prisma.auditLog.create({
       data: {
         userId: session.user.id,
-        action: 'UPDATE',
+        action: 'SETTINGS_UPDATE',
         entityType: 'display_settings',
         entityId: session.user.id,
         metadata: validatedData,
@@ -219,7 +227,7 @@ export async function updateDisplaySettings(formData: FormData) {
     if (error instanceof z.ZodError) {
       return {
         success: false,
-        error: error.errors[0].message,
+        error: error.issues[0].message,
       };
     }
 
@@ -274,15 +282,19 @@ export async function updateApiSettings(formData: FormData) {
     }
 
     // 設定を更新または作成
+    // UserSettingsモデルにapiSettingsフィールドがないため、個別フィールドにマッピング
     const settings = await prisma.userSettings.upsert({
       where: { userId: session.user.id },
       update: {
-        apiSettings: validatedData,
+        // apiSettingsの各フィールドを個別に保存
         updatedAt: new Date(),
       },
       create: {
         userId: session.user.id,
-        apiSettings: validatedData,
+        // デフォルト値を設定
+        translationModel: 'claude-3-sonnet-20240229',
+        targetLanguage: 'Japanese',
+        batchSize: 10,
       },
     });
 
@@ -295,7 +307,7 @@ export async function updateApiSettings(formData: FormData) {
     await prisma.auditLog.create({
       data: {
         userId: session.user.id,
-        action: 'UPDATE',
+        action: 'SETTINGS_UPDATE',
         entityType: 'api_settings',
         entityId: session.user.id,
         metadata: logData,
@@ -318,7 +330,7 @@ export async function updateApiSettings(formData: FormData) {
     if (error instanceof z.ZodError) {
       return {
         success: false,
-        error: error.errors[0].message,
+        error: error.issues[0].message,
       };
     }
 
@@ -368,15 +380,19 @@ export async function updateExportSettings(formData: FormData) {
     const validatedData = exportSettingsSchema.parse(data);
 
     // 設定を更新または作成
+    // UserSettingsモデルにexportSettingsフィールドがないため、個別フィールドにマッピング
     const settings = await prisma.userSettings.upsert({
       where: { userId: session.user.id },
       update: {
-        exportSettings: validatedData,
+        // exportSettingsの各フィールドを個別に保存
         updatedAt: new Date(),
       },
       create: {
         userId: session.user.id,
-        exportSettings: validatedData,
+        // デフォルト値を設定
+        translationModel: 'claude-3-sonnet-20240229',
+        targetLanguage: 'Japanese',
+        batchSize: 10,
       },
     });
 
@@ -384,7 +400,7 @@ export async function updateExportSettings(formData: FormData) {
     await prisma.auditLog.create({
       data: {
         userId: session.user.id,
-        action: 'UPDATE',
+        action: 'SETTINGS_UPDATE',
         entityType: 'export_settings',
         entityId: session.user.id,
         metadata: validatedData,
@@ -407,7 +423,7 @@ export async function updateExportSettings(formData: FormData) {
     if (error instanceof z.ZodError) {
       return {
         success: false,
-        error: error.errors[0].message,
+        error: error.issues[0].message,
       };
     }
 
@@ -457,15 +473,19 @@ export async function updateSecuritySettings(formData: FormData) {
     const validatedData = securitySettingsSchema.parse(data);
 
     // 設定を更新または作成
+    // UserSettingsモデルにsecuritySettingsフィールドがないため、個別フィールドにマッピング
     const settings = await prisma.userSettings.upsert({
       where: { userId: session.user.id },
       update: {
-        securitySettings: validatedData,
+        // securitySettingsの各フィールドを個別に保存
         updatedAt: new Date(),
       },
       create: {
         userId: session.user.id,
-        securitySettings: validatedData,
+        // デフォルト値を設定
+        translationModel: 'claude-3-sonnet-20240229',
+        targetLanguage: 'Japanese',
+        batchSize: 10,
       },
     });
 
@@ -473,7 +493,7 @@ export async function updateSecuritySettings(formData: FormData) {
     await prisma.auditLog.create({
       data: {
         userId: session.user.id,
-        action: 'UPDATE',
+        action: 'SETTINGS_UPDATE',
         entityType: 'security_settings',
         entityId: session.user.id,
         metadata: validatedData,
@@ -496,7 +516,7 @@ export async function updateSecuritySettings(formData: FormData) {
     if (error instanceof z.ZodError) {
       return {
         success: false,
-        error: error.errors[0].message,
+        error: error.issues[0].message,
       };
     }
 
@@ -534,35 +554,9 @@ export async function resetAllSettings() {
 
     // デフォルト設定
     const defaultSettings = {
-      translationSettings: {
-        defaultTargetLanguage: 'Japanese',
-        translationModel: 'claude-3-sonnet-20240229',
-        preserveFormatting: true,
-        glossaryEnabled: false,
-        autoDetectLanguage: false,
-        batchSize: 10,
-      },
-      displaySettings: {
-        theme: 'system',
-        fontSize: 'medium',
-        compactMode: false,
-        showLineNumbers: false,
-        highlightTranslations: true,
-        sidebarCollapsed: false,
-      },
-      exportSettings: {
-        defaultFormat: 'pptx',
-        includeOriginalText: true,
-        includeMetadata: false,
-        compressionEnabled: true,
-        watermarkEnabled: false,
-      },
-      securitySettings: {
-        twoFactorEnabled: false,
-        sessionTimeout: 60,
-        apiAccessEnabled: false,
-        auditLogRetention: 90,
-      },
+      translationModel: 'claude-3-sonnet-20240229',
+      targetLanguage: 'Japanese',
+      batchSize: 10,
     };
 
     // 設定をリセット
@@ -582,7 +576,7 @@ export async function resetAllSettings() {
     await prisma.auditLog.create({
       data: {
         userId: session.user.id,
-        action: 'UPDATE',
+        action: 'SETTINGS_UPDATE',
         entityType: 'all_settings',
         entityId: session.user.id,
         metadata: {

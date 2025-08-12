@@ -3,7 +3,6 @@
 import React from 'react';
 import { AppError } from '@/lib/errors/AppError';
 import { getRecoveryMessage } from '@/lib/errors/ErrorMessages';
-import { isRetryableError } from '@/lib/errors/ErrorCodes';
 
 interface ErrorMessageProps {
   error: Error | AppError | string;
@@ -43,7 +42,7 @@ export function ErrorMessage({
     }
 
     if (error instanceof AppError) {
-      const recoveryMessage = getRecoveryMessage(error.code as any, 'ja');
+      const recoveryMessage = getRecoveryMessage(error.code as any);
       return {
         message: error.userMessage,
         code: error.code,

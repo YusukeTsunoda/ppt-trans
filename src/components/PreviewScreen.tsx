@@ -5,7 +5,8 @@ import type { ProcessingResult, SlideData } from '@/types';
 import { getSettings } from '@/lib/settings';
 import { updateHistoryItem } from '@/lib/history';
 import { useResponsive } from '@/hooks/useResponsive';
-import { LazyImage } from '@/components/LazyImage';
+import { generatePptx } from '@/server-actions/generate/pptx';
+import { translateBatch } from '@/server-actions/translate/batch';
 
 // CSSアニメーションをグローバルスタイルとして追加
 const globalStyles = `
@@ -78,7 +79,7 @@ export function PreviewScreen({ data, onBack, onDataUpdate, historyId }: Preview
         ? slides.flatMap(slide => 
             slide.texts.map(text => ({
               id: text.id,
-              originalText: text.original,
+              original: text.original,
               slideIndex: slides.indexOf(slide)
             }))
           )
@@ -103,32 +104,24 @@ export function PreviewScreen({ data, onBack, onDataUpdate, historyId }: Preview
         batches.push(textsToTranslate.slice(i, i + batchSize));
       }
 
-      const allTranslations: { id: string; translatedText: string }[] = [];
+      const allTranslations: { id: string; translated: string }[] = [];
       
       // バッチごとに翻訳を実行
       for (let i = 0; i < batches.length; i++) {
         const batch = batches[i];
         
-        // 翻訳APIを呼び出す
-        const response = await fetch('/api/translate', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            texts: batch,
-            targetLanguage: targetLanguage,
-            model: settings.translationModel
-          }),
+        // Server Actionを使用して翻訳
+        const result = await translateBatch({
+          texts: batch,
+          targetLanguage: targetLanguage,
+          model: settings.translationModel
         });
 
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || '翻訳に失敗しました。');
+        if (!result.success) {
+          throw new Error(result.error || '翻訳に失敗しました。');
         }
 
-        const data = await response.json();
-        allTranslations.push(...data.translations);
+        allTranslations.push(...result.translations);
         
         // 進捗状況を更新
         setTranslationProgress(prev => ({
@@ -146,10 +139,10 @@ export function PreviewScreen({ data, onBack, onDataUpdate, historyId }: Preview
           updatedSlides[slideIndex] = {
             ...slide,
             texts: slide.texts.map(text => {
-              const translation = allTranslations.find((t: { id: string; translatedText: string }) => t.id === text.id);
+              const translation = allTranslations.find((t: { id: string; translated: string }) => t.id === text.id);
               return {
                 ...text,
-                translated: translation ? translation.translatedText : text.translated
+                translated: translation ? translation.translated : text.translated
               };
             })
           };
@@ -159,10 +152,10 @@ export function PreviewScreen({ data, onBack, onDataUpdate, historyId }: Preview
         updatedSlides[currentSlideIndex] = {
           ...currentSlide,
           texts: currentSlide.texts.map(text => {
-            const translation = allTranslations.find((t: { id: string; translatedText: string }) => t.id === text.id);
+            const translation = allTranslations.find((t: { id: string; translated: string }) => t.id === text.id);
             return {
               ...text,
-              translated: translation ? translation.translatedText : text.translated
+              translated: translation ? translation.translated : text.translated
             };
           })
         };
@@ -280,7 +273,7 @@ export function PreviewScreen({ data, onBack, onDataUpdate, historyId }: Preview
         return;
       }
 
-      // APIに送信するデータを準備
+      // Server Actionに送信するデータを準備
       const requestData = {
         originalFileUrl,
         editedSlides: slides.map(slide => ({
@@ -288,28 +281,20 @@ export function PreviewScreen({ data, onBack, onDataUpdate, historyId }: Preview
           texts: slide.texts.map(text => ({
             id: text.id,
             original: text.original,
-            translated: text.translated
+            translated: text.translated || text.original // 翻訳がない場合は元のテキストを使用
           }))
         }))
       };
 
       console.log('Generating translated PPTX...', requestData);
 
-      // PPTXファイルを生成
-      const response = await fetch('/api/generate-pptx', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestData),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'PPTXファイルの生成に失敗しました');
+      // Server Actionを使用してPPTXファイルを生成
+      const result = await generatePptx(requestData);
+      
+      if (!result.success) {
+        throw new Error(result.error || 'PPTXファイルの生成に失敗しました');
       }
 
-      const result = await response.json();
       console.log('PPTX generation result:', result);
 
       // ダウンロード処理
@@ -604,7 +589,7 @@ export function PreviewScreen({ data, onBack, onDataUpdate, historyId }: Preview
             
             {/* スライド画像 - より大きく表示 */}
             <div 
-              className="aspect-video bg-slate-100 rounded-xl overflow-hidden border border-slate-200 max-w-5xl mx-auto shadow-inner relative"
+              className="aspect-video bg-slate-100 dark:bg-slate-800 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 max-w-5xl mx-auto shadow-inner relative"
               onMouseDown={handleMouseDown}
               onMouseMove={handleMouseMove}
               onMouseUp={handleMouseUp}
@@ -621,50 +606,54 @@ export function PreviewScreen({ data, onBack, onDataUpdate, historyId }: Preview
                   }}
                 >
                   {/* 画像コンテナ - position: relativeで親要素として機能 */}
-                  <div className="w-full h-full relative">
-                    <img
-                      src={currentSlide.imageUrl}
-                      alt={`Slide ${currentSlide.pageNumber}`}
-                      className="w-full h-full object-contain select-none"
-                      loading="eager"
-                      draggable={false}
-                    />
-                    {/* ハイライトオーバーレイ - 画像の上に重ねる */}
-                    {highlightedTextId && currentSlide.texts.map((text) => {
-                      if (text.id !== highlightedTextId) return null;
-                      
-                      // デバッグ用ログ
-                      console.log('Highlighting text:', text.id, 'Position:', text.position);
-                      
-                      // PowerPointの座標をパーセンテージに変換
-                      // PowerPointの標準スライドサイズ: 720pt x 405pt (16:9比率で10インチ x 5.625インチ)
-                      // Pythonスクリプトはポイント単位で位置を返している
-                      const slideWidthPt = 720;  // PowerPointの標準幅（ポイント）
-                      const slideHeightPt = 405; // PowerPointの標準高さ（ポイント）
-                      
-                      const left = (text.position.x / slideWidthPt) * 100;
-                      const top = (text.position.y / slideHeightPt) * 100;
-                      const width = (text.position.width / slideWidthPt) * 100;
-                      const height = (text.position.height / slideHeightPt) * 100;
-                      
-                      return (
-                        <div
-                          key={text.id}
-                          className="absolute pointer-events-none"
-                          style={{
-                            left: `${left}%`,
-                            top: `${top}%`,
-                            width: `${width}%`,
-                            height: `${height}%`,
-                            border: '3px solid #3B82F6',
-                            backgroundColor: 'rgba(59, 130, 246, 0.2)',
-                            borderRadius: '8px',
-                            zIndex: 10,
-                            animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
-                          }}
-                        />
-                      );
-                    })}
+                  <div className="w-full h-full relative flex items-center justify-center">
+                    {/* 画像を中央配置のコンテナ内に配置 */}
+                    <div className="relative" style={{ width: '100%', height: '100%' }}>
+                      <img
+                        src={currentSlide.imageUrl}
+                        alt={`Slide ${currentSlide.pageNumber}`}
+                        className="w-full h-full object-contain select-none"
+                        loading="eager"
+                        draggable={false}
+                      />
+                      {/* ハイライトオーバーレイ - 画像の実際の表示領域に対して配置 */}
+                      {highlightedTextId && currentSlide.texts.map((text) => {
+                        if (text.id !== highlightedTextId) return null;
+                        
+                        // デバッグ用ログ
+                        console.log('Highlighting text:', text.id, 'Position:', text.position);
+                        
+                        // PowerPointのデフォルトスライドサイズ（ポイント単位）
+                        // 標準的な16:9スライド: 幅960pt x 高さ540pt
+                        // Pythonから取得した座標もポイント単位なので、この値で正規化
+                        const slideWidthPt = 960;
+                        const slideHeightPt = 540;
+                        
+                        // 位置をパーセンテージに変換（ポイント単位の座標を基準に）
+                        const left = (text.position.x / slideWidthPt) * 100;
+                        const top = (text.position.y / slideHeightPt) * 100;
+                        const width = (text.position.width / slideWidthPt) * 100;
+                        const height = (text.position.height / slideHeightPt) * 100;
+                        
+                        return (
+                          <div
+                            key={text.id}
+                            className="absolute pointer-events-none"
+                            style={{
+                              left: `${left}%`,
+                              top: `${top}%`,
+                              width: `${width}%`,
+                              height: `${height}%`,
+                              border: '3px solid #3B82F6',
+                              backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                              borderRadius: '8px',
+                              zIndex: 10,
+                              animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+                            }}
+                          />
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
               )}
@@ -679,7 +668,7 @@ export function PreviewScreen({ data, onBack, onDataUpdate, historyId }: Preview
                   className={`w-8 h-8 text-xs rounded-lg transition-all duration-200 ${
                     index === currentSlideIndex
                       ? 'bg-blue-600 text-white shadow-md'
-                      : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+                      : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600'
                   }`}
                 >
                   {index + 1}
@@ -701,7 +690,7 @@ export function PreviewScreen({ data, onBack, onDataUpdate, historyId }: Preview
           {hasTexts ? (
             <>
               {/* ヘッダー */}
-              <div className={`grid ${responsive.isMobile ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-2'} gap-4 lg:gap-6 mb-4 border-b border-slate-200 pb-3`}>
+              <div className={`grid ${responsive.isMobile ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-2'} gap-4 lg:gap-6 mb-4 border-b border-slate-200 dark:border-slate-700 pb-3`}>
                 <div>
                   <h3 className="text-base font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2">
                     <span className="w-2 h-2 bg-blue-600 rounded-full"></span>
@@ -717,15 +706,15 @@ export function PreviewScreen({ data, onBack, onDataUpdate, historyId }: Preview
               </div>
 
               {/* スクロール可能なコンテンツ */}
-              <div className="max-h-[500px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100">
+              <div className="max-h-[500px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-600 scrollbar-track-slate-100 dark:scrollbar-track-slate-800">
                 <div className="space-y-4">
                   {currentSlide.texts.map((text, index) => (
                     <div key={text.id} className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
                       {/* 原文 */}
                       <div 
                         onClick={() => handleTextClick(text.id)}
-                        className={`border rounded-lg p-4 hover:shadow-md transition-all duration-200 bg-white dark:bg-slate-700 hover:border-blue-400 cursor-pointer ${
-                          highlightedTextId === text.id ? 'border-blue-500 shadow-lg bg-blue-50' : 'border-slate-300'
+                        className={`border rounded-lg p-4 hover:shadow-md transition-all duration-200 bg-white dark:bg-slate-800 hover:border-blue-400 dark:hover:border-blue-500 cursor-pointer ${
+                          highlightedTextId === text.id ? 'border-blue-500 shadow-lg bg-blue-50 dark:bg-blue-900/20' : 'border-slate-300 dark:border-slate-600'
                         }`}
                         title="クリックして位置を表示"
                       >
@@ -763,14 +752,14 @@ export function PreviewScreen({ data, onBack, onDataUpdate, historyId }: Preview
                           highlightedTextId === text.id 
                             ? 'border-blue-500 shadow-lg' 
                             : text.translated 
-                              ? 'border-emerald-200 hover:border-emerald-300' 
-                              : 'border-slate-200 hover:border-slate-300'
+                              ? 'border-emerald-200 dark:border-emerald-700 hover:border-emerald-300 dark:hover:border-emerald-600' 
+                              : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
                         } ${
                           highlightedTextId === text.id 
-                            ? 'bg-blue-50' 
+                            ? 'bg-blue-50 dark:bg-blue-900/20' 
                             : text.translated 
-                              ? 'bg-emerald-50' 
-                              : 'bg-slate-50'
+                              ? 'bg-emerald-50 dark:bg-emerald-900/10' 
+                              : 'bg-white dark:bg-slate-800'
                         }`}
                       >
                         <div className="flex items-start gap-3">
@@ -819,7 +808,7 @@ export function PreviewScreen({ data, onBack, onDataUpdate, historyId }: Preview
                                       {text.translated}
                                     </p>
                                     <div className="flex items-center gap-2 mt-2">
-                                      <span className="text-xs text-emerald-600 inline-flex items-center gap-1 font-medium">
+                                      <span className="text-xs text-emerald-700 dark:text-emerald-400 inline-flex items-center gap-1 font-medium">
                                         <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                                         </svg>
@@ -827,7 +816,7 @@ export function PreviewScreen({ data, onBack, onDataUpdate, historyId }: Preview
                                       </span>
                                       <button
                                         onClick={() => handleStartEdit(text.id, text.translated)}
-                                        className="text-xs text-blue-600 hover:text-blue-700 inline-flex items-center gap-1 font-medium transition-colors"
+                                        className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 inline-flex items-center gap-1 font-medium transition-colors"
                                       >
                                         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -838,12 +827,12 @@ export function PreviewScreen({ data, onBack, onDataUpdate, historyId }: Preview
                                   </>
                                 ) : (
                                   <div>
-                                    <p className="text-slate-400 italic">
+                                    <p className="text-slate-400 dark:text-slate-500 italic">
                                       未翻訳
                                     </p>
                                     <button
                                       onClick={() => handleStartEdit(text.id, '')}
-                                      className="text-xs text-blue-600 hover:text-blue-700 inline-flex items-center gap-1 font-medium mt-2 transition-colors"
+                                      className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 inline-flex items-center gap-1 font-medium mt-2 transition-colors"
                                     >
                                       <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />

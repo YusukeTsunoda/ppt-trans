@@ -237,7 +237,7 @@ class Logger {
   /**
    * ファイルに出力（実装は省略）
    */
-  private logToFile(entry: LogEntry): void {
+  private logToFile(_entry: LogEntry): void {
     // ファイル出力の実装
     // 本番環境では適切なログファイルシステムを使用
   }
@@ -245,7 +245,7 @@ class Logger {
   /**
    * リモートログサービスに送信（実装は省略）
    */
-  private logToRemote(entry: LogEntry): void {
+  private logToRemote(_entry: LogEntry): void {
     // リモートログサービスへの送信実装
     // 例: Sentry, LogRocket, DataDog など
   }

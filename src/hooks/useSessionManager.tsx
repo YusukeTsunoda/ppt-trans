@@ -23,7 +23,7 @@ const DEFAULT_CHECK_INTERVAL = 60 * 1000; // 1分ごとにチェック
 export function useSessionManager(config: SessionConfig = {}) {
   const {
     warningTime = DEFAULT_WARNING_TIME,
-    checkInterval = DEFAULT_CHECK_INTERVAL,
+    checkInterval: _checkInterval = DEFAULT_CHECK_INTERVAL,
     autoRenew = true
   } = config;
 
@@ -68,7 +68,7 @@ export function useSessionManager(config: SessionConfig = {}) {
       setIsWarningShown(false);
       setShowRenewDialog(false);
     }
-  }, [isWarningShown]);
+  }, []);
 
   // セッション期限切れ処理
   const handleSessionExpired = useCallback(async () => {
@@ -215,7 +215,7 @@ export function useSessionManager(config: SessionConfig = {}) {
       logger.info('[checkSessionExpiry] Triggering auto-renewal');
       renewSession();
     }
-  }, []); // 依存配列を空にして再作成を防ぐ
+  }, [handleSessionExpired, renewSession]); // 必要な依存関係を追加
 
   // アクティビティリスナーを設定
   useEffect(() => {
@@ -298,7 +298,7 @@ export function useSessionManager(config: SessionConfig = {}) {
         warningTimeoutRef.current = null;
       }
     };
-  }, []); // 依存配列を空にして、マウント時に一度だけ実行
+  }, [checkSessionExpiry]); // checkSessionExpiryを依存配列に追加
 
   return {
     isAuthenticated: status === 'authenticated',

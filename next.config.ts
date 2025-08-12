@@ -1,5 +1,11 @@
 import type { NextConfig } from "next";
 
+// Bundle Analyzerの設定
+const withBundleAnalyzer = require('@next/bundle-analyzer')({
+  enabled: process.env.ANALYZE === 'true',
+  openAnalyzer: true,
+});
+
 const nextConfig: NextConfig = {
   // 画像最適化設定
   images: {
@@ -8,6 +14,19 @@ const nextConfig: NextConfig = {
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     minimumCacheTTL: 60 * 60 * 24, // 24時間
+  },
+
+  // モジュール最適化：アイコンライブラリのTree Shaking
+  modularizeImports: {
+    'lucide-react': {
+      transform: 'lucide-react/dist/esm/icons/{{member}}'
+    },
+    '@heroicons/react/24/outline': {
+      transform: '@heroicons/react/24/outline/{{member}}'
+    },
+    '@heroicons/react/24/solid': {
+      transform: '@heroicons/react/24/solid/{{member}}'
+    }
   },
 
   // バンドル分析（開発時のみ）
@@ -140,4 +159,5 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
 };
 
-export default nextConfig;
+// Bundle Analyzerをエクスポート
+export default withBundleAnalyzer(nextConfig);

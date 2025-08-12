@@ -5,6 +5,7 @@ import { updateHistoryItem } from '@/lib/history';
 import { DownloadButton } from '@/components/DownloadButton';
 import { useToast } from '@/components/Toast';
 import { useResponsive } from '@/hooks/useResponsive';
+import { generatePptx } from '@/server-actions/generate/pptx';
 import type { EditorScreenProps } from '@/types';
 
 export function EditorScreen({ data, onBack, historyId }: EditorScreenProps) {
@@ -13,7 +14,7 @@ export function EditorScreen({ data, onBack, historyId }: EditorScreenProps) {
   const [editedData, setEditedData] = useState(data);
   const [selectedSlide, setSelectedSlide] = useState(0);
   const [isEditing, setIsEditing] = useState<string | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
+  const [_isSaving, _setIsSaving] = useState(false);
 
   // 翻訳テキストを編集
   const handleTextEdit = (slideIndex: number, textId: string, newTranslation: string) => {
@@ -27,9 +28,9 @@ export function EditorScreen({ data, onBack, historyId }: EditorScreenProps) {
     setEditedData(updatedData);
   };
 
-  // 編集内容を保存してダウンロード（改善版）
-  const handleDownload = async () => {
-    setIsSaving(true);
+  // 編集内容を保存してダウンロード（Server Action版）
+  const _handleDownload = async () => {
+    _setIsSaving(true);
     try {
       // 最初のスライドから元のファイルURLを取得
       const originalFileUrl = editedData.slides[0]?.originalFileUrl;
@@ -37,7 +38,7 @@ export function EditorScreen({ data, onBack, historyId }: EditorScreenProps) {
         throw new Error('元のファイルURLが見つかりません');
       }
 
-      // APIに送信するデータを準備
+      // Server Actionに送信するデータを準備
       const requestData = {
         originalFileUrl,
         editedSlides: editedData.slides.map(slide => ({
@@ -45,31 +46,23 @@ export function EditorScreen({ data, onBack, historyId }: EditorScreenProps) {
           texts: slide.texts.map(text => ({
             id: text.id,
             original: text.original,
-            translated: text.translated
+            translated: text.translated || text.original // 翻訳がない場合は元のテキストを使用
           }))
         }))
       };
 
-      console.log('Generating translated PPTX...', requestData);
+      console.log('Generating translated PPTX with Server Action...', requestData);
 
-      // PPTXファイルを生成
-      const response = await fetch('/api/generate-pptx', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestData),
-      });
+      // Server Actionを使用してPPTXファイルを生成
+      const result = await generatePptx(requestData);
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'PPTXファイルの生成に失敗しました');
+      if (!result.success) {
+        throw new Error(result.error || 'PPTXファイルの生成に失敗しました');
       }
 
-      const result = await response.json();
       console.log('PPTX generation result:', result);
 
-      // 方法1: Supabase URLから直接ダウンロード（現在の実装）
+      // ダウンロード処理
       if (result.downloadUrl) {
         // ブラウザがCORSを処理できる場合は直接ダウンロード
         try {
@@ -79,7 +72,7 @@ export function EditorScreen({ data, onBack, historyId }: EditorScreenProps) {
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'translated_presentation.pptx';
+            a.download = result.fileName || 'translated_presentation.pptx';
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -87,47 +80,50 @@ export function EditorScreen({ data, onBack, historyId }: EditorScreenProps) {
             
             // 履歴を更新（ダウンロード完了）
             if (historyId) {
-              updateHistoryItem(historyId, {
+              await updateHistoryItem(historyId, {
                 status: 'downloaded',
                 translatedFileUrl: result.downloadUrl,
               });
             }
             
             // 成功通知
-            alert('翻訳版のPPTXファイルをダウンロードしました！');
+            showToast('翻訳版のPPTXファイルをダウンロードしました', 'success');
             return;
           }
         } catch (corsError) {
           console.log('Direct download failed, trying fallback method...', corsError);
         }
         
-        // 方法2: CORS エラーの場合はリンククリックでダウンロード
+        // CORS エラーの場合はリンククリックでダウンロード
         const downloadLink = document.createElement('a');
         downloadLink.href = result.downloadUrl;
-        downloadLink.download = 'translated_presentation.pptx';
-        downloadLink.target = '_blank'; // 新しいタブで開く
+        downloadLink.download = result.fileName || 'translated_presentation.pptx';
+        downloadLink.target = '_blank';
         document.body.appendChild(downloadLink);
         downloadLink.click();
         document.body.removeChild(downloadLink);
         
         // 履歴を更新（ダウンロード完了）
         if (historyId) {
-          updateHistoryItem(historyId, {
+          await updateHistoryItem(historyId, {
             status: 'downloaded',
             translatedFileUrl: result.downloadUrl,
           });
         }
         
-        alert('翻訳版のPPTXファイルをダウンロードしました！');
+        showToast('翻訳版のPPTXファイルをダウンロードしました', 'success');
       } else {
         throw new Error('ダウンロードURLが取得できませんでした');
       }
       
     } catch (error) {
       console.error('Download error:', error);
-      alert(`ダウンロードに失敗しました: ${error instanceof Error ? error.message : '不明なエラー'}`);
+      showToast(
+        `ダウンロードに失敗しました: ${error instanceof Error ? error.message : '不明なエラー'}`,
+        'error'
+      );
     } finally {
-      setIsSaving(false);
+      _setIsSaving(false);
     }
   };
 
@@ -290,13 +286,13 @@ export function EditorScreen({ data, onBack, historyId }: EditorScreenProps) {
                       key={text.id}
                       className={`p-4 border rounded-lg transition-all duration-200 cursor-pointer ${
                         isEditing === text.id
-                          ? 'border-blue-500 bg-blue-50 shadow-md'
-                          : 'border-slate-200 hover:border-slate-300 bg-white'
+                          ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-md'
+                          : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 bg-white dark:bg-slate-800'
                       }`}
                       onClick={() => setIsEditing(text.id)}
                     >
                       <div className="mb-2">
-                        <label className="text-sm font-medium text-slate-600">
+                        <label className="text-sm font-medium text-slate-600 dark:text-slate-400">
                           元のテキスト #{index + 1}
                         </label>
                         <div className="mt-1 p-2 bg-slate-50 dark:bg-slate-700 rounded-lg text-sm text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-600">
@@ -305,7 +301,7 @@ export function EditorScreen({ data, onBack, historyId }: EditorScreenProps) {
                       </div>
                       
                       <div>
-                        <label className="text-sm font-medium text-slate-600">
+                        <label className="text-sm font-medium text-slate-600 dark:text-slate-400">
                           翻訳テキスト
                         </label>
                         {isEditing === text.id ? (
@@ -333,7 +329,7 @@ export function EditorScreen({ data, onBack, historyId }: EditorScreenProps) {
                                   handleTextEdit(selectedSlide, text.id, text.original);
                                   setIsEditing(null);
                                 }}
-                                className="px-3 py-1 bg-slate-100 text-slate-700 text-sm rounded-lg hover:bg-slate-200 transition-all duration-200 font-medium"
+                                className="px-3 py-1 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-sm rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 transition-all duration-200 font-medium"
                               >
                                 リセット
                               </button>

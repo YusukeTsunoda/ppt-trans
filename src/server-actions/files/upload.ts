@@ -16,6 +16,8 @@ import { join } from 'path';
 import { spawn } from 'child_process';
 import type { SlideData } from '@/types';
 import { setUploadProgressAction, updateUploadStepAction } from './upload-progress';
+import { withRetry } from '@/lib/utils/retry';
+import { TimeoutConfig, adjustTimeoutForFileSize } from '@/lib/config/timeout';
 
 export interface UploadState {
   success: boolean;
@@ -195,16 +197,30 @@ export async function uploadPptxAction(
           });
         }
         
-        // ファイルアップロード
-        const { error: uploadError } = await supabase.storage
-          .from('pptx-files')
-          .upload(originalFileName, fileBuffer, {
-            contentType: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-            upsert: true
-          });
+        // ファイルアップロード（リトライ機能付き）
+        const { error: uploadError } = await withRetry(
+          async () => supabase.storage
+            .from('pptx-files')
+            .upload(originalFileName, fileBuffer, {
+              contentType: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+              upsert: true
+            }),
+          {
+            maxRetries: 3,
+            delay: 2000,
+            onRetry: (attempt, error) => {
+              logger.warn('Supabase upload retry', {
+                attempt,
+                error: error.message,
+                fileName: file.name,
+                fileSize: fileBuffer.length
+              });
+            }
+          }
+        );
         
         if (uploadError) {
-          logger.error('Supabase upload error', uploadError);
+          logger.error('Supabase upload error after retries', uploadError);
           originalFileUrl = `/tmp/${tempId}/input.pptx`; // フォールバック
         } else {
           const { data } = supabase.storage
@@ -223,18 +239,55 @@ export async function uploadPptxAction(
     
     await updateUploadStepAction(uploadId, 'ファイル保存', 'completed');
     
-    // Pythonスクリプトで処理
+    // Pythonスクリプトで処理（タイムアウト付き）
     await updateUploadStepAction(uploadId, 'PPTX処理', 'in_progress');
     await setUploadProgressAction(uploadId, {
       status: 'processing',
       message: 'PPTXファイルを処理中...'
     });
-    const processingResult = await processPptxWithPython(tempPptxPath, tempDir, tempId);
+    
+    // ファイルサイズに応じてタイムアウトを調整
+    const processingTimeout = adjustTimeoutForFileSize(
+      TimeoutConfig.processing.imageConversion,
+      fileBuffer.length
+    );
+    
+    const processingResult = await processPptxWithPython(
+      tempPptxPath,
+      tempDir,
+      tempId,
+      processingTimeout
+    );
     
     await updateUploadStepAction(uploadId, 'PPTX処理', 'completed');
     
     // データベースに保存
     await updateUploadStepAction(uploadId, 'データベース記録', 'in_progress');
+    
+    // ユーザーが存在するか確認
+    const existingUser = await prisma.user.findUnique({
+      where: { id: session.user.id }
+    });
+    
+    if (!existingUser) {
+      logger.error('User not found in database', { 
+        sessionUserId: session.user.id,
+        sessionEmail: session.user.email 
+      });
+      
+      // セッションのemailでユーザーを検索
+      const userByEmail = await prisma.user.findUnique({
+        where: { email: session.user.email || '' }
+      });
+      
+      if (!userByEmail) {
+        throw new Error('ユーザーが見つかりません。再度ログインしてください。');
+      }
+      
+      // emailで見つかったユーザーのIDを使用
+      session.user.id = userByEmail.id;
+    }
+    
     const fileRecord = await prisma.file.create({
       data: {
         userId: session.user.id,
@@ -344,12 +397,28 @@ export async function uploadPptxAction(
 async function processPptxWithPython(
   pptxPath: string,
   tempDir: string,
-  tempId: string
+  tempId: string,
+  timeoutMs: number = 60000
 ): Promise<{ slides: SlideData[] }> {
   return new Promise((resolve, reject) => {
     const pythonScriptPath = join(process.cwd(), 'scripts', 'process_pptx.py');
     
-    const pythonProcess = spawn('uv', ['run', 'python', pythonScriptPath, pptxPath, tempDir, tempId], {
+    // pythonコマンドを決定（uvが利用可能ならuv run python、なければpython3）
+    let pythonCommand = 'python3';
+    let pythonArgs = [pythonScriptPath, pptxPath, tempDir, tempId];
+    
+    // uvコマンドが利用可能か確認
+    try {
+      const { execSync } = require('child_process'); // eslint-disable-line @typescript-eslint/no-require-imports
+      execSync('which uv', { stdio: 'ignore' });
+      pythonCommand = 'uv';
+      pythonArgs = ['run', 'python', ...pythonArgs];
+    } catch {
+      // uvが利用できない場合はpython3を使用
+      logger.info('uv not found, using python3 directly');
+    }
+    
+    const pythonProcess = spawn(pythonCommand, pythonArgs, {
       cwd: process.cwd(),
       env: {
         ...process.env,
@@ -360,6 +429,7 @@ async function processPptxWithPython(
     
     let stdout = '';
     let stderr = '';
+    let processKilled = false;
     
     pythonProcess.stdout.on('data', (data) => {
       stdout += data.toString();
@@ -367,10 +437,24 @@ async function processPptxWithPython(
     
     pythonProcess.stderr.on('data', (data) => {
       stderr += data.toString();
+      // 進捗情報をログ出力
+      if (stderr.includes('Processing slide')) {
+        logger.info('Python processing progress', { message: stderr });
+      }
     });
     
     pythonProcess.on('close', (code) => {
+      if (processKilled) {
+        return; // タイムアウトで既に処理済み
+      }
+      
       if (code !== 0) {
+        logger.error('Python process failed', {
+          code,
+          stderr,
+          stdout,
+          scriptPath: pythonScriptPath
+        });
         reject(new Error(`Python process exited with code ${code}: ${stderr}`));
         return;
       }
@@ -384,14 +468,35 @@ async function processPptxWithPython(
     });
     
     pythonProcess.on('error', (error) => {
-      reject(new Error(`Failed to start Python process: ${error.message}`));
+      if (!processKilled) {
+        logger.error('Python process error', { 
+          error: error.message,
+          scriptPath: pythonScriptPath,
+          cwd: process.cwd()
+        });
+        reject(new Error(`Failed to start Python process: ${error.message}`));
+      }
     });
     
-    // タイムアウト設定（60秒）
-    setTimeout(() => {
+    // タイムアウト設定（動的）
+    const timeoutId = setTimeout(() => {
+      processKilled = true;
       pythonProcess.kill('SIGTERM');
-      reject(new Error('Python processing timeout'));
-    }, 60000);
+      
+      // 強制終了が必要な場合
+      setTimeout(() => {
+        if (!pythonProcess.killed) {
+          pythonProcess.kill('SIGKILL');
+        }
+      }, 5000);
+      
+      reject(new Error(`Python processing timeout after ${timeoutMs}ms`));
+    }, timeoutMs);
+    
+    // プロセスが正常終了したらタイムアウトをクリア
+    pythonProcess.on('exit', () => {
+      clearTimeout(timeoutId);
+    });
   });
 }
 
