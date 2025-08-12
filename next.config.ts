@@ -105,13 +105,16 @@ const nextConfig: NextConfig = {
 
   // 実験的機能
   experimental: {
-    optimizeCss: true, // CSS最適化
+    // optimizeCss: true, // CSS最適化 - 一時的に無効化（CSS表示問題の対処）
     scrollRestoration: true, // スクロール位置の復元
-    serverActions: {
-      bodySizeLimit: '10mb', // Server Actionのボディサイズ制限
-      allowedOrigins: ['localhost:3000'], // 許可されたオリジン
-    },
+    // serverActions: {
+    //   bodySizeLimit: '2mb',
+    // },
   },
+
+  // Server Action安定化設定
+  serverExternalPackages: [],
+  skipTrailingSlashRedirect: true,
 
   // コンパイラー設定
   compiler: {

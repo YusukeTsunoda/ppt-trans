@@ -1,28 +1,40 @@
 'use client';
 
-import { registerAction } from '@/server-actions/auth/register';
-import { useFormStatus } from 'react-dom';
-import { useActionState } from 'react';
+import { useActionState, useEffect } from 'react';
 import Link from 'next/link';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { useRouter } from 'next/navigation';
+import { registerAction } from '@/lib/server-actions/auth/register';
+import { createInitialState } from '@/lib/server-actions/types';
 
 function SubmitButton() {
-  const { pending } = useFormStatus();
-  
   return (
     <button
       type="submit"
-      disabled={pending}
-      className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+      className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
     >
-      {pending ? '登録中...' : '新規登録'}
+      新規登録
     </button>
   );
 }
 
 export default function RegisterPage() {
-  const [state, formAction] = useActionState(registerAction, null);
-  
+  const router = useRouter();
+  const [state, formAction, pending] = useActionState(
+    registerAction,
+    createInitialState()
+  );
+
+  // 登録成功時のリダイレクト処理
+  useEffect(() => {
+    if (state.success && state.data?.userId) {
+      // 成功メッセージを表示してからリダイレクト
+      setTimeout(() => {
+        router.push('/login?registered=true');
+      }, 1500);
+    }
+  }, [state.success, state.data, router]);
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
       <div className="absolute top-4 right-4">
@@ -43,14 +55,43 @@ export default function RegisterPage() {
         </div>
 
         <form action={formAction} className="mt-8 space-y-6">
-          {/* エラーメッセージ */}
-          {state?.error && (
-            <div className="rounded-md bg-red-50 dark:bg-red-900/20 p-4">
-              <p className="text-sm text-red-800 dark:text-red-400">{state.error}</p>
+          {/* 成功メッセージ */}
+          {state.success && state.message && (
+            <div className="rounded-md bg-green-50 dark:bg-green-900/20 p-4">
+              <p className="text-sm text-green-800 dark:text-green-400">
+                {state.message}
+              </p>
             </div>
           )}
 
+          {/* エラーメッセージ（全体） */}
+          {!state.success && state.message && (
+            <div className="rounded-md bg-red-50 dark:bg-red-900/20 p-4">
+              <p className="text-sm text-red-800 dark:text-red-400">
+                {state.message}
+              </p>
+            </div>
+          )}
+
+          {/* フォームエラー */}
+          {!state.success && state.message && (
+            <div className="rounded-md bg-red-50 dark:bg-red-900/20 p-4">
+              <p className="text-sm text-red-800 dark:text-red-400">
+                {state.message}
+              </p>
+            </div>
+          )}
+
+
+
+
+
+
+
+
+
           <div className="space-y-4">
+            {/* メールアドレス */}
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 メールアドレス
@@ -61,36 +102,34 @@ export default function RegisterPage() {
                 type="email"
                 autoComplete="email"
                 required
+                disabled={pending}
                 className={`mt-1 appearance-none relative block w-full px-3 py-2 border ${
-                  state?.fieldErrors?.email ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-                } placeholder-gray-500 dark:placeholder-gray-400 text-foreground rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm bg-background`}
+                  'border-gray-300 dark:border-gray-600'
+                } placeholder-gray-500 dark:placeholder-gray-400 text-foreground rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm bg-background disabled:opacity-50`}
                 placeholder="your@email.com"
               />
-              {state?.fieldErrors?.email && (
-                <p className="mt-1 text-sm text-red-600 dark:text-red-400">{state.fieldErrors.email}</p>
-              )}
             </div>
 
+            {/* 名前 */}
             <div>
-              <label htmlFor="username" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                ユーザー名
+              <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                お名前
               </label>
               <input
-                id="username"
-                name="username"
+                id="name"
+                name="name"
                 type="text"
-                autoComplete="username"
+                autoComplete="name"
                 required
+                disabled={pending}
                 className={`mt-1 appearance-none relative block w-full px-3 py-2 border ${
-                  state?.fieldErrors?.name ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-                } placeholder-gray-500 dark:placeholder-gray-400 text-foreground rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm bg-background`}
-                placeholder="ユーザー名"
+                  'border-gray-300 dark:border-gray-600'
+                } placeholder-gray-500 dark:placeholder-gray-400 text-foreground rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm bg-background disabled:opacity-50`}
+                placeholder="山田 太郎"
               />
-              {state?.fieldErrors?.name && (
-                <p className="mt-1 text-sm text-red-600 dark:text-red-400">{state.fieldErrors.name}</p>
-              )}
             </div>
 
+            {/* パスワード */}
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 パスワード
@@ -101,19 +140,18 @@ export default function RegisterPage() {
                 type="password"
                 autoComplete="new-password"
                 required
+                disabled={pending}
                 className={`mt-1 appearance-none relative block w-full px-3 py-2 border ${
-                  state?.fieldErrors?.password ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-                } placeholder-gray-500 dark:placeholder-gray-400 text-foreground rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm bg-background`}
+                  'border-gray-300 dark:border-gray-600'
+                } placeholder-gray-500 dark:placeholder-gray-400 text-foreground rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm bg-background disabled:opacity-50`}
                 placeholder="8文字以上"
               />
-              {state?.fieldErrors?.password && (
-                <p className="mt-1 text-sm text-red-600 dark:text-red-400">{state.fieldErrors.password}</p>
-              )}
               <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                大文字、小文字、数字、特殊文字を含む8文字以上
+                大文字、小文字、数字を含む8文字以上
               </p>
             </div>
 
+            {/* パスワード確認 */}
             <div>
               <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 パスワード（確認）
@@ -124,42 +162,65 @@ export default function RegisterPage() {
                 type="password"
                 autoComplete="new-password"
                 required
+                disabled={pending}
                 className={`mt-1 appearance-none relative block w-full px-3 py-2 border ${
-                  state?.fieldErrors?.confirmPassword ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-                } placeholder-gray-500 dark:placeholder-gray-400 text-foreground rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm bg-background`}
+                  'border-gray-300 dark:border-gray-600'
+                } placeholder-gray-500 dark:placeholder-gray-400 text-foreground rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm bg-background disabled:opacity-50`}
                 placeholder="パスワードを再入力"
               />
-              {state?.fieldErrors?.confirmPassword && (
-                <p className="mt-1 text-sm text-red-600 dark:text-red-400">{state.fieldErrors.confirmPassword}</p>
-              )}
             </div>
           </div>
 
-          <div className="flex items-center">
+          {/* 利用規約 */}
+          <div className="flex items-start">
             <input
-              id="terms"
-              name="terms"
+              id="acceptTerms"
+              name="acceptTerms"
               type="checkbox"
               required
-              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              disabled={pending}
+              className="h-4 w-4 mt-1 text-blue-600 focus:ring-blue-500 border-gray-300 rounded disabled:opacity-50"
             />
-            <label htmlFor="terms" className="ml-2 block text-sm text-gray-900 dark:text-gray-300">
-              <Link href="/terms" className="text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300">
+            <label htmlFor="acceptTerms" className="ml-2 block text-sm text-gray-900 dark:text-gray-300">
+              <Link href="/terms" className="text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 underline">
                 利用規約
               </Link>
               と
-              <Link href="/privacy" className="text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300">
+              <Link href="/privacy" className="text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 underline">
                 プライバシーポリシー
               </Link>
               に同意します
             </label>
           </div>
-          {state?.fieldErrors?.terms && (
-            <p className="text-sm text-red-600 dark:text-red-400">{state.fieldErrors.terms}</p>
-          )}
 
+          {/* 送信ボタン */}
           <div>
-            <SubmitButton />
+            {pending ? (
+              <button
+                type="button"
+                disabled
+                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-gray-400 cursor-not-allowed"
+              >
+                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                登録処理中...
+              </button>
+            ) : (
+              <SubmitButton />
+            )}
+          </div>
+
+          {/* ログインリンク */}
+          <div className="text-center">
+            <span className="text-sm text-gray-600 dark:text-gray-400">
+              既にアカウントをお持ちの方は
+            </span>
+            {' '}
+            <Link href="/login" className="text-sm font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300">
+              こちらからログイン
+            </Link>
           </div>
         </form>
       </div>

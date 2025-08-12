@@ -1,6 +1,7 @@
 import { AppError } from '@/lib/errors/AppError';
 import { ErrorCodes } from '@/lib/errors/ErrorCodes';
 import logger from '@/lib/logger';
+import { ApiClient } from '@/lib/api/ApiClient';
 
 export interface TranslationChunk {
   id: string;
@@ -48,8 +49,8 @@ export class TranslationManager {
   ): Promise<TranslationResult> {
     const {
       model = 'claude-3-haiku-20240307',
-      targetLanguage = 'Japanese',
-      sourceLanguage = 'English',
+      targetLanguage,
+      sourceLanguage,
       batchSize = this.DEFAULT_BATCH_SIZE,
       maxRetries = this.DEFAULT_MAX_RETRIES,
       retryDelay = this.DEFAULT_RETRY_DELAY,
@@ -59,10 +60,22 @@ export class TranslationManager {
       signal
     } = options;
 
+    // 言語パラメータの検証
+    if (!targetLanguage || !sourceLanguage) {
+      throw new AppError(
+        'Source and target languages are required',
+        ErrorCodes.VALIDATION_REQUIRED_FIELD,
+        400,
+        false,
+        '翻訳元言語と翻訳先言語を指定してください'
+      );
+    }
+
     logger.info('Starting translation with partial retry', {
       totalChunks: chunks.length,
       batchSize,
       model,
+      sourceLanguage,
       targetLanguage
     });
 
@@ -225,10 +238,17 @@ export class TranslationManager {
   ): Promise<string> {
     const { model, targetLanguage, sourceLanguage, slideNumber } = options;
 
-    const systemPrompt = `You are a professional translator. Translate the following text from ${sourceLanguage} to ${targetLanguage}. 
+    const effectiveSourceLanguage = (!sourceLanguage || sourceLanguage === 'auto') 
+      ? 'the source language (auto-detect)' 
+      : sourceLanguage;
+    
+    const systemPrompt = `You are a professional translator. Translate the following text from ${effectiveSourceLanguage} to ${targetLanguage}. 
+${(!sourceLanguage || sourceLanguage === 'auto') ? 'Automatically detect the source language.' : ''}
 Maintain the original formatting and style. This is slide ${slideNumber ? `#${slideNumber}` : 'content'} from a presentation.`;
 
-    const response = await fetch('/api/translate', {
+    const apiClient = new ApiClient();
+    const response = await apiClient.request<{ translatedText: string }>({
+      url: '/api/translate',
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -240,13 +260,14 @@ Maintain the original formatting and style. This is slide ${slideNumber ? `#${sl
         targetLanguage,
         sourceLanguage,
         systemPrompt
-      })
+      }),
+      retries: 3,
+      timeout: 120000, // 2分
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new AppError(
-        `Translation API error: ${errorText}`,
+    if (!response.data) {
+      throw response.error || new AppError(
+        'Translation API error',
         ErrorCodes.TRANSLATION_API_ERROR,
         response.status,
         true,
@@ -255,8 +276,7 @@ Maintain the original formatting and style. This is slide ${slideNumber ? `#${sl
       );
     }
 
-    const result = await response.json();
-    return result.translatedText;
+    return response.data.translatedText;
   }
 
   /**
@@ -273,9 +293,20 @@ Maintain the original formatting and style. This is slide ${slideNumber ? `#${sl
   ): Promise<string[]> {
     const {
       model = 'claude-3-haiku-20240307',
-      targetLanguage = 'Japanese',
-      sourceLanguage = 'English'
+      targetLanguage,
+      sourceLanguage
     } = options;
+
+    // 言語パラメータの検証
+    if (!targetLanguage || !sourceLanguage) {
+      throw new AppError(
+        'Source and target languages are required',
+        ErrorCodes.VALIDATION_REQUIRED_FIELD,
+        400,
+        false,
+        '翻訳元言語と翻訳先言語を指定してください'
+      );
+    }
 
     const batchPrompt = texts.map((text, index) => 
       `[TEXT_${index}]\n${text}\n[/TEXT_${index}]`
@@ -285,7 +316,9 @@ Maintain the original formatting and style. This is slide ${slideNumber ? `#${sl
 Return the translations in the same format with [TRANSLATION_N] tags.`;
 
     try {
-      const response = await fetch('/api/translate', {
+      const apiClient = new ApiClient();
+      const response = await apiClient.request<{ translatedText: string }>({
+        url: '/api/translate',
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -298,18 +331,20 @@ Return the translations in the same format with [TRANSLATION_N] tags.`;
           sourceLanguage,
           systemPrompt,
           isBatch: true
-        })
+        }),
+        retries: 3,
+        timeout: 180000, // 3分（バッチ処理用）
       });
 
-      if (!response.ok) {
-        throw new AppError(
+      if (!response.data) {
+        throw response.error || new AppError(
           'Batch translation failed',
           ErrorCodes.TRANSLATION_API_ERROR,
           response.status
         );
       }
 
-      const result = await response.json();
+      const result = response.data;
       
       // バッチ応答をパース
       const translations = this.parseBatchResponse(result.translatedText, texts.length);
@@ -403,7 +438,7 @@ Return the translations in the same format with [TRANSLATION_N] tags.`;
   static validateTranslation(
     original: string,
     translated: string,
-    targetLanguage: string
+    targetLanguage?: string
   ): boolean {
     // 翻訳が空でないか
     if (!translated || translated.trim().length === 0) {
@@ -419,8 +454,8 @@ Return the translations in the same format with [TRANSLATION_N] tags.`;
       return false;
     }
 
-    // 翻訳が極端に短くないか
-    if (translated.length < original.length * 0.2) {
+    // 翻訳が極端に短くないか（言語によって長さの比率は異なるため、緩めの基準）
+    if (translated.length < original.length * 0.1) {
       logger.warn('Translation suspiciously short', {
         originalLength: original.length,
         translatedLength: translated.length

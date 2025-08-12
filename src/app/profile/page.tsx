@@ -2,7 +2,7 @@ import { Suspense } from 'react';
 import { redirect } from 'next/navigation';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { getProfile } from '@/server-actions/profile/get';
+import { getProfile } from '@/lib/server-actions/profile/get';
 import ProfileClient from './ProfileClient';
 
 async function ProfileServer() {
@@ -12,7 +12,15 @@ async function ProfileServer() {
     redirect('/login');
   }
 
-  const profileResult = await getProfile();
+  // Server ActionはFormDataと初期状態を期待
+  const formData = new FormData();
+  const initialState = {
+    success: false,
+    message: '',
+    timestamp: Date.now()
+  };
+  
+  const profileResult = await getProfile(initialState, formData);
   
   if (!profileResult.success || !profileResult.data) {
     return (

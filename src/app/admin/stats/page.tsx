@@ -1,7 +1,7 @@
 import { Suspense } from 'react';
 import { redirect } from 'next/navigation';
-import { getCurrentUser } from '@/server-actions/admin/auth';
-import { getDashboardStats, getUserStats, getFileStats } from '@/server-actions/admin/stats';
+import { getCurrentUser } from '@/lib/server-actions/admin/auth';
+import { getDashboardStats, getUserStats, getFileStats } from '@/lib/server-actions/admin/stats';
 import AdminStatsClient from './AdminStatsClient';
 
 async function AdminStatsServer() {
@@ -13,9 +13,9 @@ async function AdminStatsServer() {
 
   // 並列でデータを取得
   const [dashboardStats, userStats, fileStats] = await Promise.all([
-    getDashboardStats({ period: 'month' }),
-    getUserStats({ period: 'month' }),
-    getFileStats({ period: 'month' }),
+    getDashboardStats(),
+    getUserStats(),
+    getFileStats(),
   ]);
 
   return (
