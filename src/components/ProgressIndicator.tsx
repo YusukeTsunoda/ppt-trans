@@ -45,7 +45,7 @@ export function ProgressIndicator({
   const getStatusColor = () => {
     switch (status) {
       case 'completed':
-        return 'bg-green-600';
+        return 'bg-accent-600';
       case 'error':
         return 'bg-red-600';
       case 'processing':
@@ -131,7 +131,7 @@ export function ProgressIndicator({
                   step.status === 'in_progress'
                     ? 'text-blue-600 dark:text-blue-400 font-medium'
                     : step.status === 'completed'
-                    ? 'text-green-600 dark:text-green-400'
+                    ? 'text-accent-600 dark:text-accent-400'
                     : step.status === 'failed'
                     ? 'text-red-600 dark:text-red-400'
                     : 'text-slate-500 dark:text-slate-400'
@@ -165,10 +165,10 @@ export function ProgressIndicator({
 
       {/* 成功メッセージ */}
       {status === 'completed' && (
-        <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-lg p-3">
+        <div className="bg-accent-50 dark:bg-accent-900/20 border border-accent-200 dark:border-accent-700 rounded-lg p-3">
           <div className="flex items-center gap-2">
-            <span className="text-green-600 dark:text-green-400">✅</span>
-            <p className="text-sm text-green-700 dark:text-green-300">
+            <span className="text-accent-600 dark:text-accent-400">✅</span>
+            <p className="text-sm text-accent-700 dark:text-accent-300">
               処理が完了しました
             </p>
           </div>

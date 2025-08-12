@@ -248,7 +248,7 @@ export function DownloadButton({
             ? 'bg-green-600 text-white cursor-not-allowed opacity-75'
             : generation.status === 'failed'
             ? 'bg-orange-600 hover:bg-orange-700 text-white'
-            : 'bg-blue-600 hover:bg-blue-700 text-white'
+            : 'bg-primary-600 hover:bg-primary-700 text-white'
         } ${className}`}
       >
         {isProcessing ? 'キャンセル' : getButtonContent()}
@@ -257,13 +257,13 @@ export function DownloadButton({
       {/* プログレスバー */}
       {isProcessing && (
         <div className="w-full">
-          <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-1">
+          <div className="flex justify-between text-sm text-secondary-600 dark:text-secondary-400 mb-1">
             <span>{generation.message}</span>
             <span>{generation.progress}%</span>
           </div>
-          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+          <div className="w-full bg-secondary-200 dark:bg-secondary-700 rounded-full h-2 overflow-hidden">
             <div
-              className="bg-blue-600 h-full rounded-full transition-all duration-300 ease-out"
+              className="bg-primary-600 h-full rounded-full transition-all duration-300 ease-out"
               style={{ width: `${generation.progress}%` }}
             />
           </div>

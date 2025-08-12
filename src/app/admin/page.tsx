@@ -19,6 +19,11 @@ async function AdminDashboardServer() {
     getAuditLogs(),
   ]);
 
+  // デバッグ用ログ
+  console.log('Admin Dashboard - Stats Result:', statsResult);
+  console.log('Admin Dashboard - Users Result:', usersResult);
+  console.log('Admin Dashboard - Audit Logs Result:', auditLogsResult);
+
   return (
     <AdminDashboardClient
       initialStats={statsResult.success ? statsResult.data : null}

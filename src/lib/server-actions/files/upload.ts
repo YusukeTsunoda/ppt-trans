@@ -10,10 +10,13 @@ import { v4 as uuidv4 } from 'uuid';
 // FileUploadManagerは将来的に大容量ファイルのチャンクアップロードに使用可能
 // import { FileUploadManager } from '@/lib/upload/FileUploadManager';
 import { GenerationStatusManager } from '@/lib/generation/GenerationStatusManager';
+import { logActivity } from '@/lib/activity-logger';
+import { getServerSession } from 'next-auth';
 
 const execAsync = promisify(exec);
 
 export interface UploadResult {
+  fileId: string;  // 追加: ファイルの一意識別子
   fileName: string;
   slides: Array<{
     pageNumber: number;
@@ -144,6 +147,7 @@ export async function uploadPptxAction(
         const mockResult = {
           success: true,
           data: {
+            fileId: tempId,  // 追加: ファイルID
             fileName: file.name,
             slides: mockSlides,
             totalSlides: mockSlides.length,
@@ -208,9 +212,30 @@ export async function uploadPptxAction(
         jobId,
       });
 
+      // アクティビティログを記録
+      try {
+        const session = await getServerSession();
+        if (session?.user?.id) {
+          await logActivity({
+            userId: session.user.id,
+            action: 'FILE_UPLOAD',
+            targetType: 'file',
+            targetId: tempId,
+            metadata: {
+              fileName: file.name,
+              fileSize: file.size,
+              slideCount: processedSlides.length,
+            },
+          });
+        }
+      } catch (logError) {
+        logger.error('Failed to log activity', logError);
+      }
+
       const successResult = {
         success: true,
         data: {
+          fileId: tempId,  // 追加: ファイルID
           fileName: file.name,
           slides: processedSlides,
           totalSlides: result.totalSlides || processedSlides.length,

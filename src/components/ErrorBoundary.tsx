@@ -260,12 +260,12 @@ export class ErrorBoundary extends Component<Props, State> {
                   {errorDetails.title}
                 </h2>
                 
-                <p className="text-gray-700 dark:text-gray-300 mb-4">
+                <p className="text-secondary-700 dark:text-secondary-300 mb-4">
                   {errorDetails.description}
                 </p>
 
                 {/* エラーコードとID表示 */}
-                <div className="flex gap-4 text-sm text-gray-600 dark:text-gray-400 mb-4">
+                <div className="flex gap-4 text-sm text-secondary-600 dark:text-secondary-400 mb-4">
                   <span>エラーコード: <code className="font-mono">{errorDetails.code}</code></span>
                   {this.state.errorId && (
                     <span>エラーID: <code className="font-mono">{this.state.errorId}</code></span>
@@ -274,11 +274,11 @@ export class ErrorBoundary extends Component<Props, State> {
 
                 {/* リカバリー提案 */}
                 {errorDetails.recovery && (
-                  <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-950 rounded-lg">
-                    <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-1">
+                  <div className="mb-4 p-3 bg-primary-50 dark:bg-primary-950 rounded-lg">
+                    <h3 className="text-sm font-semibold text-primary-900 dark:text-primary-100 mb-1">
                       解決方法:
                     </h3>
-                    <p className="text-sm text-blue-700 dark:text-blue-300">
+                    <p className="text-sm text-primary-700 dark:text-primary-300">
                       {errorDetails.recovery}
                     </p>
                   </div>
@@ -287,16 +287,16 @@ export class ErrorBoundary extends Component<Props, State> {
                 {/* エラー詳細（開発環境または明示的に有効な場合） */}
                 {showDetails && this.state.error && (
                   <details className="mb-4">
-                    <summary className="cursor-pointer text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">
+                    <summary className="cursor-pointer text-sm text-secondary-600 dark:text-secondary-400 hover:text-secondary-800 dark:hover:text-secondary-200">
                       技術的な詳細を表示
                     </summary>
-                    <div className="mt-2 p-4 bg-gray-100 dark:bg-gray-900 rounded-lg overflow-auto">
+                    <div className="mt-2 p-4 bg-secondary-100 dark:bg-secondary-900 rounded-lg overflow-auto">
                       {this.state.error instanceof AppError && (
                         <div className="mb-3">
-                          <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                          <p className="text-xs font-semibold text-secondary-700 dark:text-secondary-300 mb-1">
                             メタデータ:
                           </p>
-                          <pre className="text-xs text-gray-600 dark:text-gray-400">
+                          <pre className="text-xs text-secondary-600 dark:text-secondary-400">
                             {JSON.stringify(this.state.error.metadata, null, 2)}
                           </pre>
                         </div>
@@ -305,16 +305,16 @@ export class ErrorBoundary extends Component<Props, State> {
                         {this.state.error.message}
                       </p>
                       {this.state.error.stack && (
-                        <pre className="text-xs text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                        <pre className="text-xs text-secondary-700 dark:text-secondary-300 whitespace-pre-wrap">
                           {this.state.error.stack}
                         </pre>
                       )}
                       {this.state.errorInfo?.componentStack && (
                         <div className="mt-4">
-                          <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                          <p className="text-sm font-semibold text-secondary-700 dark:text-secondary-300 mb-1">
                             Component Stack:
                           </p>
-                          <pre className="text-xs text-gray-600 dark:text-gray-400 whitespace-pre-wrap">
+                          <pre className="text-xs text-secondary-600 dark:text-secondary-400 whitespace-pre-wrap">
                             {this.state.errorInfo.componentStack}
                           </pre>
                         </div>
@@ -327,7 +327,7 @@ export class ErrorBoundary extends Component<Props, State> {
                   {errorDetails.isRetryable && (
                     <button
                       onClick={this.handleReset}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                       disabled={this.state.resetCount >= 3}
                     >
                       {this.state.resetCount > 0 ? `再試行 (${this.state.resetCount}/3)` : '再試行'}
@@ -336,7 +336,7 @@ export class ErrorBoundary extends Component<Props, State> {
                   
                   <button
                     onClick={() => window.location.href = '/'}
-                    className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-200"
+                    className="px-4 py-2 bg-secondary-200 dark:bg-secondary-700 text-secondary-800 dark:text-secondary-200 rounded-lg hover:bg-secondary-300 dark:hover:bg-secondary-600 transition-colors duration-200"
                   >
                     ホームに戻る
                   </button>

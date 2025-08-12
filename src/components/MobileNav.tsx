@@ -38,13 +38,13 @@ export function MobileNav() {
         aria-label="メニューを開く"
       >
         <div className="w-6 h-5 relative flex flex-col justify-between">
-          <span className={`block h-0.5 w-full bg-gray-800 dark:bg-gray-200 transform transition-all duration-300 ${
+          <span className={`block h-0.5 w-full bg-secondary-800 dark:bg-secondary-200 transform transition-all duration-300 ${
             isOpen ? 'rotate-45 translate-y-2' : ''
           }`} />
-          <span className={`block h-0.5 w-full bg-gray-800 dark:bg-gray-200 transition-all duration-300 ${
+          <span className={`block h-0.5 w-full bg-secondary-800 dark:bg-secondary-200 transition-all duration-300 ${
             isOpen ? 'opacity-0' : ''
           }`} />
-          <span className={`block h-0.5 w-full bg-gray-800 dark:bg-gray-200 transform transition-all duration-300 ${
+          <span className={`block h-0.5 w-full bg-secondary-800 dark:bg-secondary-200 transform transition-all duration-300 ${
             isOpen ? '-rotate-45 -translate-y-2' : ''
           }`} />
         </div>
@@ -66,17 +66,17 @@ export function MobileNav() {
       `}>
         <div className="flex flex-col h-full">
           {/* ヘッダー */}
-          <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+          <div className="p-6 border-b border-secondary-200 dark:border-secondary-700">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200">
+              <h2 className="text-xl font-bold text-secondary-800 dark:text-gray-200">
                 メニュー
               </h2>
               <button
                 onClick={closeMenu}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                className="p-2 hover:bg-secondary-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
                 aria-label="メニューを閉じる"
               >
-                <svg className="w-6 h-6 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-6 h-6 text-secondary-600 dark:text-secondary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
@@ -85,14 +85,14 @@ export function MobileNav() {
             {/* ユーザー情報 */}
             {session?.user && (
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold">
+                <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold">
                   {session.user.name?.[0] || session.user.email?.[0] || 'U'}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                  <p className="text-sm font-medium text-secondary-900 dark:text-secondary-100 truncate">
                     {session.user.name || session.user.email}
                   </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                  <p className="text-xs text-secondary-500 dark:text-secondary-400">
                     {session.user.role || 'ユーザー'}
                   </p>
                 </div>
@@ -116,15 +116,15 @@ export function MobileNav() {
                       className={`
                         flex items-center gap-3 px-4 py-3 rounded-lg transition-colors
                         ${isActive(item.href)
-                          ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
-                          : 'hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-700 dark:text-gray-300'
+                          ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400'
+                          : 'hover:bg-secondary-100 dark:hover:bg-slate-800 text-secondary-700 dark:text-secondary-300'
                         }
                       `}
                     >
                       <span className="text-xl">{item.icon}</span>
                       <span className="font-medium">{item.label}</span>
                       {isActive(item.href) && (
-                        <span className="ml-auto w-1 h-6 bg-blue-600 dark:bg-blue-400 rounded-full" />
+                        <span className="ml-auto w-1 h-6 bg-primary-600 dark:bg-primary-400 rounded-full" />
                       )}
                     </Link>
                   </li>
@@ -134,22 +134,22 @@ export function MobileNav() {
           </nav>
 
           {/* フッター */}
-          <div className="p-4 border-t border-gray-200 dark:border-gray-700 space-y-3">
+          <div className="p-4 border-t border-secondary-200 dark:border-secondary-700 space-y-3">
             {/* テーマ切り替え */}
             <button
               onClick={() => {
                 setTheme(theme === 'dark' ? 'light' : 'dark');
                 closeMenu();
               }}
-              className="w-full flex items-center justify-between px-4 py-3 bg-gray-100 dark:bg-slate-800 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors"
+              className="w-full flex items-center justify-between px-4 py-3 bg-secondary-100 dark:bg-slate-800 rounded-lg hover:bg-secondary-200 dark:hover:bg-slate-700 transition-colors"
             >
               <span className="flex items-center gap-3">
                 <span className="text-xl">{theme === 'dark' ? '🌙' : '☀️'}</span>
-                <span className="font-medium text-gray-700 dark:text-gray-300">
+                <span className="font-medium text-secondary-700 dark:text-secondary-300">
                   {theme === 'dark' ? 'ダークモード' : 'ライトモード'}
                 </span>
               </span>
-              <div className="w-12 h-6 bg-gray-300 dark:bg-gray-600 rounded-full relative">
+              <div className="w-12 h-6 bg-secondary-300 dark:bg-secondary-600 rounded-full relative">
                 <div className={`
                   absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform
                   ${theme === 'dark' ? 'translate-x-6' : 'translate-x-0.5'}
@@ -170,7 +170,7 @@ export function MobileNav() {
               <Link
                 href="/login"
                 onClick={closeMenu}
-                className="w-full flex items-center gap-3 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="w-full flex items-center gap-3 px-4 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
               >
                 <span className="text-xl">🔐</span>
                 <span className="font-medium">ログイン</span>

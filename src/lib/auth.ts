@@ -5,6 +5,7 @@ import GitHubProvider from 'next-auth/providers/github';
 import { PrismaAdapter } from '@next-auth/prisma-adapter';
 import bcrypt from 'bcryptjs';
 import prisma from '@/lib/prisma';
+import { logActivity } from '@/lib/activity-logger';
 
 // 動的にURLを設定
 const getURL = () => {
@@ -53,6 +54,18 @@ export const authOptions: NextAuthOptions = {
         await prisma.user.update({
           where: { id: user.id },
           data: { lastLoginAt: new Date() }
+        });
+
+        // ログインアクティビティを記録
+        await logActivity({
+          userId: user.id,
+          action: 'LOGIN',
+          targetType: 'user',
+          targetId: user.id,
+          metadata: {
+            email: user.email,
+            loginMethod: 'credentials'
+          }
         });
 
         return {

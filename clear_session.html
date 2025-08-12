@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clear Session</title>
+</head>
+<body>
+    <h1>セッションクリア</h1>
+    <button onclick="clearSession()">セッションをクリア</button>
+    <p id="status"></p>
+    <script>
+        function clearSession() {
+            // Clear all cookies for localhost
+            document.cookie.split(";").forEach(function(c) { 
+                document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+            });
+            
+            // Clear localStorage and sessionStorage
+            localStorage.clear();
+            sessionStorage.clear();
+            
+            document.getElementById('status').textContent = '✅ セッションがクリアされました。localhost:3000にアクセスしてください。';
+            
+            setTimeout(() => {
+                window.location.href = 'http://localhost:3000';
+            }, 2000);
+        }
+    </script>
+</body>
+</html>

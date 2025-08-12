@@ -25,35 +25,34 @@ export async function generatePptx(
 ): Promise<ServerActionState<GeneratePptxResult>> {
   try {
     const data = Object.fromEntries(formData.entries());
-    const fileId = data.fileId as string;
-    const translationId = data.translationId as string;
-
-    if (!fileId || !translationId) {
-      return {
-        success: false,
-        message: 'ファイルIDと翻訳IDが必要です',
-        
-      };
-    }
-
-    // 一時ディレクトリとファイルの準備
-    const tempId = uuidv4();
-    const outputDir = path.join(process.cwd(), 'public', 'generated');
-    await fs.mkdir(outputDir, { recursive: true });
     
-    // Pythonスクリプトのパス
-    const scriptPath = path.join(process.cwd(), 'python_backend', 'generate_pptx.py');
-    
-    // データベースから翻訳データを取得（仮の実装）
-    // TODO: 実際のデータベースから取得
-    const editedSlides = formData.get('editedSlides') as string;
+    // originalFileUrlとeditedSlidesを取得
+    const editedSlidesRaw = formData.get('editedSlides') as string;
     const originalFileUrl = formData.get('originalFileUrl') as string;
     
-    if (!editedSlides || !originalFileUrl) {
-      // モックモード
+    // editedSlidesがJSON文字列の場合はパース
+    let editedSlides: string;
+    try {
+      // JSON文字列の場合はそのまま使用（Pythonスクリプトに渡すため）
+      editedSlides = editedSlidesRaw;
+      // 検証のためパースしてみる
+      JSON.parse(editedSlidesRaw);
+    } catch {
+      // パースエラーの場合はそのまま使用
+      editedSlides = editedSlidesRaw;
+    }
+    
+    // 必須パラメータのチェック（originalFileUrlとeditedSlidesのみ）
+    if (!originalFileUrl || !editedSlides) {
+      // モックモード - 開発時のテスト用
       const generatedUrl = `/generated/${Date.now()}_translated.pptx`;
       const fileName = `translated_${Date.now()}.pptx`;
       const fileSize = Math.floor(Math.random() * 1000000) + 500000;
+      
+      logger.info('Mock mode: Missing required parameters', {
+        hasOriginalFileUrl: !!originalFileUrl,
+        hasEditedSlides: !!editedSlides
+      });
       
       return {
         success: true,
@@ -63,9 +62,16 @@ export async function generatePptx(
           fileSize,
         },
         message: 'PPTXファイルを生成しました（モックモード）',
-        
       };
     }
+    
+    // 一時ディレクトリとファイルの準備
+    const tempId = uuidv4();
+    const outputDir = path.join(process.cwd(), 'public', 'generated');
+    await fs.mkdir(outputDir, { recursive: true });
+    
+    // Pythonスクリプトのパス
+    const scriptPath = path.join(process.cwd(), 'python_backend', 'generate_pptx.py');
     
     try {
       // 翻訳データをJSONファイルとして保存
@@ -92,9 +98,6 @@ export async function generatePptx(
         logger.warn('Python script stderr:', { stderr });
       }
       
-      // 結果をパース（現在未使用だが、将来的にログや検証に使用可能）
-      // const result = JSON.parse(stdout);
-      
       // ファイルサイズを取得
       const stats = await fs.stat(outputPath);
       const fileSize = stats.size;
@@ -105,11 +108,11 @@ export async function generatePptx(
       const downloadUrl = `/generated/${outputFileName}`;
       const fileName = outputFileName;
 
-      logger.info('PPTX generated', {
-        fileId,
-        translationId,
+      logger.info('PPTX generated successfully', {
+        tempId,
         fileName,
         fileSize,
+        originalFileUrl: originalFileUrl.substring(0, 100), // URLの一部のみログ
       });
 
       return {
@@ -120,12 +123,11 @@ export async function generatePptx(
           fileSize,
         },
         message: 'PPTXファイルを生成しました',
-        
       };
     } catch (pythonError) {
       logger.error('Python script execution failed', pythonError);
       
-      // モックモードにフォールバック
+      // エラー時はモックモードにフォールバック
       const generatedUrl = `/generated/${Date.now()}_translated.pptx`;
       const fileName = `translated_${Date.now()}.pptx`;
       const fileSize = Math.floor(Math.random() * 1000000) + 500000;
@@ -138,7 +140,6 @@ export async function generatePptx(
           fileSize,
         },
         message: 'PPTXファイルを生成しました（モックモード）',
-        
       };
     }
   } catch (error) {
@@ -146,7 +147,6 @@ export async function generatePptx(
     return {
       success: false,
       message: 'PPTX生成中にエラーが発生しました',
-      
     };
   }
 }

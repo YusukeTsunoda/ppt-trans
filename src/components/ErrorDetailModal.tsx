@@ -135,14 +135,14 @@ export function ErrorDetailModal({
         </div>
 
         {/* Tabs */}
-        <div className="border-b border-gray-200 dark:border-gray-700">
+        <div className="border-b border-secondary-200 dark:border-secondary-700">
           <div className="flex">
             <button
               onClick={() => setActiveTab('summary')}
               className={`px-6 py-3 font-medium transition-colors ${
                 activeTab === 'summary'
-                  ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+                  ? 'text-primary-600 dark:text-primary-400 border-b-2 border-primary-600 dark:border-primary-400'
+                  : 'text-secondary-600 dark:text-secondary-400 hover:text-secondary-800 dark:hover:text-secondary-200'
               }`}
             >
               概要
@@ -151,8 +151,8 @@ export function ErrorDetailModal({
               onClick={() => setActiveTab('details')}
               className={`px-6 py-3 font-medium transition-colors ${
                 activeTab === 'details'
-                  ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+                  ? 'text-primary-600 dark:text-primary-400 border-b-2 border-primary-600 dark:border-primary-400'
+                  : 'text-secondary-600 dark:text-secondary-400 hover:text-secondary-800 dark:hover:text-secondary-200'
               }`}
             >
               詳細情報
@@ -161,8 +161,8 @@ export function ErrorDetailModal({
               onClick={() => setActiveTab('trace')}
               className={`px-6 py-3 font-medium transition-colors ${
                 activeTab === 'trace'
-                  ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+                  ? 'text-primary-600 dark:text-primary-400 border-b-2 border-primary-600 dark:border-primary-400'
+                  : 'text-secondary-600 dark:text-secondary-400 hover:text-secondary-800 dark:hover:text-secondary-200'
               }`}
             >
               スタックトレース
@@ -176,10 +176,10 @@ export function ErrorDetailModal({
             <div className="space-y-4">
               {/* Error Message */}
               <div>
-                <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-1">
+                <h3 className="text-sm font-semibold text-secondary-600 dark:text-secondary-400 mb-1">
                   エラーメッセージ
                 </h3>
-                <p className="text-gray-900 dark:text-gray-100">
+                <p className="text-secondary-900 dark:text-secondary-100">
                   {errorMessageObj?.message || error.message}
                 </p>
               </div>
@@ -187,18 +187,18 @@ export function ErrorDetailModal({
               {/* Error Code & Status */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-1">
+                  <h3 className="text-sm font-semibold text-secondary-600 dark:text-secondary-400 mb-1">
                     エラーコード
                   </h3>
-                  <code className="text-sm font-mono bg-gray-100 dark:bg-gray-900 px-2 py-1 rounded">
+                  <code className="text-sm font-mono bg-secondary-100 dark:bg-secondary-900 px-2 py-1 rounded">
                     {errorCode}
                   </code>
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-1">
+                  <h3 className="text-sm font-semibold text-secondary-600 dark:text-secondary-400 mb-1">
                     HTTPステータス
                   </h3>
-                  <code className="text-sm font-mono bg-gray-100 dark:bg-gray-900 px-2 py-1 rounded">
+                  <code className="text-sm font-mono bg-secondary-100 dark:bg-secondary-900 px-2 py-1 rounded">
                     {statusCode}
                   </code>
                 </div>
@@ -207,10 +207,10 @@ export function ErrorDetailModal({
               {/* Error ID */}
               {errorId && (
                 <div>
-                  <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-1">
+                  <h3 className="text-sm font-semibold text-secondary-600 dark:text-secondary-400 mb-1">
                     エラーID
                   </h3>
-                  <code className="text-sm font-mono bg-gray-100 dark:bg-gray-900 px-2 py-1 rounded">
+                  <code className="text-sm font-mono bg-secondary-100 dark:bg-secondary-900 px-2 py-1 rounded">
                     {errorId}
                   </code>
                 </div>
@@ -218,11 +218,11 @@ export function ErrorDetailModal({
 
               {/* Recovery Instructions */}
               {errorMessageObj?.solution && (
-                <div className="p-4 bg-blue-50 dark:bg-blue-950 rounded-lg">
-                  <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2">
+                <div className="p-4 bg-primary-50 dark:bg-primary-950 rounded-lg">
+                  <h3 className="text-sm font-semibold text-primary-900 dark:text-primary-100 mb-2">
                     解決方法
                   </h3>
-                  <p className="text-sm text-blue-700 dark:text-blue-300">
+                  <p className="text-sm text-primary-700 dark:text-primary-300">
                     {errorMessageObj.solution}
                   </p>
                 </div>
@@ -235,10 +235,10 @@ export function ErrorDetailModal({
               {/* Timestamp */}
               {isAppError && error.timestamp ? (
                 <div>
-                  <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-1">
+                  <h3 className="text-sm font-semibold text-secondary-600 dark:text-secondary-400 mb-1">
                     発生時刻
                   </h3>
-                  <p className="text-sm text-gray-900 dark:text-gray-100">
+                  <p className="text-sm text-secondary-900 dark:text-secondary-100">
                     {new Date(error.timestamp).toLocaleString('ja-JP')}
                   </p>
                 </div>
@@ -247,10 +247,10 @@ export function ErrorDetailModal({
               {/* Metadata */}
               {(isAppError ? error.metadata : metadata) ? (
                 <div>
-                  <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-1">
+                  <h3 className="text-sm font-semibold text-secondary-600 dark:text-secondary-400 mb-1">
                     メタデータ
                   </h3>
-                  <pre className="text-xs bg-gray-100 dark:bg-gray-900 p-3 rounded-lg overflow-x-auto">
+                  <pre className="text-xs bg-secondary-100 dark:bg-secondary-900 p-3 rounded-lg overflow-x-auto">
                     {JSON.stringify(isAppError ? error.metadata : metadata, null, 2)}
                   </pre>
                 </div>
@@ -258,19 +258,19 @@ export function ErrorDetailModal({
 
               {/* Environment Info */}
               <div>
-                <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-1">
+                <h3 className="text-sm font-semibold text-secondary-600 dark:text-secondary-400 mb-1">
                   環境情報
                 </h3>
                 <dl className="text-sm space-y-1">
                   <div className="flex gap-2">
-                    <dt className="text-gray-600 dark:text-gray-400">URL:</dt>
-                    <dd className="text-gray-900 dark:text-gray-100 truncate">
+                    <dt className="text-secondary-600 dark:text-secondary-400">URL:</dt>
+                    <dd className="text-secondary-900 dark:text-secondary-100 truncate">
                       {typeof window !== 'undefined' ? window.location.href : 'N/A'}
                     </dd>
                   </div>
                   <div className="flex gap-2">
-                    <dt className="text-gray-600 dark:text-gray-400">ブラウザ:</dt>
-                    <dd className="text-gray-900 dark:text-gray-100 truncate">
+                    <dt className="text-secondary-600 dark:text-secondary-400">ブラウザ:</dt>
+                    <dd className="text-secondary-900 dark:text-secondary-100 truncate">
                       {typeof navigator !== 'undefined' ? navigator.userAgent : 'N/A'}
                     </dd>
                   </div>
@@ -282,11 +282,11 @@ export function ErrorDetailModal({
           {activeTab === 'trace' && (
             <div>
               {error.stack ? (
-                <pre className="text-xs bg-gray-100 dark:bg-gray-900 p-4 rounded-lg overflow-x-auto whitespace-pre-wrap">
+                <pre className="text-xs bg-secondary-100 dark:bg-secondary-900 p-4 rounded-lg overflow-x-auto whitespace-pre-wrap">
                   {error.stack}
                 </pre>
               ) : (
-                <p className="text-gray-600 dark:text-gray-400">
+                <p className="text-secondary-600 dark:text-secondary-400">
                   スタックトレースは利用できません。
                 </p>
               )}
@@ -295,11 +295,11 @@ export function ErrorDetailModal({
         </div>
 
         {/* Footer */}
-        <div className="border-t border-gray-200 dark:border-gray-700 p-4">
+        <div className="border-t border-secondary-200 dark:border-secondary-700 p-4">
           <div className="flex justify-between items-center">
             <button
               onClick={handleCopyError}
-              className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
+              className="px-4 py-2 text-sm text-secondary-700 dark:text-secondary-300 hover:text-secondary-900 dark:hover:text-secondary-100 transition-colors"
             >
               {isCopied ? '✓ コピーしました' : 'エラー情報をコピー'}
             </button>
@@ -308,7 +308,7 @@ export function ErrorDetailModal({
               {onRetry && isAppError && error.isRetryable() && (
                 <button
                   onClick={onRetry}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
                 >
                   再試行
                 </button>
@@ -323,7 +323,7 @@ export function ErrorDetailModal({
               
               <button
                 onClick={onClose}
-                className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                className="px-4 py-2 bg-secondary-200 dark:bg-secondary-700 text-secondary-800 dark:text-secondary-200 rounded-lg hover:bg-secondary-300 dark:hover:bg-secondary-600 transition-colors"
               >
                 閉じる
               </button>

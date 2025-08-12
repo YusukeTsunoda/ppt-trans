@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useActionState } from 'react';
-import { uploadPptxAction, batchTranslate } from '@/app/actions';
+import { uploadPptxAction } from '@/lib/server-actions/files/upload';
+import { batchTranslate } from '@/lib/server-actions/translate/batch';
 import type { UploadResult } from '@/lib/server-actions/files/upload';
 import type { TranslationResult } from '@/lib/server-actions/translate/batch';
 import { createInitialState, type ServerActionState } from '@/lib/server-actions/types';
@@ -127,7 +128,7 @@ export default function HomePage() {
   // Next.js 15では不要なため削除
 
   return (
-    <div className="flex h-screen bg-slate-50 dark:bg-slate-900">
+    <div className="flex h-screen bg-secondary-50">
         {/* モバイルナビゲーション */}
         {responsive.isMobile && <MobileNav />}
         
@@ -181,17 +182,17 @@ export default function HomePage() {
                   {!responsive.isMobile && <UserNav />}
                 </div>
                 <div className="text-center">
-                  <h1 className="text-2xl md:text-4xl font-bold text-slate-900 dark:text-slate-100 mb-2">PowerPoint 翻訳ツール</h1>
-                  <p className="text-sm md:text-lg text-slate-600 dark:text-slate-400">LibreOffice + pdf2image による高品質変換</p>
+                  <h1 className="text-2xl md:text-4xl font-semibold text-secondary-900 mb-2">PowerPoint 翻訳ツール</h1>
+                  <p className="text-sm md:text-lg text-secondary-600">プロフェッショナル向け高品質翻訳サービス</p>
                 </div>
               </div>
 
               {/* Upload Section */}
               {!showPreviews && (
           <div className="max-w-lg mx-auto">
-            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-8 space-y-6">
+            <div className="bg-white rounded-lg shadow-sm border border-secondary-200 p-8 space-y-6">
               <div className="text-center">
-                <p className="text-slate-600 dark:text-slate-400">.pptxファイルをアップロードして変換を開始します。</p>
+                <p className="text-secondary-600">.pptxファイルをアップロードして翻訳を開始します。</p>
               </div>
               <form action={uploadFormAction} className="space-y-4">
                 <div className="flex flex-col items-center space-y-4">
@@ -200,23 +201,23 @@ export default function HomePage() {
                     name="file"
                     accept=".pptx,application/vnd.openxmlformats-officedocument.presentationml.presentation"
                     required
-                    className="block w-full text-sm text-slate-600 dark:text-slate-400
-                      file:mr-4 file:py-2 file:px-4
+                    className="block w-full text-sm text-secondary-600
+                      file:mr-4 file:py-2.5 file:px-4
                       file:rounded-lg file:border-0
-                      file:text-sm file:font-semibold
-                      file:bg-blue-50 dark:file:bg-blue-900/30 file:text-blue-700 dark:file:text-blue-300
-                      hover:file:bg-blue-100 dark:hover:file:bg-blue-900/50 file:transition-all file:duration-200"
+                      file:text-sm file:font-medium
+                      file:bg-primary-50 file:text-primary-700
+                      hover:file:bg-primary-100 file:transition-colors file:cursor-pointer"
                   />
                   {error && <p className="text-sm text-red-600">{error}</p>}
                 </div>
                 <button 
                   type="submit"
                   disabled={isUploadPending}
-                  className="w-full px-4 py-2 text-white bg-blue-600 rounded-lg
-                    hover:bg-blue-700 focus:outline-none focus:ring-2
-                    focus:ring-offset-2 focus:ring-blue-500
-                    disabled:bg-slate-400 disabled:cursor-not-allowed
-                    transition-all duration-200 font-medium"
+                  className="w-full px-4 py-2.5 text-white bg-primary rounded-lg
+                    hover:bg-primary-700 focus:outline-none focus:ring-2
+                    focus:ring-offset-2 focus:ring-primary
+                    disabled:bg-secondary-400 disabled:cursor-not-allowed
+                    transition-colors font-medium shadow-sm"
                 >
                   {isUploadPending ? (
                     <>
@@ -224,7 +225,7 @@ export default function HomePage() {
                       処理中...
                     </>
                   ) : (
-                    '変換を開始'
+                    'アップロード'
                   )}
                 </button>
               </form>
@@ -235,14 +236,14 @@ export default function HomePage() {
               {/* Processing Status - isPendingを使用 */}
               {isUploadPending && (
           <div className="max-w-lg mx-auto mt-8">
-            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-xl p-4">
+            <div className="bg-primary-50 border border-primary-200 rounded-lg p-4">
               <div className="flex items-center">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mr-3"></div>
-                <p className="text-blue-700 font-medium">
-                  PowerPointファイルを変換中です...
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mr-3"></div>
+                <p className="text-primary-700 font-medium">
+                  PowerPointファイルを処理中です...
                   <br />
-                  <span className="text-sm text-blue-600">
-                    LibreOffice → PDF → 画像変換 → テキスト抽出
+                  <span className="text-sm text-primary-600">
+                    ファイル解析 → テキスト抽出 → レイアウト保持
                   </span>
                 </p>
               </div>
@@ -302,7 +303,7 @@ export default function HomePage() {
                     <button
                       type="submit"
                       disabled={isTranslationPending || !processingResult || processingResult.slides.reduce((total, slide) => total + slide.texts.length, 0) === 0}
-                      className="px-4 py-2 text-sm bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:bg-slate-400 disabled:cursor-not-allowed flex items-center gap-1 transition-all duration-200 font-medium"
+                      className="px-4 py-2 text-sm bg-accent-600 text-white rounded-lg hover:bg-accent-700 disabled:bg-slate-400 disabled:cursor-not-allowed flex items-center gap-1 transition-all duration-200 font-medium"
                     >
                       {isTranslationPending ? (
                         <>
@@ -363,12 +364,12 @@ export default function HomePage() {
               
               {/* 翻訳完了メッセージ */}
               {translationProgress.status === 'completed' && (
-                <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 mb-6">
+                <div className="bg-accent-50 border border-accent-200 rounded-xl p-4 mb-6">
                   <div className="flex items-center gap-2">
-                    <span className="text-emerald-600">✅</span>
-                    <p className="text-emerald-800 font-medium">翻訳が正常に完了しました</p>
+                    <span className="text-accent-600">✅</span>
+                    <p className="text-accent-800 font-medium">翻訳が正常に完了しました</p>
                   </div>
-                  <p className="text-emerald-700 text-sm mt-1">
+                  <p className="text-accent-700 text-sm mt-1">
                     {translationProgress.total}個のテキストを翻訳しました。
                   </p>
                 </div>
@@ -387,12 +388,12 @@ export default function HomePage() {
                 </div>
               )}
               
-              <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 mb-6">
+              <div className="bg-accent-50 border border-accent-200 rounded-xl p-4 mb-6">
                 <div className="flex items-center gap-2">
-                  <span className="text-emerald-600">✅</span>
-                  <p className="text-emerald-800 font-medium">変換が正常に完了しました</p>
+                  <span className="text-accent-600">✅</span>
+                  <p className="text-accent-800 font-medium">変換が正常に完了しました</p>
                 </div>
-                <p className="text-emerald-700 text-sm mt-1">
+                <p className="text-accent-700 text-sm mt-1">
                   各スライドが高品質な画像に変換され、テキストが正確に抽出されました。
                 </p>
               </div>
