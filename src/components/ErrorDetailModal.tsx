@@ -2,8 +2,9 @@
 
 import React, { useState } from 'react';
 import { AppError } from '@/lib/errors/AppError';
-import { getErrorMessage, getErrorMessageObject } from '@/lib/errors/ErrorMessages';
-import { ErrorStatusMap, ErrorCodes, type ErrorCode } from '@/lib/errors/ErrorCodes';
+import { getErrorMessageObject } from '@/lib/errors/ErrorMessages';
+import { ErrorCodes, type ErrorCode } from '@/lib/errors/ErrorCodes';
+import { ErrorStatusMap } from '@/lib/errors/ErrorStatusMap';
 import logger from '@/lib/logger';
 
 interface ErrorDetailModalProps {
@@ -31,8 +32,8 @@ export function ErrorDetailModal({
   if (!isOpen) return null;
 
   const isAppError = error instanceof AppError;
-  const errorCode = isAppError ? error.code : 'UNKNOWN';
-  const errorMessageObj = getErrorMessageObject(errorCode);
+  const errorCode = isAppError ? error.code : ErrorCodes.UNKNOWN_ERROR;
+  const errorMessageObj = getErrorMessageObject(errorCode as any);
   const statusCode = isAppError ? error.statusCode : (errorCode in ErrorStatusMap ? ErrorStatusMap[errorCode as ErrorCode] : 500);
 
   const handleCopyError = async () => {
@@ -179,7 +180,7 @@ export function ErrorDetailModal({
                   エラーメッセージ
                 </h3>
                 <p className="text-gray-900 dark:text-gray-100">
-                  {errorMessageObj?.ja || error.message}
+                  {errorMessageObj?.message || error.message}
                 </p>
               </div>
 
@@ -216,21 +217,14 @@ export function ErrorDetailModal({
               )}
 
               {/* Recovery Instructions */}
-              {errorMessageObj?.recovery && (
+              {errorMessageObj?.solution && (
                 <div className="p-4 bg-blue-50 dark:bg-blue-950 rounded-lg">
                   <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2">
                     解決方法
                   </h3>
                   <p className="text-sm text-blue-700 dark:text-blue-300">
-                    {errorMessageObj.recovery.ja}
+                    {errorMessageObj.solution}
                   </p>
-                  {errorMessageObj.recovery.steps && (
-                    <ol className="mt-2 ml-4 list-decimal text-sm text-blue-700 dark:text-blue-300">
-                      {errorMessageObj.recovery.steps.map((step: string, index: number) => (
-                        <li key={index}>{step}</li>
-                      ))}
-                    </ol>
-                  )}
                 </div>
               )}
             </div>

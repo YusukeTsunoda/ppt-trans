@@ -1,540 +1,196 @@
 /**
- * エラーメッセージのマッピング定義
+ * エラーメッセージの日本語定義
  */
 
 import { ErrorCode, ErrorCodes } from './ErrorCodes';
 
 /**
- * エラーメッセージの型定義
+ * エラーコードに対応する日本語メッセージ
  */
-interface ErrorMessage {
-  ja: string;
-  en: string;
-  recovery?: {
-    ja: string;
-    en: string;
-    steps?: string[];
-  };
-}
-
-/**
- * エラーコードとメッセージのマッピング
- */
-export const ErrorMessages: Record<ErrorCode, ErrorMessage> = {
+export const ErrorMessages: Record<ErrorCode, string> = {
   // 認証・認可エラー
-  [ErrorCodes.AUTH_INVALID_CREDENTIALS]: {
-    ja: 'メールアドレスまたはパスワードが正しくありません',
-    en: 'Invalid email or password',
-    recovery: {
-      ja: 'メールアドレスとパスワードを確認して、もう一度お試しください',
-      en: 'Please check your email and password and try again'
-    }
-  },
-  [ErrorCodes.AUTH_TOKEN_EXPIRED]: {
-    ja: 'セッションの有効期限が切れました',
-    en: 'Your session has expired',
-    recovery: {
-      ja: '再度ログインしてください',
-      en: 'Please log in again'
-    }
-  },
-  [ErrorCodes.AUTH_TOKEN_INVALID]: {
-    ja: '無効な認証トークンです',
-    en: 'Invalid authentication token',
-    recovery: {
-      ja: '再度ログインしてください',
-      en: 'Please log in again'
-    }
-  },
-  [ErrorCodes.AUTH_UNAUTHORIZED]: {
-    ja: 'この操作を実行する権限がありません',
-    en: 'You do not have permission to perform this action',
-  },
-  [ErrorCodes.AUTH_SESSION_EXPIRED]: {
-    ja: 'セッションの有効期限が切れました',
-    en: 'Your session has expired',
-    recovery: {
-      ja: '再度ログインしてください',
-      en: 'Please log in again'
-    }
-  },
-  [ErrorCodes.AUTH_USER_NOT_FOUND]: {
-    ja: 'ユーザーが見つかりません',
-    en: 'User not found',
-  },
-  [ErrorCodes.AUTH_ACCOUNT_LOCKED]: {
-    ja: 'アカウントがロックされています',
-    en: 'Your account has been locked',
-    recovery: {
-      ja: 'サポートにお問い合わせください',
-      en: 'Please contact support'
-    }
-  },
-  [ErrorCodes.AUTH_EMAIL_NOT_VERIFIED]: {
-    ja: 'メールアドレスが確認されていません',
-    en: 'Email address not verified',
-    recovery: {
-      ja: '確認メールをご確認ください',
-      en: 'Please check your verification email'
-    }
-  },
-
+  [ErrorCodes.AUTH_INVALID_CREDENTIALS]: 'メールアドレスまたはパスワードが正しくありません',
+  [ErrorCodes.AUTH_TOKEN_EXPIRED]: '認証トークンの有効期限が切れています。再度ログインしてください',
+  [ErrorCodes.AUTH_TOKEN_INVALID]: '認証トークンが無効です。再度ログインしてください',
+  [ErrorCodes.AUTH_UNAUTHORIZED]: 'この操作を実行する権限がありません',
+  [ErrorCodes.AUTH_SESSION_EXPIRED]: 'セッションの有効期限が切れました。再度ログインしてください',
+  [ErrorCodes.AUTH_USER_NOT_FOUND]: 'ユーザーが見つかりません',
+  [ErrorCodes.AUTH_ACCOUNT_LOCKED]: 'アカウントがロックされています。サポートにお問い合わせください',
+  [ErrorCodes.AUTH_EMAIL_NOT_VERIFIED]: 'メールアドレスが確認されていません。確認メールをご確認ください',
+  
   // バリデーションエラー
-  [ErrorCodes.VALIDATION_REQUIRED_FIELD]: {
-    ja: '必須項目が入力されていません',
-    en: 'Required field is missing',
-    recovery: {
-      ja: 'すべての必須項目を入力してください',
-      en: 'Please fill in all required fields'
-    }
-  },
-  [ErrorCodes.VALIDATION_INVALID_FORMAT]: {
-    ja: '入力形式が正しくありません',
-    en: 'Invalid input format',
-    recovery: {
-      ja: '正しい形式で入力してください',
-      en: 'Please enter in the correct format'
-    }
-  },
-  [ErrorCodes.VALIDATION_INVALID_EMAIL]: {
-    ja: '有効なメールアドレスを入力してください',
-    en: 'Please enter a valid email address',
-  },
-  [ErrorCodes.VALIDATION_INVALID_PASSWORD]: {
-    ja: 'パスワードは8文字以上で、英数字を含む必要があります',
-    en: 'Password must be at least 8 characters with letters and numbers',
-  },
-  [ErrorCodes.VALIDATION_FIELD_TOO_LONG]: {
-    ja: '入力内容が長すぎます',
-    en: 'Input is too long',
-  },
-  [ErrorCodes.VALIDATION_FIELD_TOO_SHORT]: {
-    ja: '入力内容が短すぎます',
-    en: 'Input is too short',
-  },
-  [ErrorCodes.VALIDATION_INVALID_FILE_TYPE]: {
-    ja: 'サポートされていないファイル形式です',
-    en: 'Unsupported file type',
-    recovery: {
-      ja: 'PPTXファイルをアップロードしてください',
-      en: 'Please upload a PPTX file'
-    }
-  },
-  [ErrorCodes.VALIDATION_FILE_TOO_LARGE]: {
-    ja: 'ファイルサイズが大きすぎます（最大50MB）',
-    en: 'File size is too large (max 50MB)',
-    recovery: {
-      ja: 'ファイルサイズを小さくしてください',
-      en: 'Please reduce the file size'
-    }
-  },
-
+  [ErrorCodes.VALIDATION_REQUIRED_FIELD]: '必須項目が入力されていません',
+  [ErrorCodes.VALIDATION_INVALID_FORMAT]: '入力形式が正しくありません',
+  [ErrorCodes.VALIDATION_INVALID_EMAIL]: 'メールアドレスの形式が正しくありません',
+  [ErrorCodes.VALIDATION_INVALID_PASSWORD]: 'パスワードは8文字以上で、英数字を含む必要があります',
+  [ErrorCodes.VALIDATION_FIELD_TOO_LONG]: '入力内容が長すぎます',
+  [ErrorCodes.VALIDATION_FIELD_TOO_SHORT]: '入力内容が短すぎます',
+  [ErrorCodes.VALIDATION_INVALID_FILE_TYPE]: 'ファイル形式が正しくありません。PPTX形式のファイルを選択してください',
+  [ErrorCodes.VALIDATION_FILE_TOO_LARGE]: 'ファイルサイズが大きすぎます。100MB以下のファイルを選択してください',
+  
   // ファイル処理エラー
-  [ErrorCodes.FILE_UPLOAD_FAILED]: {
-    ja: 'ファイルのアップロードに失敗しました',
-    en: 'File upload failed',
-    recovery: {
-      ja: '再度アップロードをお試しください',
-      en: 'Please try uploading again'
-    }
-  },
-  [ErrorCodes.FILE_NOT_FOUND]: {
-    ja: 'ファイルが見つかりません',
-    en: 'File not found',
-  },
-  [ErrorCodes.FILE_PROCESSING_FAILED]: {
-    ja: 'ファイルの処理に失敗しました',
-    en: 'File processing failed',
-    recovery: {
-      ja: 'ファイルが破損していないか確認してください',
-      en: 'Please check if the file is corrupted'
-    }
-  },
-  [ErrorCodes.FILE_INVALID_FORMAT]: {
-    ja: 'ファイル形式が正しくありません',
-    en: 'Invalid file format',
-    recovery: {
-      ja: '有効なPPTXファイルをアップロードしてください',
-      en: 'Please upload a valid PPTX file'
-    }
-  },
-  [ErrorCodes.FILE_CORRUPTED]: {
-    ja: 'ファイルが破損している可能性があります',
-    en: 'File may be corrupted',
-    recovery: {
-      ja: 'ファイルを再度保存してからアップロードしてください',
-      en: 'Please save the file again and upload'
-    }
-  },
-  [ErrorCodes.FILE_TOO_MANY_SLIDES]: {
-    ja: 'スライド数が多すぎます（最大100枚）',
-    en: 'Too many slides (max 100)',
-    recovery: {
-      ja: 'スライド数を減らしてください',
-      en: 'Please reduce the number of slides'
-    }
-  },
-  [ErrorCodes.FILE_EMPTY]: {
-    ja: 'ファイルが空です',
-    en: 'File is empty',
-  },
-  [ErrorCodes.FILE_PERMISSION_DENIED]: {
-    ja: 'このファイルへのアクセス権限がありません',
-    en: 'You do not have permission to access this file',
-  },
-  [ErrorCodes.FILE_DELETE_FAILED]: {
-    ja: 'ファイルの削除に失敗しました',
-    en: 'Failed to delete file',
-    recovery: {
-      ja: 'しばらく待ってから再度お試しください',
-      en: 'Please wait a moment and try again'
-    }
-  },
-  [ErrorCodes.FILE_LIST_FAILED]: {
-    ja: 'ファイルリストの取得に失敗しました',
-    en: 'Failed to retrieve file list',
-    recovery: {
-      ja: 'ページを再読み込みしてください',
-      en: 'Please reload the page'
-    }
-  },
-
+  [ErrorCodes.FILE_UPLOAD_FAILED]: 'ファイルのアップロードに失敗しました。再度お試しください',
+  [ErrorCodes.FILE_NOT_FOUND]: 'ファイルが見つかりません',
+  [ErrorCodes.FILE_PROCESSING_FAILED]: 'ファイルの処理に失敗しました。ファイルが破損している可能性があります',
+  [ErrorCodes.FILE_INVALID_FORMAT]: 'ファイル形式が不正です。PowerPoint（.pptx）ファイルを選択してください',
+  [ErrorCodes.FILE_CORRUPTED]: 'ファイルが破損しています。別のファイルをお試しください',
+  [ErrorCodes.FILE_TOO_MANY_SLIDES]: 'スライド数が多すぎます。100枚以下のプレゼンテーションを選択してください',
+  [ErrorCodes.FILE_EMPTY]: 'ファイルが空です。内容のあるファイルを選択してください',
+  [ErrorCodes.FILE_PERMISSION_DENIED]: 'このファイルへのアクセス権限がありません',
+  [ErrorCodes.FILE_DELETE_FAILED]: 'ファイルの削除に失敗しました',
+  [ErrorCodes.FILE_LIST_FAILED]: 'ファイル一覧の取得に失敗しました',
+  
   // 翻訳エラー
-  [ErrorCodes.TRANSLATION_FAILED]: {
-    ja: '翻訳処理に失敗しました',
-    en: 'Translation failed',
-    recovery: {
-      ja: '再度翻訳をお試しください',
-      en: 'Please try translating again'
-    }
-  },
-  [ErrorCodes.TRANSLATION_TIMEOUT]: {
-    ja: '翻訳処理がタイムアウトしました',
-    en: 'Translation timed out',
-    recovery: {
-      ja: 'しばらく待ってから再度お試しください',
-      en: 'Please wait and try again'
-    }
-  },
-  [ErrorCodes.TRANSLATION_UNSUPPORTED_LANGUAGE]: {
-    ja: 'サポートされていない言語です',
-    en: 'Unsupported language',
-    recovery: {
-      ja: 'サポートされている言語を選択してください',
-      en: 'Please select a supported language'
-    }
-  },
-  [ErrorCodes.TRANSLATION_EMPTY_TEXT]: {
-    ja: '翻訳するテキストが空です',
-    en: 'No text to translate',
-  },
-  [ErrorCodes.TRANSLATION_API_ERROR]: {
-    ja: '翻訳APIでエラーが発生しました',
-    en: 'Translation API error occurred',
-    recovery: {
-      ja: 'しばらく待ってから再度お試しください',
-      en: 'Please wait and try again'
-    }
-  },
-  [ErrorCodes.TRANSLATION_QUOTA_EXCEEDED]: {
-    ja: '翻訳の利用制限に達しました',
-    en: 'Translation quota exceeded',
-    recovery: {
-      ja: 'プランをアップグレードするか、翌月まで待ってください',
-      en: 'Please upgrade your plan or wait until next month'
-    }
-  },
-  [ErrorCodes.TRANSLATION_RATE_LIMITED]: {
-    ja: '翻訳リクエストが多すぎます',
-    en: 'Too many translation requests',
-    recovery: {
-      ja: 'しばらく待ってから再度お試しください',
-      en: 'Please wait and try again'
-    }
-  },
-
+  [ErrorCodes.TRANSLATION_FAILED]: '翻訳に失敗しました。再度お試しください',
+  [ErrorCodes.TRANSLATION_TIMEOUT]: '翻訳処理がタイムアウトしました。テキスト量を減らしてお試しください',
+  [ErrorCodes.TRANSLATION_UNSUPPORTED_LANGUAGE]: '指定された言語はサポートされていません',
+  [ErrorCodes.TRANSLATION_EMPTY_TEXT]: '翻訳するテキストを入力してください',
+  [ErrorCodes.TRANSLATION_API_ERROR]: '翻訳APIでエラーが発生しました。しばらくしてから再度お試しください',
+  [ErrorCodes.TRANSLATION_QUOTA_EXCEEDED]: '翻訳の利用制限に達しました。プランをアップグレードしてください',
+  [ErrorCodes.TRANSLATION_RATE_LIMITED]: '翻訳リクエストが多すぎます。しばらく待ってから再度お試しください',
+  
   // データベースエラー
-  [ErrorCodes.DATABASE_CONNECTION_FAILED]: {
-    ja: 'データベース接続に失敗しました',
-    en: 'Database connection failed',
-    recovery: {
-      ja: 'しばらく待ってから再度お試しください',
-      en: 'Please wait and try again'
-    }
-  },
-  [ErrorCodes.DATABASE_QUERY_FAILED]: {
-    ja: 'データの取得に失敗しました',
-    en: 'Failed to retrieve data',
-    recovery: {
-      ja: 'ページを更新してください',
-      en: 'Please refresh the page'
-    }
-  },
-  [ErrorCodes.DATABASE_TRANSACTION_FAILED]: {
-    ja: 'データの保存に失敗しました',
-    en: 'Failed to save data',
-    recovery: {
-      ja: '再度お試しください',
-      en: 'Please try again'
-    }
-  },
-  [ErrorCodes.DATABASE_CONSTRAINT_VIOLATION]: {
-    ja: 'データの整合性エラーが発生しました',
-    en: 'Data integrity error occurred',
-  },
-  [ErrorCodes.DATABASE_DEADLOCK]: {
-    ja: 'データベースでデッドロックが発生しました',
-    en: 'Database deadlock occurred',
-    recovery: {
-      ja: '再度お試しください',
-      en: 'Please try again'
-    }
-  },
-  [ErrorCodes.DATABASE_TIMEOUT]: {
-    ja: 'データベース処理がタイムアウトしました',
-    en: 'Database operation timed out',
-    recovery: {
-      ja: 'しばらく待ってから再度お試しください',
-      en: 'Please wait and try again'
-    }
-  },
-
+  [ErrorCodes.DATABASE_CONNECTION_FAILED]: 'データベースに接続できません。システム管理者にお問い合わせください',
+  [ErrorCodes.DATABASE_QUERY_FAILED]: 'データの取得に失敗しました。再度お試しください',
+  [ErrorCodes.DATABASE_TRANSACTION_FAILED]: 'データベース処理に失敗しました。再度お試しください',
+  [ErrorCodes.DATABASE_CONSTRAINT_VIOLATION]: 'データの整合性エラーが発生しました',
+  [ErrorCodes.DATABASE_DEADLOCK]: 'データベースで競合が発生しました。再度お試しください',
+  [ErrorCodes.DATABASE_TIMEOUT]: 'データベース処理がタイムアウトしました',
+  
   // 外部サービスエラー
-  [ErrorCodes.EXTERNAL_API_ERROR]: {
-    ja: '外部サービスでエラーが発生しました',
-    en: 'External service error occurred',
-    recovery: {
-      ja: 'しばらく待ってから再度お試しください',
-      en: 'Please wait and try again'
-    }
-  },
-  [ErrorCodes.EXTERNAL_API_TIMEOUT]: {
-    ja: '外部サービスの応答がタイムアウトしました',
-    en: 'External service timed out',
-    recovery: {
-      ja: 'しばらく待ってから再度お試しください',
-      en: 'Please wait and try again'
-    }
-  },
-  [ErrorCodes.EXTERNAL_API_RATE_LIMITED]: {
-    ja: '外部サービスのレート制限に達しました',
-    en: 'External service rate limit reached',
-    recovery: {
-      ja: 'しばらく待ってから再度お試しください',
-      en: 'Please wait and try again'
-    }
-  },
-  [ErrorCodes.EXTERNAL_API_UNAUTHORIZED]: {
-    ja: '外部サービスの認証に失敗しました',
-    en: 'External service authentication failed',
-  },
-  [ErrorCodes.EXTERNAL_SERVICE_UNAVAILABLE]: {
-    ja: '外部サービスが利用できません',
-    en: 'External service unavailable',
-    recovery: {
-      ja: 'しばらく待ってから再度お試しください',
-      en: 'Please wait and try again'
-    }
-  },
-
+  [ErrorCodes.EXTERNAL_API_ERROR]: '外部サービスでエラーが発生しました',
+  [ErrorCodes.EXTERNAL_API_TIMEOUT]: '外部サービスへの接続がタイムアウトしました',
+  [ErrorCodes.EXTERNAL_API_RATE_LIMITED]: '外部サービスのレート制限に達しました',
+  [ErrorCodes.EXTERNAL_API_UNAUTHORIZED]: '外部サービスへの認証に失敗しました',
+  [ErrorCodes.EXTERNAL_SERVICE_UNAVAILABLE]: '外部サービスが一時的に利用できません',
+  
   // ネットワークエラー
-  [ErrorCodes.NETWORK_ERROR]: {
-    ja: 'ネットワークエラーが発生しました',
-    en: 'Network error occurred',
-    recovery: {
-      ja: 'インターネット接続を確認してください',
-      en: 'Please check your internet connection'
-    }
-  },
-  [ErrorCodes.NETWORK_TIMEOUT]: {
-    ja: 'ネットワーク接続がタイムアウトしました',
-    en: 'Network connection timed out',
-    recovery: {
-      ja: '接続を確認して再度お試しください',
-      en: 'Please check your connection and try again'
-    }
-  },
-  [ErrorCodes.NETWORK_CONNECTION_LOST]: {
-    ja: 'ネットワーク接続が失われました',
-    en: 'Network connection lost',
-    recovery: {
-      ja: '接続が回復したら再度お試しください',
-      en: 'Please try again when connection is restored'
-    }
-  },
-  [ErrorCodes.NETWORK_DNS_FAILED]: {
-    ja: 'DNSの解決に失敗しました',
-    en: 'DNS resolution failed',
-    recovery: {
-      ja: 'ネットワーク設定を確認してください',
-      en: 'Please check your network settings'
-    }
-  },
-
+  [ErrorCodes.NETWORK_ERROR]: 'ネットワークエラーが発生しました。インターネット接続を確認してください',
+  [ErrorCodes.NETWORK_TIMEOUT]: 'ネットワーク接続がタイムアウトしました',
+  [ErrorCodes.NETWORK_CONNECTION_LOST]: 'ネットワーク接続が失われました',
+  [ErrorCodes.NETWORK_DNS_FAILED]: 'DNS解決に失敗しました',
+  
   // レート制限エラー
-  [ErrorCodes.RATE_LIMIT_EXCEEDED]: {
-    ja: 'リクエスト数が制限を超えました',
-    en: 'Request limit exceeded',
-    recovery: {
-      ja: 'しばらく待ってから再度お試しください',
-      en: 'Please wait and try again'
-    }
-  },
-  [ErrorCodes.DAILY_QUOTA_EXCEEDED]: {
-    ja: '1日の利用制限に達しました',
-    en: 'Daily quota exceeded',
-    recovery: {
-      ja: '明日以降に再度お試しください',
-      en: 'Please try again tomorrow'
-    }
-  },
-  [ErrorCodes.MONTHLY_QUOTA_EXCEEDED]: {
-    ja: '月間の利用制限に達しました',
-    en: 'Monthly quota exceeded',
-    recovery: {
-      ja: 'プランをアップグレードするか、翌月まで待ってください',
-      en: 'Please upgrade your plan or wait until next month'
-    }
-  },
-  [ErrorCodes.CONCURRENT_REQUEST_LIMIT]: {
-    ja: '同時リクエスト数が制限を超えました',
-    en: 'Concurrent request limit exceeded',
-    recovery: {
-      ja: '他の処理が完了してから再度お試しください',
-      en: 'Please wait for other processes to complete'
-    }
-  },
-
-  // システムエラー
-  [ErrorCodes.INTERNAL_SERVER_ERROR]: {
-    ja: 'サーバーエラーが発生しました',
-    en: 'Internal server error occurred',
-    recovery: {
-      ja: 'しばらく待ってから再度お試しください',
-      en: 'Please wait and try again'
-    }
-  },
-  [ErrorCodes.SERVICE_UNAVAILABLE]: {
-    ja: 'サービスが一時的に利用できません',
-    en: 'Service temporarily unavailable',
-    recovery: {
-      ja: 'しばらく待ってから再度お試しください',
-      en: 'Please wait and try again'
-    }
-  },
-  [ErrorCodes.CONFIGURATION_ERROR]: {
-    ja: 'システム設定エラーが発生しました',
-    en: 'System configuration error',
-    recovery: {
-      ja: 'サポートにお問い合わせください',
-      en: 'Please contact support'
-    }
-  },
-  [ErrorCodes.UNKNOWN_ERROR]: {
-    ja: '予期しないエラーが発生しました',
-    en: 'An unexpected error occurred',
-    recovery: {
-      ja: 'ページを更新して再度お試しください',
-      en: 'Please refresh the page and try again'
-    }
-  },
-
+  [ErrorCodes.RATE_LIMIT_EXCEEDED]: 'リクエストが多すぎます。しばらくしてから再度お試しください',
+  [ErrorCodes.DAILY_QUOTA_EXCEEDED]: '本日の利用制限に達しました',
+  [ErrorCodes.MONTHLY_QUOTA_EXCEEDED]: '今月の利用制限に達しました。プランをアップグレードしてください',
+  [ErrorCodes.CONCURRENT_REQUEST_LIMIT]: '同時リクエスト数の上限に達しました',
+  
   // セキュリティエラー
-  [ErrorCodes.SECURITY_FILE_VALIDATION_FAILED]: {
-    ja: 'ファイルのセキュリティ検証に失敗しました',
-    en: 'File security validation failed',
-    recovery: {
-      ja: 'ファイルが安全であることを確認してください',
-      en: 'Please ensure your file is safe'
-    }
-  },
-  [ErrorCodes.SECURITY_CSRF_TOKEN_INVALID]: {
-    ja: 'CSRFトークンが無効です',
-    en: 'Invalid CSRF token',
-    recovery: {
-      ja: 'ページを再読み込みしてください',
-      en: 'Please reload the page'
-    }
-  },
-  [ErrorCodes.SECURITY_RATE_LIMIT_EXCEEDED]: {
-    ja: 'レート制限を超えました',
-    en: 'Rate limit exceeded',
-    recovery: {
-      ja: 'しばらく待ってから再度お試しください',
-      en: 'Please wait and try again'
-    }
-  },
-  [ErrorCodes.SECURITY_XSS_DETECTED]: {
-    ja: 'XSS攻撃が検出されました',
-    en: 'XSS attack detected',
-    recovery: {
-      ja: '入力内容を確認してください',
-      en: 'Please check your input'
-    }
-  },
-  [ErrorCodes.SECURITY_SQL_INJECTION_DETECTED]: {
-    ja: 'SQLインジェクションが検出されました',
-    en: 'SQL injection detected',
-    recovery: {
-      ja: '入力内容を確認してください',
-      en: 'Please check your input'
-    }
-  },
+  [ErrorCodes.SECURITY_FILE_VALIDATION_FAILED]: 'ファイルのセキュリティチェックに失敗しました',
+  [ErrorCodes.SECURITY_CSRF_TOKEN_INVALID]: 'セキュリティトークンが無効です。ページを更新してください',
+  [ErrorCodes.SECURITY_RATE_LIMIT_EXCEEDED]: 'セキュリティ制限に達しました。しばらくお待ちください',
+  [ErrorCodes.SECURITY_XSS_DETECTED]: '不正な入力が検出されました',
+  [ErrorCodes.SECURITY_SQL_INJECTION_DETECTED]: '不正な入力が検出されました',
+  
+  // システムエラー
+  [ErrorCodes.INTERNAL_SERVER_ERROR]: 'サーバー内部エラーが発生しました。しばらくしてから再度お試しください',
+  [ErrorCodes.SERVICE_UNAVAILABLE]: 'サービスが一時的に利用できません。メンテナンス中の可能性があります',
+  [ErrorCodes.CONFIGURATION_ERROR]: 'システム設定に問題があります。管理者にお問い合わせください',
+  [ErrorCodes.UNKNOWN_ERROR]: '予期しないエラーが発生しました。サポートにお問い合わせください',
 };
 
 /**
- * 言語設定に基づいてエラーメッセージを取得
+ * エラーコードから適切なユーザーメッセージを取得
  */
-export function getErrorMessage(
+export function getErrorMessage(code: ErrorCode, customMessage?: string): string {
+  return customMessage || ErrorMessages[code] || ErrorMessages[ErrorCodes.UNKNOWN_ERROR];
+}
+
+/**
+ * エラーの詳細説明を取得
+ */
+export const ErrorDescriptions: Partial<Record<ErrorCode, string>> = {
+  [ErrorCodes.FILE_TOO_MANY_SLIDES]: 'プレゼンテーションのスライド数が多すぎます。処理可能なスライド数は100枚までです。スライドを分割してから再度お試しください。',
+  [ErrorCodes.TRANSLATION_QUOTA_EXCEEDED]: '今月の翻訳可能文字数の上限に達しました。有料プランへのアップグレードをご検討ください。',
+  [ErrorCodes.RATE_LIMIT_EXCEEDED]: '短時間に多くのリクエストが送信されました。セキュリティ保護のため、しばらくお待ちいただいてから再度お試しください。',
+  [ErrorCodes.FILE_CORRUPTED]: 'アップロードされたファイルが破損しているか、正しいPowerPoint形式ではありません。ファイルを修復するか、別のファイルをお試しください。',
+};
+
+/**
+ * エラーの解決方法を取得
+ */
+export const ErrorSolutions: Partial<Record<ErrorCode, string[]>> = {
+  [ErrorCodes.AUTH_INVALID_CREDENTIALS]: [
+    'メールアドレスとパスワードを確認してください',
+    'パスワードを忘れた場合は「パスワードを忘れた方」からリセットできます',
+    'アカウントをお持ちでない場合は新規登録してください',
+  ],
+  [ErrorCodes.VALIDATION_FILE_TOO_LARGE]: [
+    'ファイルサイズを100MB以下に圧縮してください',
+    '画像を圧縮するか、不要なスライドを削除してください',
+    '複数のファイルに分割してアップロードしてください',
+  ],
+  [ErrorCodes.NETWORK_ERROR]: [
+    'インターネット接続を確認してください',
+    'ファイアウォールやプロキシの設定を確認してください',
+    'ブラウザを更新してから再度お試しください',
+  ],
+  [ErrorCodes.TRANSLATION_TIMEOUT]: [
+    'テキスト量を減らしてください',
+    'スライドを分割して処理してください',
+    '複雑な表やグラフを簡略化してください',
+  ],
+};
+
+/**
+ * エラーメッセージをフォーマット
+ */
+export function formatErrorMessage(
   code: ErrorCode,
-  language: 'ja' | 'en' = 'ja',
-  includeRecovery: boolean = true
-): string {
-  const message = ErrorMessages[code];
-  
-  if (!message) {
-    return language === 'ja' 
-      ? '予期しないエラーが発生しました'
-      : 'An unexpected error occurred';
+  options?: {
+    includeCode?: boolean;
+    includeDescription?: boolean;
+    includeSolutions?: boolean;
+  }
+): {
+  message: string;
+  code?: string;
+  description?: string;
+  solutions?: string[];
+} {
+  const result: any = {
+    message: getErrorMessage(code),
+  };
+
+  if (options?.includeCode) {
+    result.code = code;
   }
 
-  let result = message[language];
-  
-  if (includeRecovery && message.recovery) {
-    result += `\n${message.recovery[language]}`;
+  if (options?.includeDescription && ErrorDescriptions[code]) {
+    result.description = ErrorDescriptions[code];
   }
-  
+
+  if (options?.includeSolutions && ErrorSolutions[code]) {
+    result.solutions = ErrorSolutions[code];
+  }
+
   return result;
 }
 
 /**
- * エラーメッセージオブジェクトを取得（コンポーネント用）
+ * エラーメッセージオブジェクトを取得（後方互換性のため）
  */
-export function getErrorMessageObject(
-  code: string | ErrorCode
-): ErrorMessage | undefined {
-  // 文字列の場合はErrorCodeかチェック
-  if (code in ErrorMessages) {
-    return ErrorMessages[code as ErrorCode];
-  }
-  return undefined;
+export function getErrorMessageObject(code: ErrorCode): {
+  message: string;
+  description?: string;
+  solution?: string;
+} {
+  const message = getErrorMessage(code);
+  const description = ErrorDescriptions[code];
+  const solution = ErrorSolutions[code]?.[0]; // 最初の解決策を使用
+  
+  return {
+    message,
+    description,
+    solution,
+  };
 }
 
 /**
- * エラーコードから復旧方法のみを取得
+ * リカバリーメッセージを取得
  */
-export function getRecoveryMessage(
-  code: ErrorCode,
-  language: 'ja' | 'en' = 'ja'
-): string | undefined {
-  const message = ErrorMessages[code];
-  return message?.recovery?.[language];
+export function getRecoveryMessage(code: ErrorCode): string {
+  const solutions = ErrorSolutions[code];
+  return solutions?.[0] || '問題が解決しない場合は、サポートにお問い合わせください。';
 }
-
-/**
- * デフォルトのエラーメッセージ
- */
-export const DEFAULT_ERROR_MESSAGE = {
-  ja: 'エラーが発生しました。しばらく待ってから再度お試しください。',
-  en: 'An error occurred. Please wait and try again.',
-};

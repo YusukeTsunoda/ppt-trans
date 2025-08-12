@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { batchTranslate } from '@/server-actions/translate/process';
 import { uploadPptxAction } from '@/server-actions/files/upload';
 import { 
@@ -17,6 +17,7 @@ import { addToHistory, updateHistoryItem } from '@/lib/history';
 import type { ProcessingResult } from '@/types';
 import type { Settings } from '@/lib/settings';
 import { ThemeDebug } from '@/components/ThemeDebug';
+import { ProgressIndicator, type ProgressStep } from '@/components/ProgressIndicator';
 
 export default function HomePage() {
   const [file, setFile] = useState<File | null>(null);
@@ -26,10 +27,23 @@ export default function HomePage() {
   const [showPreviews, setShowPreviews] = useState(false);
   const [isTranslating, setIsTranslating] = useState(false);
   const [targetLanguage, setTargetLanguage] = useState('Japanese');
+  const [translationProgress, setTranslationProgress] = useState({
+    current: 0,
+    total: 0,
+    status: 'idle' as 'idle' | 'processing' | 'completed' | 'error',
+    message: '',
+    steps: [] as ProgressStep[]
+  });
   const [currentPage, setCurrentPage] = useState<'upload' | 'preview' | 'editor' | 'settings'>('upload');
   const [settings, setSettings] = useState<Settings>(getSettings());
   const [currentHistoryId, setCurrentHistoryId] = useState<string | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
   const responsive = useResponsive();
+
+  // クライアントでのみ実行
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -62,25 +76,75 @@ export default function HomePage() {
         });
       });
 
+      // 進捗情報を初期化
+      setTranslationProgress({
+        current: 0,
+        total: allTexts.length,
+        status: 'processing',
+        message: '翻訳を開始しています...',
+        steps: [
+          { name: 'テキストの前処理', status: 'completed' },
+          { name: 'Claude APIへのリクエスト送信', status: 'in_progress' },
+          { name: '翻訳結果の反映', status: 'pending' }
+        ]
+      });
+
       if (allTexts.length === 0) {
         setError('翻訳するテキストがありません。');
         return;
       }
 
-      // Server Actionを使用して翻訳
-      const result = await batchTranslate({
-        texts: allTexts.map(t => ({ id: t.id, text: t.originalText })),
-        targetLanguage: targetLanguage as any,
-        sourceLanguage: 'auto',
-        model: settings.translationModel as any,
-        batchSize: 10
-      });
-
-      if (!result.success) {
-        throw new Error(result.error || '翻訳に失敗しました。');
+      // バッチサイズを設定（進捗表示のため小さくする）
+      const batchSize = 5;
+      const batches = [];
+      for (let i = 0; i < allTexts.length; i += batchSize) {
+        batches.push(allTexts.slice(i, i + batchSize));
       }
 
-      const translations = result.data?.translations || [];
+      // 各バッチを順次処理して進捗を更新
+      const translations: any[] = [];
+      for (let i = 0; i < batches.length; i++) {
+        const batch = batches[i];
+        
+        // 進捗を更新
+        setTranslationProgress(prev => ({
+          ...prev,
+          current: i * batchSize,
+          message: `翻訳中... (バッチ ${i + 1}/${batches.length})`,
+          steps: prev.steps.map((step, idx) => 
+            idx === 1 ? { ...step, progress: Math.round((i / batches.length) * 100) } : step
+          )
+        }));
+
+        // Server Actionを使用して翻訳
+        const result = await batchTranslate({
+          texts: batch.map(t => ({ id: t.id, text: t.originalText })),
+          targetLanguage: targetLanguage as any,
+          sourceLanguage: 'auto',
+          model: settings.translationModel as any,
+          batchSize: batch.length
+        });
+
+        if (!result.success) {
+          throw new Error(result.error || '翻訳に失敗しました。');
+        }
+
+        translations.push(...(result.data?.translations || []));
+      }
+
+      // 進捗を完了状態に更新
+      setTranslationProgress(prev => ({
+        ...prev,
+        current: allTexts.length,
+        status: 'processing',
+        message: '翻訳結果を反映中...',
+        steps: prev.steps.map((step, idx) => {
+          if (idx === 1) return { ...step, status: 'completed' as const, progress: 100 };
+          if (idx === 2) return { ...step, status: 'in_progress' as const };
+          return step;
+        })
+      }));
+
 
       // 翻訳結果をprocessingResultに反映
       const updatedResult = { ...processingResult };
@@ -98,6 +162,19 @@ export default function HomePage() {
       setProcessingResult(updatedResult);
       console.log('Translation successful:', translations);
 
+      // 進捗を完了状態に更新
+      setTranslationProgress({
+        current: allTexts.length,
+        total: allTexts.length,
+        status: 'completed',
+        message: '翻訳が完了しました！',
+        steps: [
+          { name: 'テキストの前処理', status: 'completed' },
+          { name: 'Claude APIへのリクエスト送信', status: 'completed' },
+          { name: '翻訳結果の反映', status: 'completed' }
+        ]
+      });
+
       // 履歴を更新（翻訳完了）
       if (currentHistoryId) {
         updateHistoryItem(currentHistoryId, {
@@ -110,8 +187,28 @@ export default function HomePage() {
       console.error('Translation error:', err);
       const errorMessage = err instanceof Error ? err.message : '翻訳中にエラーが発生しました。';
       setError(errorMessage);
+      
+      // 進捗をエラー状態に更新
+      setTranslationProgress(prev => ({
+        ...prev,
+        status: 'error',
+        message: errorMessage,
+        steps: prev.steps.map(step => 
+          step.status === 'in_progress' ? { ...step, status: 'failed' as const } : step
+        )
+      }));
     } finally {
       setIsTranslating(false);
+      // 3秒後に進捗表示をリセット
+      setTimeout(() => {
+        setTranslationProgress({
+          current: 0,
+          total: 0,
+          status: 'idle',
+          message: '',
+          steps: []
+        });
+      }, 3000);
     }
   };
 
@@ -129,8 +226,11 @@ export default function HomePage() {
       formData.append('file', file);
 
       const uploadResult = await uploadPptxAction(null, formData);
+      
+      console.log('Upload result:', uploadResult);
 
       if (!uploadResult.success) {
+        console.error('Upload failed:', uploadResult.error);
         throw new Error(uploadResult.error || 'ファイルの処理に失敗しました。');
       }
 
@@ -181,20 +281,20 @@ export default function HomePage() {
 
   return (
     <div className="flex h-screen bg-slate-50 dark:bg-slate-900">
-      {/* モバイルナビゲーション */}
-      {responsive.isMobile && <MobileNav />}
-      
-      {/* デスクトップサイドバー */}
-      {!responsive.isMobile && (
-        <Sidebar 
-          currentPage={currentPage}
-          onPageChange={handlePageChange}
-          hasData={processingResult !== null}
-        />
-      )}
+        {/* モバイルナビゲーション */}
+        {isMounted && responsive.isMobile && <MobileNav />}
+        
+        {/* デスクトップサイドバー */}
+        {isMounted && !responsive.isMobile && (
+          <Sidebar 
+            currentPage={currentPage}
+            onPageChange={handlePageChange}
+            hasData={processingResult !== null}
+          />
+        )}
 
-      {/* メインコンテンツ */}
-      <div className="flex-1 overflow-auto">
+        {/* メインコンテンツ */}
+        <div className="flex-1 overflow-auto">
         {/* 設定画面 */}
         {currentPage === 'settings' && (
           <DynamicSettingsScreen onSettingsChange={handleSettingsChange} />
@@ -223,40 +323,40 @@ export default function HomePage() {
 
         {/* アップロード画面 */}
         {currentPage === 'upload' && (
-          <main className="min-h-screen bg-slate-50 dark:bg-slate-900">
-      <div className="container mx-auto px-4 py-8">
-        {/* Header with User Navigation */}
-        <div className="mb-8">
-          <div className="flex justify-between items-center mb-6">
-            <div></div>
-            {!responsive.isMobile && <UserNav />}
-          </div>
-          <div className="text-center">
-            <h1 className="text-2xl md:text-4xl font-bold text-slate-900 dark:text-slate-100 mb-2">PowerPoint 翻訳ツール</h1>
-            <p className="text-sm md:text-lg text-slate-600 dark:text-slate-400">LibreOffice + pdf2image による高品質変換</p>
-          </div>
-        </div>
+          <div className="w-full">
+            <div className="container mx-auto px-4 py-8">
+              {/* Header with User Navigation */}
+              <div className="mb-8">
+                <div className="flex justify-between items-center mb-6">
+                  <div></div>
+                  {!responsive.isMobile && <UserNav />}
+                </div>
+                <div className="text-center">
+                  <h1 className="text-2xl md:text-4xl font-bold text-slate-900 dark:text-slate-100 mb-2">PowerPoint 翻訳ツール</h1>
+                  <p className="text-sm md:text-lg text-slate-600 dark:text-slate-400">LibreOffice + pdf2image による高品質変換</p>
+                </div>
+              </div>
 
-        {/* Upload Section */}
-        {!showPreviews && (
+              {/* Upload Section */}
+              {!showPreviews && (
           <div className="max-w-lg mx-auto">
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8 space-y-6">
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-8 space-y-6">
               <div className="text-center">
-                <p className="text-slate-600">.pptxファイルをアップロードして変換を開始します。</p>
+                <p className="text-slate-600 dark:text-slate-400">.pptxファイルをアップロードして変換を開始します。</p>
               </div>
               <div className="flex flex-col items-center space-y-4">
                 <input
                   type="file"
                   onChange={handleFileChange}
                   accept=".pptx,application/vnd.openxmlformats-officedocument.presentationml.presentation"
-                  className="block w-full text-sm text-slate-600
+                  className="block w-full text-sm text-slate-600 dark:text-slate-400
                     file:mr-4 file:py-2 file:px-4
                     file:rounded-lg file:border-0
                     file:text-sm file:font-semibold
-                    file:bg-blue-50 file:text-blue-700
-                    hover:file:bg-blue-100 file:transition-all file:duration-200"
+                    file:bg-blue-50 dark:file:bg-blue-900/30 file:text-blue-700 dark:file:text-blue-300
+                    hover:file:bg-blue-100 dark:hover:file:bg-blue-900/50 file:transition-all file:duration-200"
                 />
-                {file && <p className="text-sm text-slate-600">選択中のファイル: {file.name}</p>}
+                {file && <p className="text-sm text-slate-600 dark:text-slate-400">選択中のファイル: {file.name}</p>}
                 {error && <p className="text-sm text-red-600">{error}</p>}
               </div>
               <button
@@ -272,12 +372,12 @@ export default function HomePage() {
               </button>
             </div>
           </div>
-        )}
+              )}
 
-        {/* Processing Status */}
-        {isUploading && (
+              {/* Processing Status */}
+              {isUploading && (
           <div className="max-w-lg mx-auto mt-8">
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-xl p-4">
               <div className="flex items-center">
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
                 <p className="ml-3 text-blue-700 font-medium">
@@ -290,18 +390,18 @@ export default function HomePage() {
               </div>
             </div>
           </div>
-        )}
+              )}
 
-        {/* Preview Results */}
-        {showPreviews && processingResult && (
+              {/* Preview Results */}
+              {showPreviews && processingResult && (
           <div className="space-y-6">
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-4">
                 <div>
-                  <h2 className="text-2xl font-semibold text-slate-900">
+                  <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">
                     🎉 変換完了 - {processingResult.totalSlides} スライド
                   </h2>
-                  <p className="text-sm text-slate-600 mt-1">
+                  <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
                     総テキスト要素: {processingResult.slides.reduce((total, slide) => total + slide.texts.length, 0)} 個
                   </p>
                 </div>
@@ -367,6 +467,46 @@ export default function HomePage() {
                 </div>
               </div>
               
+              {/* 翻訳進捗表示 */}
+              {isTranslating && translationProgress.status === 'processing' && (
+                <div className="mb-6">
+                  <ProgressIndicator
+                    current={translationProgress.current}
+                    total={translationProgress.total}
+                    status={translationProgress.status}
+                    message={translationProgress.message}
+                    steps={translationProgress.steps}
+                    showDetails={true}
+                  />
+                </div>
+              )}
+              
+              {/* 翻訳完了メッセージ */}
+              {translationProgress.status === 'completed' && (
+                <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 mb-6">
+                  <div className="flex items-center gap-2">
+                    <span className="text-emerald-600">✅</span>
+                    <p className="text-emerald-800 font-medium">翻訳が正常に完了しました</p>
+                  </div>
+                  <p className="text-emerald-700 text-sm mt-1">
+                    {translationProgress.total}個のテキストを翻訳しました。
+                  </p>
+                </div>
+              )}
+              
+              {/* エラーメッセージ */}
+              {translationProgress.status === 'error' && (
+                <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
+                  <div className="flex items-center gap-2">
+                    <span className="text-red-600">⚠️</span>
+                    <p className="text-red-800 font-medium">翻訳中にエラーが発生しました</p>
+                  </div>
+                  <p className="text-red-700 text-sm mt-1">
+                    {translationProgress.message}
+                  </p>
+                </div>
+              )}
+              
               <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 mb-6">
                 <div className="flex items-center gap-2">
                   <span className="text-emerald-600">✅</span>
@@ -382,18 +522,18 @@ export default function HomePage() {
                 {processingResult.slides.map((slide) => (
                   <div 
                     key={slide.pageNumber} 
-                    className="bg-white rounded-xl p-4 border border-slate-200 hover:shadow-md transition-all duration-200 group hover:border-blue-300"
+                    className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 hover:shadow-md transition-all duration-200 group hover:border-blue-300 dark:hover:border-blue-600"
                   >
                     <div className="mb-3">
                       <div className="flex items-center justify-between mb-2">
-                        <h3 className="font-semibold text-slate-900 text-sm">
+                        <h3 className="font-semibold text-slate-900 dark:text-slate-100 text-sm">
                           📄 スライド {slide.pageNumber}
                         </h3>
-                        <span className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-full font-medium border border-blue-200">
+                        <span className="text-xs bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-full font-medium border border-blue-200 dark:border-blue-700">
                           {slide.texts.length} テキスト
                         </span>
                       </div>
-                      <div className="aspect-video bg-white rounded-lg border border-slate-200 overflow-hidden group-hover:shadow-sm transition-all duration-200">
+                      <div className="aspect-video bg-white dark:bg-slate-700 rounded-lg border border-slate-200 dark:border-slate-600 overflow-hidden group-hover:shadow-sm transition-all duration-200">
                         <img
                           src={slide.imageUrl}
                           alt={`Slide ${slide.pageNumber}`}
@@ -416,12 +556,12 @@ export default function HomePage() {
                           </summary>
                           <div className="mt-2 space-y-1 max-h-40 overflow-y-auto">
                             {slide.texts.map((text, index) => (
-                              <div key={text.id} className="text-xs bg-white p-2 rounded-lg border-l-2 border-blue-300">
-                                <p className="text-slate-800 font-medium line-clamp-2" title={text.original}>
+                              <div key={text.id} className="text-xs bg-white dark:bg-slate-700 p-2 rounded-lg border-l-2 border-blue-300 dark:border-blue-600">
+                                <p className="text-slate-800 dark:text-slate-200 font-medium line-clamp-2" title={text.original}>
                                   {index + 1}. {text.original}
                                 </p>
                                 {text.translated && (
-                                  <p className="text-emerald-700 text-xs mt-1 line-clamp-2" title={text.translated}>
+                                  <p className="text-slate-900 dark:text-slate-100 text-xs mt-1 line-clamp-2" title={text.translated}>
                                     → {text.translated}
                                   </p>
                                 )}
@@ -430,7 +570,7 @@ export default function HomePage() {
                           </div>
                         </details>
                       ) : (
-                        <div className="text-xs text-slate-500 italic flex items-center gap-1 p-2 bg-slate-50 rounded-lg border border-slate-200">
+                        <div className="text-xs text-slate-500 dark:text-slate-400 italic flex items-center gap-1 p-2 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
                           <span>🔍</span>
                           <span>テキストが検出されませんでした</span>
                         </div>
@@ -441,9 +581,9 @@ export default function HomePage() {
               </div>
             </div>
           </div>
-        )}
-      </div>
-    </main>
+              )}
+            </div>
+          </div>
         )}
       </div>
       <ThemeDebug />

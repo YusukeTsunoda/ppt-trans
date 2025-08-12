@@ -12,46 +12,46 @@ datasource db {
 
 // ユーザーモデル
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  username      String    @unique
-  name          String?
-  password      String?   // passwordHashからpasswordに変更（bcryptハッシュを保存）
-  passwordHash  String?   // 互換性のため一時的に保持
-  role          Role      @default(USER)
-  image         String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  lastLoginAt   DateTime?
-  isActive      Boolean   @default(true)
-  
+  id           String    @id @default(cuid())
+  email        String    @unique
+  username     String    @unique
+  name         String?
+  password     String? // passwordHashからpasswordに変更（bcryptハッシュを保存）
+  passwordHash String? // 互換性のため一時的に保持
+  role         Role      @default(USER)
+  image        String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  lastLoginAt  DateTime?
+  isActive     Boolean   @default(true)
+
   // リレーション
-  files         File[]
-  settings      UserSettings?
-  sessions      Session[]
-  auditLogs     AuditLog[]
-  activityLogs  ActivityLog[]
-  usageLimit    UsageLimit?
-  
+  files        File[]
+  settings     UserSettings?
+  sessions     Session[]
+  auditLogs    AuditLog[]
+  activityLogs ActivityLog[]
+  usageLimit   UsageLimit?
+
   @@index([email])
   @@index([username])
 }
 
 // ユーザー設定
 model UserSettings {
-  id                String   @id @default(cuid())
-  userId            String   @unique
-  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   // 翻訳設定
-  translationModel  String   @default("claude-3-haiku-20240307")
-  targetLanguage    String   @default("Japanese")
-  batchSize         Int      @default(5)
-  autoSave          Boolean  @default(true)
-  theme             String   @default("light")
-  
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  translationModel String  @default("claude-3-haiku-20240307")
+  targetLanguage   String  @default("Japanese")
+  batchSize        Int     @default(5)
+  autoSave         Boolean @default(true)
+  theme            String  @default("light")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // セッション管理
@@ -62,83 +62,83 @@ model Session {
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   expires      DateTime
   createdAt    DateTime @default(now())
-  
+
   @@index([sessionToken])
   @@index([userId])
 }
 
 // ファイル管理
 model File {
-  id              String    @id @default(cuid())
-  userId          String
-  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  fileName        String
-  originalFileUrl String
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  fileName          String
+  originalFileUrl   String
   translatedFileUrl String?
-  fileSize        Int
-  mimeType        String
-  
+  fileSize          Int
+  mimeType          String
+
   // 処理状態
-  status          FileStatus @default(PENDING)
-  processedAt     DateTime?
-  
+  status      FileStatus @default(PENDING)
+  processedAt DateTime?
+
   // メタデータ
-  totalSlides     Int?
-  sourceLanguage  String?
-  targetLanguage  String?
+  totalSlides      Int?
+  sourceLanguage   String?
+  targetLanguage   String?
   translationModel String?
-  
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // リレーション
-  translations    Translation[]
-  auditLogs       AuditLog[]
-  activityLogs    ActivityLog[]
-  
+  translations Translation[]
+  auditLogs    AuditLog[]
+  activityLogs ActivityLog[]
+
   @@index([userId])
   @@index([status])
 }
 
 // 翻訳履歴
 model Translation {
-  id            String   @id @default(cuid())
-  fileId        String
-  file          File     @relation(fields: [fileId], references: [id], onDelete: Cascade)
-  
-  slideNumber   Int?
-  originalText  String?
+  id     String @id @default(cuid())
+  fileId String
+  file   File   @relation(fields: [fileId], references: [id], onDelete: Cascade)
+
+  slideNumber    Int?
+  originalText   String?
   translatedText String?
   targetLanguage String?
-  status        String?
-  progress      Int?
-  completedAt   DateTime?
-  
-  createdAt     DateTime @default(now())
-  
+  status         String?
+  progress       Int?
+  completedAt    DateTime?
+
+  createdAt DateTime @default(now())
+
   @@index([fileId])
 }
 
 // 監査ログ
 model AuditLog {
-  id          String      @id @default(cuid())
-  userId      String
-  user        User        @relation(fields: [userId], references: [id])
-  
-  action      AuditAction
-  entityType  String      // "file", "user", "settings" など
-  entityId    String?
-  
-  fileId      String?
-  file        File?       @relation(fields: [fileId], references: [id])
-  
-  metadata    Json?       // 追加情報
-  ipAddress   String?
-  userAgent   String?
-  
-  createdAt   DateTime    @default(now())
-  
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  action     AuditAction
+  entityType String // "file", "user", "settings" など
+  entityId   String?
+
+  fileId String?
+  file   File?   @relation(fields: [fileId], references: [id])
+
+  metadata  Json? // 追加情報
+  ipAddress String?
+  userAgent String?
+
+  createdAt DateTime @default(now())
+
   @@index([userId])
   @@index([action])
   @@index([createdAt])
@@ -173,19 +173,19 @@ enum AuditAction {
 
 // アクティビティログ（Server Actions用）
 model ActivityLog {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  action      String   // "FILE_UPLOAD", "FILE_DELETE", "LOGIN", など
-  targetType  String?  // "file", "user", "settings" など
-  targetId    String?
-  fileId      String?
-  file        File?    @relation(fields: [fileId], references: [id])
-  metadata    Json?    // 追加情報
-  
-  createdAt   DateTime @default(now())
-  
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  action     String // "FILE_UPLOAD", "FILE_DELETE", "LOGIN", など
+  targetType String? // "file", "user", "settings" など
+  targetId   String?
+  fileId     String?
+  file       File?   @relation(fields: [fileId], references: [id])
+  metadata   Json? // 追加情報
+
+  createdAt DateTime @default(now())
+
   @@index([userId])
   @@index([action])
   @@index([createdAt])
@@ -193,18 +193,18 @@ model ActivityLog {
 
 // 使用量制限
 model UsageLimit {
-  id                String   @id @default(cuid())
-  userId            String   @unique
-  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   monthlyFileLimit  Int      @default(10)
   currentMonthFiles Int      @default(0)
   maxFileSize       Int      @default(104857600) // 100MB
   maxStorageSize    Int      @default(1073741824) // 1GB
   resetDate         DateTime @default(now())
-  
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@index([userId])
 }

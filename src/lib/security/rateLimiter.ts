@@ -233,3 +233,108 @@ export async function withRateLimit(
   
   return null;
 }
+
+/**
+ * Server Actions用のレート制限チェック
+ * IPアドレスまたはユーザーIDをキーとして使用
+ */
+export async function checkServerActionRateLimit(
+  identifier: string,
+  endpoint: string,
+  config: Partial<RateLimitConfig> = {}
+): Promise<{
+  success: boolean;
+  limit: number;
+  remaining: number;
+  reset: Date;
+}> {
+  const redis = getRedisClient();
+  const now = Date.now();
+  
+  // デフォルト設定
+  const finalConfig = {
+    windowMs: 60 * 1000, // 1分
+    max: 60,
+    ...config
+  };
+  
+  const key = `ratelimit:serveraction:${endpoint}:${identifier}`;
+  const windowStart = now - finalConfig.windowMs;
+  
+  // Redisが利用できない場合は常に通過させる
+  if (!redis) {
+    logger.debug('Redis not available for Server Action rate limit');
+    return {
+      success: true,
+      limit: finalConfig.max,
+      remaining: finalConfig.max,
+      reset: new Date(now + finalConfig.windowMs),
+    };
+  }
+  
+  try {
+    // Redisトランザクションで原子的に処理
+    const multi = redis.multi();
+    
+    // 古いエントリを削除
+    multi.zremrangebyscore(key, '-inf', windowStart);
+    
+    // 現在のカウントを取得
+    multi.zcard(key);
+    
+    // 新しいリクエストを追加
+    multi.zadd(key, now, `${now}-${Math.random()}`);
+    
+    // TTLを設定
+    multi.expire(key, Math.ceil(finalConfig.windowMs / 1000));
+    
+    const results = await multi.exec();
+    
+    if (!results) {
+      throw new Error('Redis transaction failed');
+    }
+    
+    const count = (results[1][1] as number) + 1;
+    const remaining = Math.max(0, finalConfig.max - count);
+    const resetTime = new Date(now + finalConfig.windowMs);
+    
+    // レート制限を超えている場合
+    if (count > finalConfig.max) {
+      // 余分なリクエストを削除
+      await redis.zremrangebyrank(key, 0, 0);
+      
+      logger.warn('Server Action rate limit exceeded', {
+        key,
+        count,
+        limit: finalConfig.max,
+        identifier,
+        endpoint,
+      });
+      
+      return {
+        success: false,
+        limit: finalConfig.max,
+        remaining: 0,
+        reset: resetTime,
+      };
+    }
+    
+    return {
+      success: true,
+      limit: finalConfig.max,
+      remaining,
+      reset: resetTime,
+    };
+    
+  } catch (error) {
+    logger.error('Server Action rate limiter error', error);
+    
+    // エラー時は通過させる（フェイルオープン）
+    return {
+      success: true,
+      limit: finalConfig.max,
+      remaining: finalConfig.max,
+      reset: new Date(now + finalConfig.windowMs),
+    };
+  }
+}

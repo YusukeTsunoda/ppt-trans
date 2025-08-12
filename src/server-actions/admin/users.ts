@@ -14,10 +14,10 @@ const searchUsersSchema = z.object({
   query: z.string().optional(),
   role: z.enum(['USER', 'ADMIN']).optional(),
   status: z.enum(['active', 'inactive', 'suspended']).optional(),
-  page: z.number().min(1).default(1),
-  limit: z.number().min(1).max(100).default(20),
-  sortBy: z.enum(['createdAt', 'name', 'email', 'lastLoginAt']).default('createdAt'),
-  sortOrder: z.enum(['asc', 'desc']).default('desc'),
+  page: z.number().min(1).optional().default(1),
+  limit: z.number().min(1).max(100).optional().default(20),
+  sortBy: z.enum(['createdAt', 'name', 'email', 'lastLoginAt']).optional().default('createdAt'),
+  sortOrder: z.enum(['asc', 'desc']).optional().default('desc'),
 });
 
 // ユーザー更新のスキーマ
@@ -75,12 +75,12 @@ async function checkAdminPermission() {
 /**
  * ユーザー一覧を取得
  */
-export async function getUsers(params: z.infer<typeof searchUsersSchema>) {
+export async function getUsers(params?: Partial<z.infer<typeof searchUsersSchema>>) {
   try {
     const adminUserId = await checkAdminPermission();
 
     // パラメータをバリデーション
-    const validatedParams = searchUsersSchema.parse(params);
+    const validatedParams = searchUsersSchema.parse(params || {});
 
     // 検索条件を構築
     const where: any = {};
