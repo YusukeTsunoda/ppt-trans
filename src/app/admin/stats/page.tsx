@@ -1,11 +1,11 @@
 import { Suspense } from 'react';
 import { redirect } from 'next/navigation';
-import { getCurrentUser } from '@/lib/server-actions/admin/auth';
+import { getCurrentAdminUser } from '@/lib/server-actions/admin/auth';
 import { getDashboardStats, getUserStats, getFileStats } from '@/lib/server-actions/admin/stats';
 import AdminStatsClient from './AdminStatsClient';
 
 async function AdminStatsServer() {
-  const user = await getCurrentUser();
+  const user = await getCurrentAdminUser();
   
   if (!user || user.role !== 'ADMIN') {
     redirect('/');

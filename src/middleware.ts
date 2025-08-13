@@ -1,84 +1,87 @@
-import { withAuth } from 'next-auth/middleware';
-import { NextResponse } from 'next/server';
-import type { NextRequestWithAuth } from 'next-auth/middleware';
-// レート制限はEdge Runtimeで使用できないため、APIルート内で実装
-// XSSProtectionはEdge Runtimeで使用できないため、CSPは直接設定
-// loggerはEdge Runtimeでの使用を避ける
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { NextResponse, type NextRequest } from 'next/server'
 
-export default withAuth(
-  async function middleware(req: NextRequestWithAuth) {
-    const token = req.nextauth?.token;
-    const pathname = req.nextUrl.pathname;
-    const response = NextResponse.next();
-    
-    try {
-      // セキュリティヘッダーの設定
-      setSecurityHeaders(response);
-      
-      // APIルートのセキュリティ処理（NextAuth関連のみ残存）
-      if (pathname.startsWith('/api/')) {
-        // レート制限はAPIルート内で個別に実装
-        // Server Actionsは自動的にCSRF保護されるため、追加の実装は不要
-        
-        // API専用ヘッダー
-        response.headers.set('X-Content-Type-Options', 'nosniff');
-        response.headers.set('X-API-Version', '1.0.0');
-      }
-      
-      // Admin routes require admin role
-      if (pathname.startsWith('/admin')) {
-        if (!token || ((token as any).role !== 'ADMIN' && (token as any).role !== 'SUPER_ADMIN')) {
-          return NextResponse.redirect(new URL('/login', req.url));
-        }
-      }
-      
-      return response;
-    } catch (error) {
-      console.error('Middleware security error', error);
-      return response;
-    }
-  },
-  {
-    callbacks: {
-      authorized: ({ token, req }) => {
-        const pathname = req.nextUrl.pathname;
-        
-        // Public routes - no authentication required
-        if (
-          pathname === '/login' ||
-          pathname === '/register' ||
-          pathname === '/test-login' ||
-          pathname.startsWith('/api/auth')
-          // APIエンドポイントは認証必須に変更（セキュリティ強化）
-          // pathname.startsWith('/api/translate') - 削除
-          // pathname.startsWith('/api/generate') - 削除
-        ) {
-          return true;
-        }
-        
-        // All other routes require authentication
-        return !!token;
+export async function middleware(request: NextRequest) {
+  let response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  })
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll()
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+          response = NextResponse.next({
+            request,
+          })
+          cookiesToSet.forEach(({ name, value, options }) =>
+            response.cookies.set(name, value, options)
+          )
+        },
       },
-    },
-    pages: {
-      signIn: '/login',
-    },
+    }
+  )
+
+  // セキュリティヘッダーの設定
+  setSecurityHeaders(response)
+
+  const { data: { user } } = await supabase.auth.getUser()
+
+  // 保護されたルートのチェック
+  const protectedPaths = ['/dashboard', '/files', '/admin', '/settings']
+  const authPaths = ['/login', '/register', '/forgot-password']
+  
+  const isProtectedPath = protectedPaths.some(path => request.nextUrl.pathname.startsWith(path))
+  const isAuthPath = authPaths.some(path => request.nextUrl.pathname.startsWith(path))
+
+  // 未認証ユーザーが保護されたルートにアクセスしようとした場合
+  if (isProtectedPath && !user) {
+    const redirectUrl = new URL('/login', request.url)
+    redirectUrl.searchParams.set('callbackUrl', request.nextUrl.pathname)
+    return NextResponse.redirect(redirectUrl)
   }
-);
+
+  // 認証済みユーザーが認証ページにアクセスしようとした場合
+  if (isAuthPath && user) {
+    return NextResponse.redirect(new URL('/dashboard', request.url))
+  }
+
+  // 管理者ルートのチェック
+  if (request.nextUrl.pathname.startsWith('/admin') && user) {
+    // プロファイルからロールを取得
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    if (profile?.role !== 'ADMIN') {
+      return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
+  }
+
+  return response
+}
 
 /**
  * セキュリティヘッダーを設定
  */
 function setSecurityHeaders(response: NextResponse) {
   // Content Security Policy
-  // CSPを直接設定（Edge Runtime対応）
   const csp = [
     "default-src 'self'",
     "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: https:",
     "font-src 'self' data:",
-    "connect-src 'self' https://api.anthropic.com",
+    "connect-src 'self' https://api.anthropic.com https://*.supabase.co wss://*.supabase.co",
     "frame-ancestors 'none'",
     "base-uri 'self'",
     "form-action 'self'",
@@ -105,13 +108,12 @@ function setSecurityHeaders(response: NextResponse) {
 export const config = {
   matcher: [
     /*
-     * Match all request paths except:
-     * - api/auth (auth endpoints)
+     * Match all request paths except for the ones starting with:
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
-     * - public files (public folder)
+     * - public folder
      */
-    '/((?!api/auth|_next/static|_next/image|favicon.ico|public).*)',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
-};
+}

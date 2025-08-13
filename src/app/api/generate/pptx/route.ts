@@ -6,7 +6,7 @@ import fs from 'fs/promises';
 import { v4 as uuidv4 } from 'uuid';
 import logger from '@/lib/logger';
 import { supabase } from '@/lib/supabaseClient';
-import { verifyApiAuth, checkRateLimit } from '@/lib/auth/api-auth';
+import { requireAuth } from '@/lib/auth-helpers';
 
 const execAsync = promisify(exec);
 
@@ -28,23 +28,11 @@ interface GenerateRequest {
 
 export async function POST(request: NextRequest) {
   // 認証チェック
-  const authResult = await verifyApiAuth(request);
-  if (!authResult.isAuthenticated) {
-    return authResult.error!;
+  const authResult = await requireAuth();
+  if (authResult instanceof NextResponse) {
+    return authResult;
   }
-
-  // レート制限チェック（1分あたり10リクエスト - 生成は重い処理のため少なめに）
-  const rateLimitResult = checkRateLimit(authResult.user!.id, 10, 60000);
-  if (!rateLimitResult.allowed) {
-    logger.warn('Rate limit exceeded for PPTX generation', { userId: authResult.user!.id });
-    return NextResponse.json(
-      { 
-        success: false,
-        error: 'Rate limit exceeded. Please try again later.' 
-      },
-      { status: 429 }
-    );
-  }
+  const user = authResult;
   
   let tempDir: string | null = null;
   

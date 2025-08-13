@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import SessionProvider from "@/components/SessionProvider";
+import AuthProvider from "@/components/AuthProvider";
 import { ToastProvider } from "@/components/Toast";
 import "./globals.css";
 
@@ -32,7 +32,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <ErrorBoundary>
-          <SessionProvider>
+          <AuthProvider>
             <ThemeProvider
               attribute="class"
               defaultTheme="light"
@@ -45,7 +45,7 @@ export default function RootLayout({
                 {children}
               </ToastProvider>
             </ThemeProvider>
-          </SessionProvider>
+          </AuthProvider>
         </ErrorBoundary>
       </body>
     </html>

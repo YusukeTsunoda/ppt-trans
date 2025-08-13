@@ -1,6 +1,6 @@
 'use client';
 
-import { useSession } from 'next-auth/react';
+import { useAuth } from '@/components/AuthProvider';
 import { useState, useEffect, useTransition, useOptimistic } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -27,7 +27,7 @@ const formatDate = (date: Date): string => {
 };
 
 export default function FilesPage() {
-  const { data: session, status } = useSession();
+  const { user, loading } = useAuth();
   const router = useRouter();
   const [files, setFiles] = useState<FileWithTranslations[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -44,15 +44,15 @@ export default function FilesPage() {
   );
 
   useEffect(() => {
-    if (status === 'loading') return;
+    if (loading) return;
     
-    if (!session) {
+    if (!user) {
       router.push('/login');
       return;
     }
 
     fetchFiles();
-  }, [session, status, router]);
+  }, [user, loading, router]);
 
   const fetchFiles = async () => {
     setIsLoading(true);
@@ -173,7 +173,7 @@ export default function FilesPage() {
     );
   };
 
-  if (status === 'loading' || isLoading) {
+  if (loading || isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
@@ -181,7 +181,7 @@ export default function FilesPage() {
     );
   }
 
-  if (!session) {
+  if (!user) {
     return null;
   }
 

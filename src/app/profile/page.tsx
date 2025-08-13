@@ -1,14 +1,13 @@
 import { Suspense } from 'react';
 import { redirect } from 'next/navigation';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { getCurrentUser } from '@/lib/auth-helpers';
 import { getProfile } from '@/lib/server-actions/profile/get';
 import ProfileClient from './ProfileClient';
 
 async function ProfileServer() {
-  const session = await getServerSession(authOptions);
+  const user = await getCurrentUser();
   
-  if (!session) {
+  if (!user) {
     redirect('/login');
   }
 

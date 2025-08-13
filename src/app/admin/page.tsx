@@ -1,12 +1,12 @@
 import { Suspense } from 'react';
 import { redirect } from 'next/navigation';
-import { getCurrentUser } from '@/lib/server-actions/admin/auth';
+import { getCurrentAdminUser } from '@/lib/server-actions/admin/auth';
 import { getDashboardStats, getAuditLogs } from '@/lib/server-actions/admin/stats';
 import { getUsers } from '@/lib/server-actions/admin/users';
 import AdminDashboardClient from './AdminDashboardClient';
 
 async function AdminDashboardServer() {
-  const user = await getCurrentUser();
+  const user = await getCurrentAdminUser();
   
   if (!user || user.role !== 'ADMIN') {
     redirect('/');

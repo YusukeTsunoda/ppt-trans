@@ -1,22 +1,22 @@
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { AuditAction } from '@prisma/client';
 
 export async function getCurrentUser() {
-  const session = await getServerSession(authOptions);
+  const supabase = await createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
   
-  if (!session?.user?.id) {
+  if (!user?.id) {
     return null;
   }
 
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
+  const dbUser = await prisma.user.findUnique({
+    where: { id: user.id },
     include: { settings: true }
   });
 
-  return user;
+  return dbUser;
 }
 
 export async function requireAuth() {

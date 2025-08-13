@@ -1,23 +1,69 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useSession, signOut } from 'next-auth/react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useTheme } from 'next-themes';
+import { createClient } from '@/lib/supabase/client';
+import { User } from '@supabase/supabase-js';
 
 export function MobileNav() {
   const [isOpen, setIsOpen] = useState(false);
-  const { data: session } = useSession();
+  const [user, setUser] = useState<User | null>(null);
+  const [userRole, setUserRole] = useState<string>('USER');
   const pathname = usePathname();
+  const router = useRouter();
   const { theme, setTheme } = useTheme();
+  const supabase = createClient();
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+
+      if (user) {
+        // プロファイルからロールを取得
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single();
+
+        setUserRole(profile?.role || 'USER');
+      }
+    };
+
+    checkAuth();
+
+    // 認証状態の変更を監視
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      setUser(session?.user || null);
+      
+      if (session?.user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', session.user.id)
+          .single();
+
+        setUserRole(profile?.role || 'USER');
+      } else {
+        setUserRole('USER');
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [supabase]);
 
   const toggleMenu = () => setIsOpen(!isOpen);
   const closeMenu = () => setIsOpen(false);
 
   const handleSignOut = async () => {
     closeMenu();
-    await signOut({ callbackUrl: '/login' });
+    await supabase.auth.signOut();
+    router.push('/login');
   };
 
   const menuItems = [
@@ -83,17 +129,17 @@ export function MobileNav() {
             </div>
 
             {/* ユーザー情報 */}
-            {session?.user && (
+            {user && (
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold">
-                  {session.user.name?.[0] || session.user.email?.[0] || 'U'}
+                  {user.email?.[0]?.toUpperCase() || 'U'}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-secondary-900 dark:text-secondary-100 truncate">
-                    {session.user.name || session.user.email}
+                    {user.email}
                   </p>
                   <p className="text-xs text-secondary-500 dark:text-secondary-400">
-                    {session.user.role || 'ユーザー'}
+                    {userRole === 'ADMIN' ? '管理者' : 'ユーザー'}
                   </p>
                 </div>
               </div>
@@ -105,8 +151,8 @@ export function MobileNav() {
             <ul className="space-y-1">
               {menuItems.map((item) => {
                 // 認証が必要なアイテムの表示制御
-                if (item.requireAuth && !session) return null;
-                if (item.requireAdmin && session?.user?.role !== 'ADMIN') return null;
+                if (item.requireAuth && !user) return null;
+                if (item.requireAdmin && userRole !== 'ADMIN') return null;
 
                 return (
                   <li key={item.href}>
@@ -158,7 +204,7 @@ export function MobileNav() {
             </button>
 
             {/* ログイン/ログアウト */}
-            {session ? (
+            {user ? (
               <button
                 onClick={handleSignOut}
                 className="w-full flex items-center gap-3 px-4 py-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"

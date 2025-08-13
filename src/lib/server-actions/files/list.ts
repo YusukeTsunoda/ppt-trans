@@ -3,8 +3,7 @@
 import { ServerActionState, createSuccessState, createErrorState } from '../types';
 import prisma from '@/lib/prisma';
 import logger from '@/lib/logger';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { getCurrentUser } from '@/lib/auth-helpers';
 
 // ファイルと翻訳を含む型
 export interface FileWithTranslations {
@@ -39,8 +38,8 @@ export async function listFilesAction(
   formData: FormData
 ): Promise<ServerActionState<ListFilesResult>> {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const user = await getCurrentUser();
+    if (!user) {
       return createErrorState('ログインが必要です');
     }
 
@@ -55,7 +54,7 @@ export async function listFilesAction(
     // ファイルと翻訳データを取得
     const [files, total] = await Promise.all([
       prisma.file.findMany({
-        where: { userId: session.user.id },
+        where: { userId: user.id },
         skip,
         take: limit,
         orderBy: { [sortBy]: sortOrder },
@@ -71,12 +70,12 @@ export async function listFilesAction(
         },
       }),
       prisma.file.count({
-        where: { userId: session.user.id },
+        where: { userId: user.id },
       }),
     ]);
 
     logger.info('Files listed', {
-      userId: session.user.id,
+      userId: user.id,
       count: files.length,
       page,
       total,
