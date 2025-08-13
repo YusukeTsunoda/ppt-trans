@@ -202,11 +202,20 @@ class PPTXProcessor:
             image.save(img_buffer, format='JPEG', quality=85, optimize=True)
             img_buffer.seek(0)
             
-            # Upload to Supabase
+            # First, try to remove existing file if it exists
+            try:
+                self.supabase.storage.from_('pptx-files').remove([filename])
+            except:
+                pass  # Ignore errors if file doesn't exist
+            
+            # Upload to Supabase with upsert option
             upload_result = self.supabase.storage.from_('pptx-files').upload(
                 path=filename,
                 file=img_buffer.getvalue(),
-                file_options={"content-type": "image/jpeg"}
+                file_options={
+                    "content-type": "image/jpeg",
+                    "upsert": "true"  # Allow overwriting existing files
+                }
             )
             
             # Check if upload was successful

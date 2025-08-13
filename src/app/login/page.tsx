@@ -4,20 +4,24 @@ import { useState, Suspense, FormEvent } from 'react';
 import Link from 'next/link';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { signIn } from 'next-auth/react';
+import { createClient } from '@/lib/supabase/client';
 
-function LoginForm() {
+function LoginFormInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const registered = searchParams.get('registered') === 'true';
   const reset = searchParams.get('reset') === 'true';
-  const callbackUrl = searchParams.get('callbackUrl') || '/files';
+  const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
   
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
+  const [loginMethod, setLoginMethod] = useState<'password' | 'magic-link'>('password');
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+  const supabase = createClient();
+
+  const handlePasswordLogin = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
@@ -30,20 +34,18 @@ function LoginForm() {
     console.log('Login attempt:', { email, callbackUrl });
 
     try {
-      const result = await signIn('credentials', {
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
-        redirect: false,
-        callbackUrl,
       });
 
-      console.log('SignIn result:', result);
-
-      if (result?.error) {
-        console.error('SignIn error:', result.error);
-        setError(result.error);
+      if (error) {
+        console.error('SignIn error:', error);
+        setError(error.message === 'Invalid login credentials' 
+          ? 'メールアドレスまたはパスワードが正しくありません' 
+          : error.message);
         setLoading(false);
-      } else if (result?.ok) {
+      } else if (data.user) {
         console.log('SignIn success, redirecting to:', callbackUrl);
         setSuccess(true);
         // リダイレクト
@@ -55,6 +57,59 @@ function LoginForm() {
     } catch (err) {
       console.error('Login error:', err);
       setError('ログイン処理中にエラーが発生しました');
+      setLoading(false);
+    }
+  };
+
+  const handleMagicLink = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+    setEmailSent(false);
+
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get('email') as string;
+
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback?next=${callbackUrl}`,
+        },
+      });
+
+      if (error) {
+        setError(error.message);
+      } else {
+        setEmailSent(true);
+      }
+    } catch (err) {
+      console.error('Magic link error:', err);
+      setError('メール送信中にエラーが発生しました');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSocialLogin = async (provider: 'google' | 'github') => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback?next=${callbackUrl}`,
+        },
+      });
+
+      if (error) {
+        setError(error.message);
+        setLoading(false);
+      }
+    } catch (err) {
+      console.error('Social login error:', err);
+      setError('ソーシャルログイン中にエラーが発生しました');
       setLoading(false);
     }
   };
@@ -78,7 +133,35 @@ function LoginForm() {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="mt-8 space-y-6">
+        {/* ログイン方法の切り替え */}
+        <div className="flex rounded-md shadow-sm" role="group">
+          <button
+            type="button"
+            onClick={() => setLoginMethod('password')}
+            className={`flex-1 px-4 py-2 text-sm font-medium rounded-l-lg border ${
+              loginMethod === 'password'
+                ? 'bg-primary text-white border-primary'
+                : 'bg-white dark:bg-secondary-800 text-secondary-700 dark:text-secondary-300 border-secondary-300 dark:border-secondary-600 hover:bg-secondary-50 dark:hover:bg-secondary-700'
+            }`}
+            disabled={loading}
+          >
+            パスワード
+          </button>
+          <button
+            type="button"
+            onClick={() => setLoginMethod('magic-link')}
+            className={`flex-1 px-4 py-2 text-sm font-medium rounded-r-lg border ${
+              loginMethod === 'magic-link'
+                ? 'bg-primary text-white border-primary'
+                : 'bg-white dark:bg-secondary-800 text-secondary-700 dark:text-secondary-300 border-secondary-300 dark:border-secondary-600 hover:bg-secondary-50 dark:hover:bg-secondary-700'
+            }`}
+            disabled={loading}
+          >
+            マジックリンク
+          </button>
+        </div>
+
+        <form onSubmit={loginMethod === 'password' ? handlePasswordLogin : handleMagicLink} className="mt-8 space-y-6">
           {/* 登録完了メッセージ */}
           {registered && (
             <div className="rounded-md bg-accent-50 dark:bg-accent-900/20 p-4">
@@ -102,6 +185,15 @@ function LoginForm() {
             <div className="rounded-md bg-accent-50 dark:bg-accent-900/20 p-4">
               <p className="text-sm text-accent-800 dark:text-accent-400">
                 ログインしました。リダイレクト中...
+              </p>
+            </div>
+          )}
+
+          {/* メール送信完了メッセージ */}
+          {emailSent && (
+            <div className="rounded-md bg-accent-50 dark:bg-accent-900/20 p-4">
+              <p className="text-sm text-accent-800 dark:text-accent-400">
+                ログインリンクをメールで送信しました。受信トレイをご確認ください。
               </p>
             </div>
           )}
@@ -133,45 +225,49 @@ function LoginForm() {
               />
             </div>
 
-            {/* パスワード */}
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-secondary-700 dark:text-secondary-300">
-                パスワード
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                disabled={loading}
-                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-secondary-300 dark:border-secondary-600 placeholder-secondary-500 dark:placeholder-secondary-400 text-foreground rounded-md focus:outline-none focus:ring-primary focus:border-primary focus:z-10 sm:text-sm bg-background disabled:opacity-50"
-                placeholder="••••••••"
-              />
-            </div>
+            {/* パスワード（パスワードログインの場合のみ） */}
+            {loginMethod === 'password' && (
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-secondary-700 dark:text-secondary-300">
+                  パスワード
+                </label>
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  autoComplete="current-password"
+                  required
+                  disabled={loading}
+                  className="mt-1 appearance-none relative block w-full px-3 py-2 border border-secondary-300 dark:border-secondary-600 placeholder-secondary-500 dark:placeholder-secondary-400 text-foreground rounded-md focus:outline-none focus:ring-primary focus:border-primary focus:z-10 sm:text-sm bg-background disabled:opacity-50"
+                  placeholder="••••••••"
+                />
+              </div>
+            )}
           </div>
 
-          {/* Remember Me & パスワード忘れ */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <input
-                id="rememberMe"
-                name="rememberMe"
-                type="checkbox"
-                disabled={loading}
-                className="h-4 w-4 text-primary focus:ring-primary border-secondary-300 rounded disabled:opacity-50"
-              />
-              <label htmlFor="rememberMe" className="ml-2 block text-sm text-secondary-900 dark:text-secondary-300">
-                ログイン状態を保持
-              </label>
-            </div>
+          {/* Remember Me & パスワード忘れ（パスワードログインの場合のみ） */}
+          {loginMethod === 'password' && (
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <input
+                  id="rememberMe"
+                  name="rememberMe"
+                  type="checkbox"
+                  disabled={loading}
+                  className="h-4 w-4 text-primary focus:ring-primary border-secondary-300 rounded disabled:opacity-50"
+                />
+                <label htmlFor="rememberMe" className="ml-2 block text-sm text-secondary-900 dark:text-secondary-300">
+                  ログイン状態を保持
+                </label>
+              </div>
 
-            <div className="text-sm">
-              <Link href="/forgot-password" className="font-medium text-primary hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300">
-                パスワードを忘れた方
-              </Link>
+              <div className="text-sm">
+                <Link href="/forgot-password" className="font-medium text-primary hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300">
+                  パスワードを忘れた方
+                </Link>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* 送信ボタン */}
           <div>
@@ -185,14 +281,14 @@ function LoginForm() {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                ログイン中...
+                {loginMethod === 'password' ? 'ログイン中...' : 'メール送信中...'}
               </button>
             ) : (
               <button
                 type="submit"
                 className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-primary hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors"
               >
-                ログイン
+                {loginMethod === 'password' ? 'ログイン' : 'ログインリンクを送信'}
               </button>
             )}
           </div>
@@ -211,7 +307,7 @@ function LoginForm() {
           <div className="grid grid-cols-2 gap-3">
             <button
               type="button"
-              onClick={() => signIn('google', { callbackUrl })}
+              onClick={() => handleSocialLogin('google')}
               disabled={loading}
               className="w-full inline-flex justify-center py-2 px-4 border border-secondary-300 dark:border-secondary-600 rounded-md shadow-sm bg-white dark:bg-secondary-800 text-sm font-medium text-secondary-500 dark:text-secondary-300 hover:bg-secondary-50 dark:hover:bg-secondary-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -226,7 +322,7 @@ function LoginForm() {
 
             <button
               type="button"
-              onClick={() => signIn('github', { callbackUrl })}
+              onClick={() => handleSocialLogin('github')}
               disabled={loading}
               className="w-full inline-flex justify-center py-2 px-4 border border-secondary-300 dark:border-secondary-600 rounded-md shadow-sm bg-white dark:bg-secondary-800 text-sm font-medium text-secondary-500 dark:text-secondary-300 hover:bg-secondary-50 dark:hover:bg-secondary-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -253,17 +349,24 @@ function LoginForm() {
   );
 }
 
-export default function LoginPage() {
+function LoginForm() {
   return (
     <Suspense fallback={
       <div className="min-h-screen flex items-center justify-center bg-secondary-50 dark:bg-slate-900">
+        <div className="absolute top-4 right-4">
+          <ThemeToggle />
+        </div>
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
           <p className="mt-4 text-secondary-600 dark:text-secondary-400">読み込み中...</p>
         </div>
       </div>
     }>
-      <LoginForm />
+      <LoginFormInner />
     </Suspense>
   );
+}
+
+export default function LoginPage() {
+  return <LoginForm />;
 }

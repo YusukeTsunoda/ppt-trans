@@ -1,14 +1,74 @@
 'use client';
 
-import { useSession, signOut } from 'next-auth/react';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
+import { User } from '@supabase/supabase-js';
 
 export function UserNav() {
-  const { data: session, status } = useSession();
+  const [user, setUser] = useState<User | null>(null);
+  const [userRole, setUserRole] = useState<string>('USER');
+  const [loading, setLoading] = useState(true);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const router = useRouter();
+  const supabase = createClient();
 
-  if (status === 'loading') {
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        setUser(user);
+
+        if (user) {
+          // プロファイルからロールを取得
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single();
+
+          setUserRole(profile?.role || 'USER');
+        }
+      } catch (error) {
+        console.error('Auth check error:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkAuth();
+
+    // 認証状態の変更を監視
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      setUser(session?.user || null);
+      
+      if (session?.user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', session.user.id)
+          .single();
+
+        setUserRole(profile?.role || 'USER');
+      } else {
+        setUserRole('USER');
+      }
+      setLoading(false);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [supabase]);
+
+  const handleSignOut = async () => {
+    setDropdownOpen(false);
+    await supabase.auth.signOut();
+    router.push('/login');
+  };
+
+  if (loading) {
     return (
       <div className="flex items-center space-x-4">
         <div className="h-8 w-8 rounded-full bg-secondary-200 animate-pulse"></div>
@@ -16,7 +76,7 @@ export function UserNav() {
     );
   }
 
-  if (!session) {
+  if (!user) {
     return (
       <div className="flex items-center space-x-4">
         <Link
@@ -35,7 +95,7 @@ export function UserNav() {
     );
   }
 
-  const isAdmin = (session.user as any).role === 'ADMIN' || (session.user as any).role === 'SUPER_ADMIN';
+  const isAdmin = userRole === 'ADMIN' || userRole === 'SUPER_ADMIN';
 
   return (
     <div className="relative">
@@ -45,9 +105,9 @@ export function UserNav() {
       >
         <div className="flex items-center space-x-2">
           <div className="h-8 w-8 rounded-full bg-primary-600 flex items-center justify-center text-white">
-            {session.user?.email?.[0].toUpperCase()}
+            {user.email?.[0].toUpperCase()}
           </div>
-          <span>{session.user?.email}</span>
+          <span>{user.email}</span>
           <svg
             className={`w-4 h-4 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`}
             fill="none"
@@ -63,7 +123,7 @@ export function UserNav() {
         <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-secondary-800 ring-1 ring-black ring-opacity-5">
           <div className="py-1">
             <div className="px-4 py-2 text-xs text-secondary-500 dark:text-secondary-400">
-              {session.user?.name || session.user?.email}
+              {user.email}
             </div>
             
             {isAdmin && (
@@ -107,10 +167,7 @@ export function UserNav() {
             <hr className="my-1 border-secondary-200 dark:border-secondary-700" />
             
             <button
-              onClick={() => {
-                setDropdownOpen(false);
-                signOut();
-              }}
+              onClick={handleSignOut}
               className="block w-full text-left px-4 py-2 text-sm text-secondary-700 hover:bg-secondary-100 dark:text-secondary-300 dark:hover:bg-secondary-700"
             >
               🚪 ログアウト

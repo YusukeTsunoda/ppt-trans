@@ -5,9 +5,9 @@
 
 'use client';
 
-import { useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
+import { createClient } from '@/lib/supabase/client';
 
 // ローディング表示
 const AdminLoadingSkeleton = () => (
@@ -51,18 +51,59 @@ interface DynamicAdminLoaderProps {
 }
 
 export function DynamicAdminLoader({ type }: DynamicAdminLoaderProps) {
-  const { data: session, status } = useSession();
   const [isAdmin, setIsAdmin] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const supabase = createClient();
 
   useEffect(() => {
-    // 管理者権限チェック
-    if (session?.user && 'role' in session.user) {
-      setIsAdmin(session.user.role === 'ADMIN');
-    }
-  }, [session]);
+    const checkAuth = async () => {
+      try {
+        // 現在のユーザーを取得
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (user) {
+          // プロファイルからロールを取得
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single();
+
+          setIsAdmin(profile?.role === 'ADMIN');
+        }
+      } catch (error) {
+        console.error('Auth check error:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkAuth();
+
+    // 認証状態の変更を監視
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (session?.user) {
+        // プロファイルからロールを取得
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', session.user.id)
+          .single();
+
+        setIsAdmin(profile?.role === 'ADMIN');
+      } else {
+        setIsAdmin(false);
+      }
+      setLoading(false);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [supabase]);
 
   // 認証待ち
-  if (status === 'loading') {
+  if (loading) {
     return <AdminLoadingSkeleton />;
   }
 

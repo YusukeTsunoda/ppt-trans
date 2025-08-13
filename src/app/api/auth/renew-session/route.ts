@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { requireAuth } from '@/lib/auth-helpers';
 import prisma from '@/lib/prisma';
 import { AppError } from '@/lib/errors/AppError';
 import { ErrorCodes } from '@/lib/errors/ErrorCodes';
@@ -13,9 +12,14 @@ import logger from '@/lib/logger';
 export async function POST(_request: Request) {
   try {
     // 現在のセッションを取得
-    const session = await getServerSession(authOptions);
+    const authResult = await requireAuth();
 
-    if (!session?.user?.id) {
+    // requireAuthがNextResponseを返した場合はエラー
+    if (authResult instanceof NextResponse) {
+      return authResult;
+    }
+
+    if (!authResult) {
       logger.warn('Session renewal attempted without active session');
       return NextResponse.json(
         {
@@ -28,7 +32,7 @@ export async function POST(_request: Request) {
 
     // ユーザーの存在確認
     const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: authResult.id },
       select: {
         id: true,
         email: true,
@@ -37,7 +41,7 @@ export async function POST(_request: Request) {
     });
 
     if (!user) {
-      logger.error('User not found during session renewal', { userId: session.user.id });
+      logger.error('User not found during session renewal', { userId: authResult.id });
       return NextResponse.json(
         {
           error: 'User not found',
@@ -81,7 +85,7 @@ export async function POST(_request: Request) {
       // セッションが見つからない場合は新規作成
       const newSession = await prisma.session.create({
         data: {
-          sessionToken: `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          sessionToken: `session_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
           userId: user.id,
           expires,
         }
@@ -172,9 +176,17 @@ export async function POST(_request: Request) {
  */
 export async function GET(_request: Request) {
   try {
-    const session = await getServerSession(authOptions);
+    const authResult = await requireAuth();
 
-    if (!session) {
+    // requireAuthがNextResponseを返した場合はエラー
+    if (authResult instanceof NextResponse) {
+      return NextResponse.json({
+        valid: false,
+        message: 'No session found'
+      });
+    }
+
+    if (!authResult) {
       return NextResponse.json({
         valid: false,
         message: 'No session found'
@@ -182,7 +194,7 @@ export async function GET(_request: Request) {
     }
 
     // セッションの有効期限をチェック
-    const expires = session.expires ? new Date(session.expires) : null;
+    const expires = authResult.settings?.createdAt ? new Date(authResult.settings.createdAt) : null;
     const now = new Date();
 
     if (expires && expires < now) {
@@ -201,9 +213,9 @@ export async function GET(_request: Request) {
       expires: expires?.toISOString(),
       timeRemaining,
       user: {
-        id: session.user.id,
-        email: session.user.email,
-        name: session.user.name
+        id: authResult.id,
+        email: authResult.email,
+        name: authResult.name
       }
     });
 

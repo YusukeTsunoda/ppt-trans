@@ -3,8 +3,7 @@
 import { ServerActionState, createSuccessState, createErrorState } from '../types';
 import prisma from '@/lib/prisma';
 import logger from '@/lib/logger';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { getCurrentUser } from '@/lib/auth-helpers';
 
 export interface ProfileData {
   id: string;
@@ -29,25 +28,17 @@ export async function getProfile(
   _formData: FormData
 ): Promise<ServerActionState<ProfileData>> {
   try {
-    const session = await getServerSession(authOptions);
+    const currentUser = await getCurrentUser();
     
-    console.log('Session in getProfile:', JSON.stringify(session, null, 2));
+    console.log('User in getProfile:', JSON.stringify(currentUser, null, 2));
     
-    if (!session?.user) {
-      console.error('No session user found');
+    if (!currentUser) {
+      console.error('No user found');
       return createErrorState('ログインが必要です');
-    }
-    
-    const userId = (session.user as any).id;
-    console.log('User ID from session:', userId);
-    
-    if (!userId) {
-      console.error('No user ID in session');
-      return createErrorState('ユーザーIDが取得できません');
     }
 
     const user = await prisma.user.findUnique({
-      where: { id: userId },
+      where: { id: currentUser.id },
       select: {
         id: true,
         email: true,
@@ -71,7 +62,7 @@ export async function getProfile(
     });
 
     if (!user) {
-      console.error('User not found for ID:', userId);
+      console.error('User not found for ID:', currentUser.id);
       return createErrorState('ユーザーが見つかりません');
     }
 
@@ -111,8 +102,8 @@ export async function updateProfileSettings(
   formData: FormData
 ): Promise<ServerActionState<ProfileData>> {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const currentUser = await getCurrentUser();
+    if (!currentUser) {
       return createErrorState('ログインが必要です');
     }
 
@@ -122,14 +113,14 @@ export async function updateProfileSettings(
 
     // 設定を更新または作成
     await prisma.userSettings.upsert({
-      where: { userId: session.user.id },
+      where: { userId: currentUser.id },
       update: {
         translationModel,
         targetLanguage,
         batchSize,
       },
       create: {
-        userId: session.user.id,
+        userId: currentUser.id,
         translationModel,
         targetLanguage,
         batchSize,
@@ -137,7 +128,7 @@ export async function updateProfileSettings(
     });
 
     logger.info('Profile settings updated', {
-      userId: session.user.id,
+      userId: currentUser.id,
       translationModel,
       targetLanguage,
       batchSize,

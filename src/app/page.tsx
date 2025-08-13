@@ -46,6 +46,7 @@ export default function HomePage() {
   
   // 派生状態（useEffectではなく直接計算）
   const processingResult = uploadState?.data?.slides ? {
+    fileId: uploadState.data.fileId || '',  // fileIdを追加
     fileName: uploadState.data.fileName || '',
     slides: translationState?.success && translationState?.data ? 
       // 翻訳結果がある場合はマージ
@@ -67,6 +68,12 @@ export default function HomePage() {
   } as ProcessingResult : null;
   
   const showPreviews = !!processingResult;
+  
+  // デバッグログ
+  console.log('=== Processing Result Debug ===');
+  console.log('processingResult:', processingResult);
+  console.log('showPreviews:', showPreviews);
+  console.log('currentPage:', currentPage);
   const error = uploadState?.message && !uploadState?.success ? uploadState.message : 
                  translationState?.message && !translationState?.success ? translationState.message : null;
   
@@ -92,20 +99,37 @@ export default function HomePage() {
   
   // 履歴の追加（状態が変化したときに実行）
   useEffect(() => {
-    if (uploadState?.success && uploadState?.data && !currentHistoryId) {
-      const historyItem = addToHistory({
-        fileName: uploadState.data.fileName || '',
-        originalFileUrl: uploadState.data.slides?.[0]?.originalFileUrl,
-        targetLanguage: targetLanguage,
-        slideCount: uploadState.data.totalSlides || 0,
-        textCount: uploadState.data.slides?.reduce((total: number, slide: any) => total + (slide.texts?.length || 0), 0) || 0,
-        translationModel: settings.translationModel,
-        status: 'uploaded',
-      });
-      setCurrentHistoryId(historyItem.id);
-      setCurrentPage('preview');
+    console.log('=== Upload State Effect ===');
+    console.log('uploadState:', uploadState);
+    console.log('uploadState?.success:', uploadState?.success);
+    console.log('uploadState?.data:', uploadState?.data);
+    console.log('uploadState?.data?.slides:', uploadState?.data?.slides);
+    console.log('currentHistoryId:', currentHistoryId);
+    console.log('currentPage:', currentPage);
+    
+    // uploadStateが成功し、データがあり、まだ履歴が作成されていない場合
+    if (uploadState?.success && uploadState?.data?.slides && uploadState?.data?.slides.length > 0) {
+      // タイムスタンプベースでユニークなhistoryIdを作成（currentHistoryIdの重複チェックを避ける）
+      const uniqueKey = `${uploadState.data.fileId}_${uploadState.timestamp || Date.now()}`;
+      
+      // すでに処理済みかチェック（uploadStateの同じtimestampで処理済みの場合はスキップ）
+      if (!currentHistoryId || !currentHistoryId.includes(uniqueKey)) {
+        console.log('Creating history item and transitioning to preview...');
+        const historyItem = addToHistory({
+          fileName: uploadState.data.fileName || '',
+          originalFileUrl: uploadState.data.slides?.[0]?.originalFileUrl,
+          targetLanguage: targetLanguage,
+          slideCount: uploadState.data.totalSlides || 0,
+          textCount: uploadState.data.slides?.reduce((total: number, slide: any) => total + (slide.texts?.length || 0), 0) || 0,
+          translationModel: settings.translationModel,
+          status: 'uploaded',
+        });
+        setCurrentHistoryId(historyItem.id);
+        setCurrentPage('preview');
+        console.log('Transitioned to preview page with historyId:', historyItem.id);
+      }
     }
-  }, [uploadState, currentHistoryId, targetLanguage, settings.translationModel]);
+  }, [uploadState?.success, uploadState?.data, uploadState?.timestamp]);
   
   // 翻訳完了時の履歴更新
   useEffect(() => {

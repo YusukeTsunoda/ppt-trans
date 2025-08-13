@@ -3,8 +3,7 @@
 import { ServerActionState, createSuccessState, createErrorState } from '../types';
 import prisma from '@/lib/prisma';
 import logger from '@/lib/logger';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { getCurrentUser } from '@/lib/auth-helpers';
 
 export interface DeleteFileResult {
   deletedFileId: string;
@@ -18,8 +17,8 @@ export async function deleteFileAction(
   formData: FormData
 ): Promise<ServerActionState<DeleteFileResult>> {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const user = await getCurrentUser();
+    if (!user) {
       return createErrorState('ログインが必要です');
     }
 
@@ -33,7 +32,7 @@ export async function deleteFileAction(
     const file = await prisma.file.findFirst({
       where: {
         id: fileId,
-        userId: session.user.id,
+        userId: user.id,
       },
     });
 
@@ -47,7 +46,7 @@ export async function deleteFileAction(
     });
 
     logger.info('File deleted', {
-      userId: session.user.id,
+      userId: user.id,
       fileId,
     });
 
