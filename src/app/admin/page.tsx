@@ -1,46 +1,26 @@
-import { Suspense } from 'react';
 import { redirect } from 'next/navigation';
-import { getCurrentAdminUser } from '@/lib/server-actions/admin/auth';
-import { getDashboardStats, getAuditLogs } from '@/lib/server-actions/admin/stats';
-import { getUsers } from '@/lib/server-actions/admin/users';
+import { checkAdminRole, getAdminDashboardData } from '@/lib/data/admin';
 import AdminDashboardClient from './AdminDashboardClient';
 
-async function AdminDashboardServer() {
-  const user = await getCurrentAdminUser();
+// 動的レンダリングを強制
+export const dynamic = 'force-dynamic';
+
+export default async function AdminPage() {
+  // 管理者権限の確認
+  const isAdmin = await checkAdminRole();
   
-  if (!user || user.role !== 'ADMIN') {
-    redirect('/');
+  if (!isAdmin) {
+    redirect('/dashboard');
   }
-
-  // 並列でデータを取得
-  const [statsResult, usersResult, auditLogsResult] = await Promise.all([
-    getDashboardStats(),
-    getUsers({ limit: 10 }),
-    getAuditLogs(),
-  ]);
-
-  // デバッグ用ログ
-  console.log('Admin Dashboard - Stats Result:', statsResult);
-  console.log('Admin Dashboard - Users Result:', usersResult);
-  console.log('Admin Dashboard - Audit Logs Result:', auditLogsResult);
-
+  
+  // 管理者ダッシュボードのデータを取得
+  const { stats, users, logs } = await getAdminDashboardData();
+  
   return (
     <AdminDashboardClient
-      initialStats={statsResult.success ? statsResult.data : null}
-      initialUsers={usersResult.success ? (usersResult.data?.users || []) : []}
-      initialActivities={auditLogsResult.success ? (auditLogsResult.data?.logs || []) : []}
+      initialStats={stats}
+      initialUsers={users}
+      initialActivities={logs}
     />
-  );
-}
-
-export default function AdminDashboard() {
-  return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-lg">読み込み中...</div>
-      </div>
-    }>
-      <AdminDashboardServer />
-    </Suspense>
   );
 }

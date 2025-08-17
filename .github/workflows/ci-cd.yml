@@ -1,0 +1,341 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '18.x'
+  USE_REQUEST_SCOPED_AUTH: true
+
+jobs:
+  # =====================================
+  # Phase 1: Code Quality & Testing
+  # =====================================
+  quality-check:
+    name: Code Quality Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run type check
+        run: npm run type-check
+
+      - name: Run linter
+        run: npm run lint
+
+      - name: Check for security vulnerabilities
+        run: npm audit --audit-level=moderate
+
+  test:
+    name: Test Suite
+    runs-on: ubuntu-latest
+    needs: quality-check
+    
+    strategy:
+      matrix:
+        test-suite: [unit, integration]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: |
+          if [ "${{ matrix.test-suite }}" == "unit" ]; then
+            npm run test:coverage
+          else
+            echo "Integration tests would run here"
+          fi
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+
+      - name: Upload coverage reports
+        if: matrix.test-suite == 'unit'
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage/lcov.info
+          flags: unittests
+          name: codecov-umbrella
+
+  # =====================================
+  # Phase 2: Build & Validation
+  # =====================================
+  build:
+    name: Build Application
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate build ID
+        run: node scripts/build-id-manager.js generate
+
+      - name: Build application
+        run: npm run build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          USE_REQUEST_SCOPED_AUTH: true
+          DEPLOYMENT_TARGET: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+
+      - name: Validate build
+        run: node scripts/build-id-manager.js validate
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-artifacts
+          path: |
+            .next/
+            public/
+            package.json
+            package-lock.json
+            next.config.js
+
+      - name: Upload build metadata
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-metadata
+          path: .next/build-metadata.json
+
+  # =====================================
+  # Phase 3: Health Checks
+  # =====================================
+  health-check:
+    name: Health Check Validation
+    runs-on: ubuntu-latest
+    needs: build
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: build-artifacts
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Start application
+        run: |
+          npm run start &
+          sleep 10
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          PORT: 3000
+
+      - name: Run health checks
+        run: |
+          # Basic health check
+          curl -f http://localhost:3000/api/health || exit 1
+          
+          # Database health check
+          curl -f http://localhost:3000/api/health/db || exit 1
+          
+          # Auth health check
+          curl -f http://localhost:3000/api/health/auth || exit 1
+
+      - name: Check build ID consistency
+        run: |
+          BUILD_ID=$(curl -s http://localhost:3000/api/health | jq -r '.buildId')
+          echo "Build ID from health check: $BUILD_ID"
+          
+          # Verify build ID exists and is not 'unknown'
+          if [ "$BUILD_ID" == "unknown" ] || [ -z "$BUILD_ID" ]; then
+            echo "Invalid build ID detected"
+            exit 1
+          fi
+
+  # =====================================
+  # Phase 4: Canary Deployment (Staging)
+  # =====================================
+  deploy-canary:
+    name: Deploy to Canary
+    runs-on: ubuntu-latest
+    needs: health-check
+    if: github.ref == 'refs/heads/develop'
+    environment:
+      name: canary
+      url: ${{ steps.deploy.outputs.url }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: build-artifacts
+
+      - name: Download build metadata
+        uses: actions/download-artifact@v3
+        with:
+          name: build-metadata
+
+      - name: Deploy to Vercel (Canary)
+        id: deploy
+        run: |
+          echo "Deploying to canary environment..."
+          # Vercel deployment would go here
+          echo "::set-output name=url::https://canary.your-app.com"
+
+      - name: Run smoke tests
+        run: |
+          # Wait for deployment to be ready
+          sleep 30
+          
+          # Run smoke tests against canary URL
+          curl -f ${{ steps.deploy.outputs.url }}/api/health || exit 1
+
+      - name: Monitor canary metrics
+        run: |
+          echo "Monitoring canary deployment for 5 minutes..."
+          # In a real scenario, this would monitor actual metrics
+          sleep 300
+
+  # =====================================
+  # Phase 5: Production Deployment
+  # =====================================
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: health-check
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: production
+      url: ${{ steps.deploy.outputs.url }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: build-artifacts
+
+      - name: Download build metadata
+        uses: actions/download-artifact@v3
+        with:
+          name: build-metadata
+
+      - name: Deploy to Vercel (Production)
+        id: deploy
+        run: |
+          echo "Deploying to production environment..."
+          # Vercel deployment would go here
+          echo "::set-output name=url::https://your-app.com"
+
+      - name: Verify deployment
+        run: |
+          # Wait for deployment to be ready
+          sleep 30
+          
+          # Verify production deployment
+          curl -f ${{ steps.deploy.outputs.url }}/api/health || exit 1
+
+      - name: Create deployment record
+        run: |
+          BUILD_ID=$(cat .next/build-metadata.json | jq -r '.buildId')
+          echo "Production deployment completed with Build ID: $BUILD_ID"
+          
+          # In a real scenario, this would create a deployment record
+          # in your monitoring system
+
+  # =====================================
+  # Rollback Job (Manual Trigger)
+  # =====================================
+  rollback:
+    name: Rollback Deployment
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    environment:
+      name: production-rollback
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Rollback to previous version
+        run: |
+          echo "Rolling back to previous stable version..."
+          # Rollback logic would go here
+          
+      - name: Verify rollback
+        run: |
+          echo "Verifying rollback completed successfully..."
+          # Verification logic would go here
+
+# =====================================
+# Notification & Reporting
+# =====================================
+  notify:
+    name: Send Notifications
+    runs-on: ubuntu-latest
+    needs: [deploy-canary, deploy-production]
+    if: always()
+    
+    steps:
+      - name: Send Slack notification
+        if: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          STATUS="${{ job.status }}"
+          COLOR="good"
+          if [ "$STATUS" != "success" ]; then
+            COLOR="danger"
+          fi
+          
+          curl -X POST ${{ secrets.SLACK_WEBHOOK_URL }} \
+            -H 'Content-Type: application/json' \
+            -d "{
+              \"attachments\": [{
+                \"color\": \"$COLOR\",
+                \"title\": \"Deployment Status\",
+                \"text\": \"Deployment $STATUS for ${{ github.ref }}\",
+                \"footer\": \"GitHub Actions\",
+                \"ts\": $(date +%s)
+              }]
+            }"

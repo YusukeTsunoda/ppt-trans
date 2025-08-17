@@ -1,0 +1,51 @@
+#!/bin/bash
+
+echo "==========================================="
+echo "Supabase セットアップスクリプト"
+echo "==========================================="
+echo ""
+
+# 環境変数の確認
+if [ -z "$NEXT_PUBLIC_SUPABASE_URL" ] || [ -z "$NEXT_PUBLIC_SUPABASE_ANON_KEY" ]; then
+    echo "❌ エラー: 環境変数が設定されていません"
+    echo "   .envファイルに以下を設定してください:"
+    echo "   - NEXT_PUBLIC_SUPABASE_URL"
+    echo "   - NEXT_PUBLIC_SUPABASE_ANON_KEY"
+    exit 1
+fi
+
+echo "✅ 環境変数が設定されています"
+echo ""
+
+echo "==========================================="
+echo "Supabaseダッシュボードでの設定手順"
+echo "==========================================="
+echo ""
+echo "1. Supabaseダッシュボードにログイン:"
+echo "   https://app.supabase.com"
+echo ""
+echo "2. SQL Editorを開く:"
+echo "   プロジェクト → SQL Editor"
+echo ""
+echo "3. 以下のSQLを実行:"
+echo "   supabase/migrations/001_initial_schema.sql"
+echo ""
+echo "4. Authenticationでテストユーザーを作成:"
+echo "   Authentication → Users → Add User"
+echo ""
+echo "   テストユーザー例:"
+echo "   - Email: admin@example.com"
+echo "   - Password: Admin123!"
+echo ""
+echo "   - Email: user1@example.com"
+echo "   - Password: User123!"
+echo ""
+echo "5. 完了!"
+echo ""
+echo "==========================================="
+echo "自動セットアップ (オプション)"
+echo "==========================================="
+echo ""
+echo "Supabase CLIがインストールされている場合:"
+echo "npx tsx scripts/create-supabase-users.ts"
+echo ""

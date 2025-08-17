@@ -2,14 +2,6 @@ import dynamic from 'next/dynamic';
 import { ComponentType } from 'react';
 
 // 遅延読み込みするコンポーネントの定義
-// EditorScreenは重いので遅延読み込み
-export const DynamicEditorScreen = dynamic(
-  () => import('@/components/EditorScreen').then(mod => mod.EditorScreen),
-  {
-    loading: () => <EditorScreenSkeleton />,
-    ssr: false, // サーバーサイドレンダリングを無効化
-  }
-);
 
 // PreviewScreenも遅延読み込み
 export const DynamicPreviewScreen = dynamic(
@@ -57,34 +49,6 @@ export const DynamicErrorDetailModal = dynamic(
 );
 
 // Skeleton Components
-function EditorScreenSkeleton() {
-  return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 animate-pulse">
-      <div className="container mx-auto px-4 py-6">
-        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-5 mb-6">
-          <div className="h-8 bg-slate-200 dark:bg-slate-700 rounded w-1/4 mb-4"></div>
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
-            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
-              <div className="h-96 bg-slate-200 dark:bg-slate-700 rounded"></div>
-            </div>
-          </div>
-          <div className="lg:col-span-1">
-            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
-              <div className="space-y-4">
-                <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded"></div>
-                <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded"></div>
-                <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function PreviewScreenSkeleton() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 animate-pulse">
