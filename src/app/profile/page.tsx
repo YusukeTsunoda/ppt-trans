@@ -1,45 +1,29 @@
-import { Suspense } from 'react';
 import { redirect } from 'next/navigation';
-import { getCurrentUser } from '@/lib/auth-helpers';
-import { getProfile } from '@/lib/server-actions/profile/get';
+import { createClient } from '@/lib/supabase/server';
+import { getUserProfile } from '@/lib/data/profile';
 import ProfileClient from './ProfileClient';
 
-async function ProfileServer() {
-  const user = await getCurrentUser();
+// 動的レンダリングを強制
+export const dynamic = 'force-dynamic';
+
+export default async function ProfilePage() {
+  const supabase = await createClient();
   
-  if (!user) {
+  // ユーザー認証の確認
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  
+  if (userError || !user) {
     redirect('/login');
   }
-
-  // Server ActionはFormDataと初期状態を期待
-  const formData = new FormData();
-  const initialState = {
-    success: false,
-    message: '',
-    timestamp: Date.now()
-  };
   
-  const profileResult = await getProfile(initialState, formData);
+  // プロフィール情報を取得（通常の関数として）
+  const profile = await getUserProfile(user.id);
   
-  if (!profileResult.success || !profileResult.data) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-lg">プロファイルの取得に失敗しました</div>
-      </div>
-    );
-  }
-
-  return <ProfileClient initialProfile={profileResult.data} />;
-}
-
-export default function ProfilePage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-lg">読み込み中...</div>
-      </div>
-    }>
-      <ProfileServer />
-    </Suspense>
+    <ProfileClient 
+      userId={user.id}
+      userEmail={user.email || ''}
+      initialProfile={profile}
+    />
   );
 }

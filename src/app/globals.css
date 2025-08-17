@@ -2,50 +2,79 @@
 @tailwind components;
 @tailwind utilities;
 
+/* プロフェッショナル・ブルー系デザインシステム */
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
+    /* プライマリカラー */
+    --primary: 217 91% 60%; /* #2563eb */
+    --primary-foreground: 0 0% 100%;
+    
+    /* セカンダリカラー */
+    --secondary: 215 14% 52%; /* #64748b */
+    --secondary-foreground: 0 0% 100%;
+    
+    /* アクセントカラー */
+    --accent: 158 64% 52%; /* #10b981 */
+    --accent-foreground: 0 0% 100%;
+    
+    /* 背景色 */
+    --background: 210 40% 98%; /* #f8fafc */
+    --foreground: 215 25% 19%; /* #1e293b */
+    
+    /* カード */
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
+    --card-foreground: 215 25% 19%;
+    
+    /* ポップオーバー */
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    --primary: 0 0% 9%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
-    --destructive: 0 84.2% 60.2%;
+    --popover-foreground: 215 25% 19%;
+    
+    /* Muted */
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+    
+    /* 警告・エラー */
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 0 0% 3.9%;
-    --radius: 0.5rem;
+    
+    /* ボーダー・入力 */
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 217 91% 60%;
+    
+    /* 角丸 */
+    --radius: 0.75rem;
   }
 
   .dark {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
+    /* ダークモード用カラー */
+    --primary: 217 91% 60%;
+    --primary-foreground: 0 0% 100%;
+    
+    --secondary: 215 14% 52%;
+    --secondary-foreground: 0 0% 100%;
+    
+    --accent: 158 64% 52%;
+    --accent-foreground: 0 0% 100%;
+    
+    --background: 222 47% 11%;
+    --foreground: 210 40% 98%;
+    
+    --card: 222 47% 13%;
+    --card-foreground: 210 40% 98%;
+    
+    --popover: 222 47% 13%;
+    --popover-foreground: 210 40% 98%;
+    
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+    
+    --destructive: 0 62% 30%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 0 0% 83.1%;
+    
+    --border: 217 33% 17%;
+    --input: 217 33% 17%;
+    --ring: 217 91% 60%;
   }
 }
 
@@ -76,20 +105,91 @@
   }
 }
 
-/* Theme Debug UIを完全に非表示 */
+/* デザインシステムコンポーネント */
+@layer components {
+  /* ボタン - プライマリ */
+  .btn-primary {
+    @apply bg-blue-600 text-white hover:bg-blue-700 px-6 py-3 rounded-xl font-medium transition-all duration-200 shadow-sm hover:shadow-md;
+  }
+
+  /* ボタン - セカンダリ */
+  .btn-secondary {
+    @apply bg-slate-100 text-slate-700 hover:bg-slate-200 px-6 py-3 rounded-xl font-medium transition-all duration-200;
+  }
+
+  /* ボタン - アクセント */
+  .btn-accent {
+    @apply bg-emerald-500 text-white hover:bg-emerald-600 px-6 py-3 rounded-xl font-medium transition-all duration-200 shadow-sm hover:shadow-md;
+  }
+
+  /* カード */
+  .card {
+    @apply bg-white rounded-xl shadow-sm border border-slate-200 p-6 transition-all duration-200 hover:shadow-md;
+  }
+
+  /* 入力フィールド */
+  .input-field {
+    @apply border border-slate-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white;
+  }
+
+  /* ラベル */
+  .label {
+    @apply block text-sm font-medium text-slate-700 mb-2;
+  }
+
+  /* エラーメッセージ */
+  .error-message {
+    @apply text-red-600 text-sm mt-1;
+  }
+
+  /* 成功メッセージ */
+  .success-message {
+    @apply text-emerald-600 text-sm mt-1;
+  }
+
+  /* ローディングスピナー */
+  .loading-spinner {
+    @apply animate-spin h-5 w-5 text-blue-600;
+  }
+
+  /* グラデーション背景 */
+  .gradient-bg {
+    @apply bg-gradient-to-br from-blue-50 via-white to-slate-50;
+  }
+
+  /* ヘッダーグラデーション */
+  .header-gradient {
+    @apply bg-gradient-to-r from-blue-600 to-blue-700;
+  }
+}
+
+/* アニメーション */
 @layer utilities {
-  /* 右下の固定positioned要素でshadow-lgとz-50を持つものを非表示（Theme Debugの特徴） */
-  .fixed.bottom-4.right-4.shadow-lg.z-50:not(.force-show) {
-    display: none !important;
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
-  
-  /* さらに具体的にmax-w-xsも持つものを対象 */
-  .fixed.bottom-4.right-4.shadow-lg.z-50.max-w-xs:not(.force-show) {
-    display: none !important;
+
+  .animate-fadeIn {
+    animation: fadeIn 0.3s ease-out;
   }
-  
-  /* bg-whiteとdark:bg-gray-800の組み合わせも対象 */
-  .fixed.bottom-4.right-4.bg-white.dark\:bg-gray-800:not(.force-show) {
-    display: none !important;
+
+  @keyframes slideIn {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
+
+  .animate-slideIn {
+    animation: slideIn 0.3s ease-out;
   }
 }

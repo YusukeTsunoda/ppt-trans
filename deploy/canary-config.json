@@ -1,0 +1,211 @@
+{
+  "canaryDeployment": {
+    "enabled": true,
+    "stages": [
+      {
+        "name": "initial",
+        "trafficPercentage": 5,
+        "duration": "5m",
+        "healthCheck": {
+          "endpoint": "/api/health",
+          "interval": "30s",
+          "threshold": 3,
+          "successRate": 0.95
+        },
+        "metrics": {
+          "errorRate": {
+            "threshold": 0.05,
+            "action": "rollback"
+          },
+          "responseTime": {
+            "p95": 1000,
+            "p99": 2000,
+            "action": "alert"
+          }
+        }
+      },
+      {
+        "name": "expansion",
+        "trafficPercentage": 25,
+        "duration": "10m",
+        "healthCheck": {
+          "endpoint": "/api/health",
+          "interval": "1m",
+          "threshold": 3,
+          "successRate": 0.98
+        },
+        "metrics": {
+          "errorRate": {
+            "threshold": 0.03,
+            "action": "rollback"
+          },
+          "responseTime": {
+            "p95": 800,
+            "p99": 1500,
+            "action": "alert"
+          }
+        }
+      },
+      {
+        "name": "validation",
+        "trafficPercentage": 50,
+        "duration": "15m",
+        "healthCheck": {
+          "endpoint": "/api/health",
+          "interval": "2m",
+          "threshold": 5,
+          "successRate": 0.99
+        },
+        "metrics": {
+          "errorRate": {
+            "threshold": 0.02,
+            "action": "rollback"
+          },
+          "responseTime": {
+            "p95": 600,
+            "p99": 1200,
+            "action": "alert"
+          }
+        }
+      },
+      {
+        "name": "production",
+        "trafficPercentage": 100,
+        "duration": "permanent",
+        "healthCheck": {
+          "endpoint": "/api/health",
+          "interval": "5m",
+          "threshold": 10,
+          "successRate": 0.99
+        },
+        "metrics": {
+          "errorRate": {
+            "threshold": 0.01,
+            "action": "alert"
+          },
+          "responseTime": {
+            "p95": 500,
+            "p99": 1000,
+            "action": "alert"
+          }
+        }
+      }
+    ],
+    "rollback": {
+      "automatic": true,
+      "conditions": [
+        {
+          "metric": "errorRate",
+          "operator": ">",
+          "value": 0.05
+        },
+        {
+          "metric": "healthCheckFailures",
+          "operator": ">",
+          "value": 3
+        },
+        {
+          "metric": "responseTimeP99",
+          "operator": ">",
+          "value": 3000
+        }
+      ],
+      "strategy": "immediate",
+      "notificationChannels": ["email", "slack"]
+    },
+    "monitoring": {
+      "providers": ["datadog", "cloudwatch", "custom"],
+      "dashboards": {
+        "canary": "/monitoring/canary-dashboard",
+        "production": "/monitoring/production-dashboard"
+      },
+      "alerts": {
+        "channels": ["pagerduty", "slack", "email"],
+        "escalation": {
+          "levels": [
+            {
+              "severity": "warning",
+              "channels": ["slack"],
+              "delay": "0m"
+            },
+            {
+              "severity": "critical",
+              "channels": ["pagerduty", "slack", "email"],
+              "delay": "5m"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "blueGreenDeployment": {
+    "enabled": false,
+    "strategy": "dns-switch",
+    "healthCheckGracePeriod": "2m",
+    "rollbackWindow": "30m"
+  },
+  "featureFlags": {
+    "provider": "launchdarkly",
+    "flags": {
+      "newAuthSystem": {
+        "enabled": true,
+        "percentage": 100,
+        "targeting": {
+          "rules": [
+            {
+              "attribute": "email",
+              "operator": "endsWith",
+              "value": "@admin.com",
+              "serve": true
+            }
+          ]
+        }
+      },
+      "dualWriteDatabase": {
+        "enabled": true,
+        "percentage": 100
+      },
+      "enhancedErrorHandling": {
+        "enabled": true,
+        "percentage": 50
+      }
+    }
+  },
+  "deploymentValidation": {
+    "preDeployment": [
+      {
+        "name": "Build ID Validation",
+        "command": "node scripts/build-id-manager.js validate"
+      },
+      {
+        "name": "Type Check",
+        "command": "npm run type-check"
+      },
+      {
+        "name": "Test Suite",
+        "command": "npm run test:ci"
+      },
+      {
+        "name": "Security Scan",
+        "command": "npm audit --audit-level=moderate"
+      }
+    ],
+    "postDeployment": [
+      {
+        "name": "Health Check",
+        "endpoint": "/api/health",
+        "expectedStatus": 200
+      },
+      {
+        "name": "Database Connection",
+        "endpoint": "/api/health/db",
+        "expectedStatus": 200
+      },
+      {
+        "name": "Authentication Flow",
+        "endpoint": "/api/health/auth",
+        "expectedStatus": 200
+      }
+    ]
+  }
+}

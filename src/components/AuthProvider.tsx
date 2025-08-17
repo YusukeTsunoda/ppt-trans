@@ -26,14 +26,27 @@ export default function AuthProvider({
   const supabase = createClient();
 
   useEffect(() => {
+    console.log('=== AuthProvider Initialization ===');
+    console.log('Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
+    console.log('Supabase Key exists:', !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+    
     // 初回のセッション確認
     const checkSession = async () => {
+      console.log('Checking session...');
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session }, error } = await supabase.auth.getSession();
+        console.log('Session check result:', { session: !!session, error });
+        
+        if (error) {
+          console.error('Session check error details:', error);
+        }
+        
         setUser(session?.user || null);
+        console.log('User set to:', session?.user?.email || 'null');
       } catch (error) {
-        console.error('Session check error:', error);
+        console.error('Session check exception:', error);
       } finally {
+        console.log('Setting loading to false');
         setLoading(false);
       }
     };

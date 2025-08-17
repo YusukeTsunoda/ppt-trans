@@ -4,16 +4,33 @@ import { useState } from 'react';
 import Link from 'next/link';
 
 interface AdminStatsClientProps {
-  initialDashboardStats: any;
-  initialUserStats: any;
-  initialFileStats: any;
+  initialStats: {
+    users: {
+      total: number;
+      weekly: number;
+      monthly: number;
+      growth: {
+        weekly: number;
+        monthly: number;
+      };
+    };
+    files: {
+      total: number;
+      weekly: number;
+      monthly: number;
+      totalSize: number;
+      averageSize: number;
+    };
+    translations: {
+      total: number;
+      successful: number;
+      failed: number;
+      averageTime: number;
+    };
+  };
 }
 
-export default function AdminStatsClient({
-  initialDashboardStats,
-  initialUserStats,
-  initialFileStats
-}: AdminStatsClientProps) {
+export default function AdminStatsClient({ initialStats }: AdminStatsClientProps) {
   const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'files'>('overview');
 
   const formatBytes = (bytes: number) => {
@@ -77,7 +94,7 @@ export default function AdminStatsClient({
           </nav>
         </div>
 
-        {activeTab === 'overview' && initialDashboardStats && (
+        {activeTab === 'overview' && (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
@@ -87,15 +104,11 @@ export default function AdminStatsClient({
                       総ユーザー数
                     </p>
                     <p className="mt-2 text-3xl font-semibold text-foreground">
-                      {initialDashboardStats.overview?.totalUsers || 0}
+                      {initialStats.users.total}
                     </p>
-                    {initialDashboardStats.overview?.userGrowthRate !== undefined && (
-                      <p className={`mt-1 text-sm ${
-                        initialDashboardStats.overview.userGrowthRate > 0 ? 'text-green-600' : 'text-red-600'
-                      }`}>
-                        {initialDashboardStats.overview.userGrowthRate > 0 ? '+' : ''}{initialDashboardStats.overview.userGrowthRate}%
-                      </p>
-                    )}
+                    <p className="mt-1 text-sm text-green-600">
+                      今週: +{initialStats.users.weekly}
+                    </p>
                   </div>
                   <div className="text-4xl">👥</div>
                 </div>
@@ -105,13 +118,13 @@ export default function AdminStatsClient({
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                      アクティブユーザー
+                      今月の新規ユーザー
                     </p>
                     <p className="mt-2 text-3xl font-semibold text-foreground">
-                      {initialDashboardStats.overview?.activeUsers || 0}
+                      {initialStats.users.monthly}
                     </p>
                     <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                      新規: {initialDashboardStats.overview?.newUsers || 0}
+                      今週: {initialStats.users.weekly}
                     </p>
                   </div>
                   <div className="text-4xl">✨</div>
@@ -125,15 +138,11 @@ export default function AdminStatsClient({
                       総ファイル数
                     </p>
                     <p className="mt-2 text-3xl font-semibold text-foreground">
-                      {initialDashboardStats.files?.totalFiles || 0}
+                      {initialStats.files.total}
                     </p>
-                    {initialDashboardStats.files?.fileGrowthRate !== undefined && (
-                      <p className={`mt-1 text-sm ${
-                        initialDashboardStats.files.fileGrowthRate > 0 ? 'text-green-600' : 'text-red-600'
-                      }`}>
-                        {initialDashboardStats.files.fileGrowthRate > 0 ? '+' : ''}{initialDashboardStats.files.fileGrowthRate}%
-                      </p>
-                    )}
+                    <p className="mt-1 text-sm text-green-600">
+                      今週: +{initialStats.files.weekly}
+                    </p>
                   </div>
                   <div className="text-4xl">📁</div>
                 </div>
@@ -146,10 +155,10 @@ export default function AdminStatsClient({
                       ストレージ使用量
                     </p>
                     <p className="mt-2 text-3xl font-semibold text-foreground">
-                      {formatBytes(initialDashboardStats.usage?.storageUsed || 0)}
+                      {formatBytes(initialStats.files.totalSize)}
                     </p>
                     <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                      API: {initialDashboardStats.usage?.apiUsage || 0} 回
+                      平均: {formatBytes(initialStats.files.averageSize)}
                     </p>
                   </div>
                   <div className="text-4xl">💾</div>
@@ -157,184 +166,141 @@ export default function AdminStatsClient({
               </div>
             </div>
 
-            {initialDashboardStats.period && (
-              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-                <p className="text-sm text-blue-800 dark:text-blue-200">
-                  期間: {new Date(initialDashboardStats.period.startDate).toLocaleDateString('ja-JP')} 
-                  〜 {new Date(initialDashboardStats.period.endDate).toLocaleDateString('ja-JP')}
-                </p>
-              </div>
-            )}
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+              <p className="text-sm text-blue-800 dark:text-blue-200">
+                翻訳統計: 合計 {initialStats.translations.total} 件 | 
+                成功 {initialStats.translations.successful} 件 | 
+                失敗 {initialStats.translations.failed} 件
+              </p>
+            </div>
           </>
         )}
 
-        {activeTab === 'users' && initialUserStats && (
+        {activeTab === 'users' && (
           <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                <h3 className="text-lg font-semibold text-foreground mb-4">ロール別ユーザー数</h3>
+                <h3 className="text-lg font-semibold text-foreground mb-4">ユーザー統計</h3>
                 <div className="space-y-3">
-                  {initialUserStats.byRole?.map((role: any) => (
-                    <div key={role.role} className="flex justify-between items-center">
-                      <span className="text-sm font-medium text-foreground">{role.role}</span>
-                      <span className="text-sm text-gray-500 dark:text-gray-400">
-                        {role._count} ユーザー
-                      </span>
-                    </div>
-                  ))}
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-foreground">総ユーザー数</span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                      {initialStats.users.total}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-foreground">今週の新規</span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                      {initialStats.users.weekly}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-foreground">今月の新規</span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                      {initialStats.users.monthly}
+                    </span>
+                  </div>
                 </div>
               </div>
 
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                <h3 className="text-lg font-semibold text-foreground mb-4">ステータス別ユーザー数</h3>
+                <h3 className="text-lg font-semibold text-foreground mb-4">成長率</h3>
                 <div className="space-y-3">
-                  {initialUserStats.byStatus?.map((status: any) => (
-                    <div key={status.isActive.toString()} className="flex justify-between items-center">
-                      <span className="text-sm font-medium text-foreground">
-                        {status.isActive ? 'アクティブ' : '非アクティブ'}
-                      </span>
-                      <span className="text-sm text-gray-500 dark:text-gray-400">
-                        {status._count} ユーザー
-                      </span>
-                    </div>
-                  ))}
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-foreground">週間成長</span>
+                    <span className="text-sm text-green-600">
+                      +{initialStats.users.growth.weekly} ユーザー
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-foreground">月間成長</span>
+                    <span className="text-sm text-green-600">
+                      +{initialStats.users.growth.monthly} ユーザー
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                <h3 className="text-lg font-semibold text-foreground">最もアクティブなユーザー</h3>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                  <thead className="bg-gray-50 dark:bg-gray-900">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        ユーザー
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        ファイル数
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        監査ログ
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                    {initialUserStats.topActiveUsers?.map((user: any, index: number) => (
-                      <tr key={user.id}>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div className="text-sm font-medium text-foreground">
-                              {index === 0 && '🥇 '}
-                              {index === 1 && '🥈 '}
-                              {index === 2 && '🥉 '}
-                              {user.name || 'Unknown'}
-                            </div>
-                          </div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400">
-                            {user.email}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
-                          {user._count?.files || 0}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
-                          {user._count?.auditLogs || 0}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                <h3 className="text-lg font-semibold text-foreground mb-4">アクティビティ</h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-foreground">アクティブ率</span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                      {initialStats.users.monthly > 0 
+                        ? Math.round((initialStats.users.weekly / initialStats.users.monthly) * 100) 
+                        : 0}%
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         )}
 
-        {activeTab === 'files' && initialFileStats && (
+        {activeTab === 'files' && (
           <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                <h3 className="text-lg font-semibold text-foreground mb-4">ステータス別ファイル数</h3>
+                <h3 className="text-lg font-semibold text-foreground mb-4">ファイル統計</h3>
                 <div className="space-y-3">
-                  {initialFileStats.byStatus?.map((status: any) => (
-                    <div key={status.status} className="flex justify-between items-center">
-                      <span className="text-sm font-medium text-foreground">{status.status}</span>
-                      <span className="text-sm text-gray-500 dark:text-gray-400">
-                        {status._count} ファイル
-                      </span>
-                    </div>
-                  ))}
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-foreground">総ファイル数</span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                      {initialStats.files.total}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-foreground">今週のアップロード</span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                      {initialStats.files.weekly}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-foreground">今月のアップロード</span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                      {initialStats.files.monthly}
+                    </span>
+                  </div>
                 </div>
               </div>
 
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                <h3 className="text-lg font-semibold text-foreground mb-4">タイプ別ファイル数</h3>
+                <h3 className="text-lg font-semibold text-foreground mb-4">ストレージ</h3>
                 <div className="space-y-3">
-                  {initialFileStats.byType?.map((type: any) => (
-                    <div key={type.mimeType} className="flex justify-between items-center">
-                      <span className="text-sm font-medium text-foreground truncate">
-                        {type.mimeType?.split('/').pop() || 'Unknown'}
-                      </span>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">
-                        {type._count} ({formatBytes(type._sum?.fileSize || 0)})
-                      </div>
-                    </div>
-                  ))}
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-foreground">総使用量</span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                      {formatBytes(initialStats.files.totalSize)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-foreground">平均サイズ</span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                      {formatBytes(initialStats.files.averageSize)}
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                <h3 className="text-lg font-semibold text-foreground">最大ファイル</h3>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                  <thead className="bg-gray-50 dark:bg-gray-900">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        ファイル名
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        サイズ
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        ユーザー
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        ステータス
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                    {initialFileStats.largestFiles?.map((file: any) => (
-                      <tr key={file.id}>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-foreground truncate max-w-[200px]">
-                            {file.fileName}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
-                          {formatBytes(file.fileSize)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                          {file.user?.name || file.user?.email || 'Unknown'}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            file.status === 'COMPLETED' 
-                              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                              : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-                          }`}>
-                            {file.status}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                <h3 className="text-lg font-semibold text-foreground mb-4">翻訳統計</h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-foreground">総翻訳数</span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                      {initialStats.translations.total}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-foreground">成功率</span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                      {initialStats.translations.total > 0
+                        ? Math.round((initialStats.translations.successful / initialStats.translations.total) * 100)
+                        : 0}%
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

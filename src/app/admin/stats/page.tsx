@@ -1,40 +1,83 @@
-import { Suspense } from 'react';
 import { redirect } from 'next/navigation';
-import { getCurrentAdminUser } from '@/lib/server-actions/admin/auth';
-import { getDashboardStats, getUserStats, getFileStats } from '@/lib/server-actions/admin/stats';
+import { checkAdminRole } from '@/lib/data/admin';
+import { createClient } from '@/lib/supabase/server';
 import AdminStatsClient from './AdminStatsClient';
 
-async function AdminStatsServer() {
-  const user = await getCurrentAdminUser();
+// 動的レンダリングを強制
+export const dynamic = 'force-dynamic';
+
+async function getDetailedStats() {
+  const supabase = await createClient();
   
-  if (!user || user.role !== 'ADMIN') {
-    redirect('/');
-  }
-
-  // 並列でデータを取得
-  const [dashboardStats, userStats, fileStats] = await Promise.all([
-    getDashboardStats(),
-    getUserStats(),
-    getFileStats(),
+  // 詳細な統計情報を取得
+  const today = new Date();
+  const lastWeek = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const lastMonth = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+  
+  const [
+    totalUsersResult,
+    weeklyUsersResult,
+    monthlyUsersResult,
+    totalFilesResult,
+    weeklyFilesResult,
+    monthlyFilesResult
+  ] = await Promise.all([
+    supabase.from('profiles').select('id', { count: 'exact' }),
+    supabase.from('profiles').select('id', { count: 'exact' })
+      .gte('created_at', lastWeek.toISOString()),
+    supabase.from('profiles').select('id', { count: 'exact' })
+      .gte('created_at', lastMonth.toISOString()),
+    supabase.from('files').select('id', { count: 'exact' }),
+    supabase.from('files').select('id', { count: 'exact' })
+      .gte('created_at', lastWeek.toISOString()),
+    supabase.from('files').select('id', { count: 'exact' })
+      .gte('created_at', lastMonth.toISOString())
   ]);
-
-  return (
-    <AdminStatsClient
-      initialDashboardStats={dashboardStats.success ? dashboardStats.data : null}
-      initialUserStats={userStats.success ? userStats.data : null}
-      initialFileStats={fileStats.success ? fileStats.data : null}
-    />
-  );
+  
+  // ファイルサイズの統計
+  const { data: fileSizes } = await supabase
+    .from('files')
+    .select('file_size');
+  
+  const totalSize = fileSizes?.reduce((sum, file) => sum + (file.file_size || 0), 0) || 0;
+  const averageSize = fileSizes?.length ? totalSize / fileSizes.length : 0;
+  
+  return {
+    users: {
+      total: totalUsersResult.count || 0,
+      weekly: weeklyUsersResult.count || 0,
+      monthly: monthlyUsersResult.count || 0,
+      growth: {
+        weekly: weeklyUsersResult.count || 0,
+        monthly: monthlyUsersResult.count || 0
+      }
+    },
+    files: {
+      total: totalFilesResult.count || 0,
+      weekly: weeklyFilesResult.count || 0,
+      monthly: monthlyFilesResult.count || 0,
+      totalSize: totalSize,
+      averageSize: averageSize
+    },
+    translations: {
+      total: 0,
+      successful: 0,
+      failed: 0,
+      averageTime: 0
+    }
+  };
 }
 
-export default function AdminStatsPage() {
-  return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-lg">読み込み中...</div>
-      </div>
-    }>
-      <AdminStatsServer />
-    </Suspense>
-  );
+export default async function AdminStatsPage() {
+  // 管理者権限の確認
+  const isAdmin = await checkAdminRole();
+  
+  if (!isAdmin) {
+    redirect('/dashboard');
+  }
+  
+  // 詳細な統計情報を取得
+  const stats = await getDetailedStats();
+  
+  return <AdminStatsClient initialStats={stats} />;
 }
