@@ -1,4 +1,5 @@
 import Redis from 'ioredis';
+import logger from '@/lib/logger';
 
 // Redis接続が必須かどうか
 const REDIS_ENABLED = process.env.REDIS_ENABLED === 'true';
@@ -35,28 +36,28 @@ export function getRedisClient(): Redis | null {
     redisClient = new Redis(redisConfig);
     
     redisClient.on('connect', () => {
-      console.log('🚀 Redis connected successfully');
+      logger.info('🚀 Redis connected successfully');
       redisAvailable = true;
     });
 
     redisClient.on('error', (err) => {
       // エラーをログに記録するが、アプリケーションを停止しない
       if (redisAvailable) {
-        console.warn('⚠️ Redis connection lost:', err.message);
+        logger.warn('⚠️ Redis connection lost:', { message: err.message });
         redisAvailable = false;
       }
     });
 
     redisClient.on('close', () => {
       if (redisAvailable) {
-        console.log('🔌 Redis connection closed');
+        logger.info('🔌 Redis connection closed');
         redisAvailable = false;
       }
     });
 
     // 接続を試みる（失敗しても続行）
     redisClient.connect().catch((err) => {
-      console.warn('⚠️ Redis is not available, continuing without cache:', err.message);
+      logger.warn('⚠️ Redis is not available, continuing without cache:', err.message);
       redisAvailable = false;
     });
   }

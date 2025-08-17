@@ -5,6 +5,7 @@
 
 import { cache } from 'react';
 import { getRequestScopedSupabase, getRequestScopedUser } from './request-scoped-auth';
+import logger from '@/lib/logger';
 
 // セッション状態の型定義
 export type SessionStatus = 'valid' | 'expired' | 'invalid' | 'refreshing';
@@ -53,7 +54,7 @@ export const getSessionInfo = cache(async (): Promise<SessionInfo> => {
       isNearExpiry
     };
   } catch (error) {
-    console.error('Failed to get session info:', error);
+    logger.error('Failed to get session info:', error);
     return { status: 'invalid' };
   }
 });
@@ -70,13 +71,13 @@ export const autoRefreshSession = cache(async (): Promise<boolean> => {
       const { data: { session }, error } = await supabase.auth.refreshSession();
       
       if (error || !session) {
-        console.error('Failed to refresh session:', error);
+        logger.error('Failed to refresh session:', error);
         return false;
       }
       
       return true;
     } catch (error) {
-      console.error('Failed to refresh session:', error);
+      logger.error('Failed to refresh session:', error);
       return false;
     }
   }
@@ -107,11 +108,11 @@ export async function signOutSession(): Promise<void> {
     const { error } = await supabase.auth.signOut();
     
     if (error) {
-      console.error('Failed to sign out:', error);
+      logger.error('Failed to sign out:', error);
       throw error;
     }
   } catch (error) {
-    console.error('Failed to sign out:', error);
+    logger.error('Failed to sign out:', error);
     throw error;
   }
 }
@@ -154,6 +155,6 @@ export async function logSessionEvent(
         }
       });
   } catch (error) {
-    console.error(`Failed to log session event ${event}:`, error);
+    logger.error(`Failed to log session event ${event}:`, error);
   }
 }

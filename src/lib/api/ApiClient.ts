@@ -4,7 +4,7 @@
  */
 
 import { AppError, normalizeError } from '../errors/AppError';
-import { ErrorCodes, isRetryableError } from '../errors/ErrorCodes';
+import { ErrorCode, ErrorCodes, isRetryableError } from '../errors/ErrorCodes';
 import logger from '../logger';
 
 /**
@@ -21,7 +21,7 @@ export interface ApiRequestOptions extends RequestInit {
 /**
  * APIレスポンス型
  */
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   data?: T;
   error?: AppError;
   status: number;
@@ -54,7 +54,7 @@ export class ApiClient {
   /**
    * APIリクエストを実行
    */
-  async request<T = any>(options: ApiRequestOptions): Promise<ApiResponse<T>> {
+  async request<T = unknown>(options: ApiRequestOptions): Promise<ApiResponse<T>> {
     const {
       url,
       retries = this.defaultRetryConfig.maxRetries,
@@ -94,7 +94,7 @@ export class ApiClient {
         const error = await this.handleErrorResponse(response);
         
         // リトライ可能なエラーかチェック
-        if (attempt < retries && isRetryableError(error.code as any)) {
+        if (attempt < retries && isRetryableError(error.code as ErrorCode)) {
           lastError = error;
           await this.delay(currentDelay);
           currentDelay = Math.min(currentDelay * this.defaultRetryConfig.backoffFactor, this.defaultRetryConfig.maxDelay);
@@ -115,7 +115,7 @@ export class ApiClient {
         // ネットワークエラーなど
         const appError = this.handleNetworkError(error);
         
-        if (attempt < retries && isRetryableError(appError.code as any)) {
+        if (attempt < retries && isRetryableError(appError.code as ErrorCode)) {
           lastError = appError;
           await this.delay(currentDelay);
           currentDelay = Math.min(currentDelay * this.defaultRetryConfig.backoffFactor, this.defaultRetryConfig.maxDelay);
@@ -146,7 +146,7 @@ export class ApiClient {
   /**
    * GETリクエスト
    */
-  async get<T = any>(url: string, options?: Partial<ApiRequestOptions>): Promise<T> {
+  async get<T = unknown>(url: string, options?: Partial<ApiRequestOptions>): Promise<T> {
     const response = await this.request<T>({
       ...options,
       url,
@@ -163,7 +163,7 @@ export class ApiClient {
   /**
    * POSTリクエスト
    */
-  async post<T = any>(url: string, data?: any, options?: Partial<ApiRequestOptions>): Promise<T> {
+  async post<T = unknown>(url: string, data?: unknown, options?: Partial<ApiRequestOptions>): Promise<T> {
     const response = await this.request<T>({
       ...options,
       url,
@@ -185,7 +185,7 @@ export class ApiClient {
   /**
    * PUTリクエスト
    */
-  async put<T = any>(url: string, data?: any, options?: Partial<ApiRequestOptions>): Promise<T> {
+  async put<T = unknown>(url: string, data?: unknown, options?: Partial<ApiRequestOptions>): Promise<T> {
     const response = await this.request<T>({
       ...options,
       url,
@@ -207,7 +207,7 @@ export class ApiClient {
   /**
    * DELETEリクエスト
    */
-  async delete<T = any>(url: string, options?: Partial<ApiRequestOptions>): Promise<T> {
+  async delete<T = unknown>(url: string, options?: Partial<ApiRequestOptions>): Promise<T> {
     const response = await this.request<T>({
       ...options,
       url,
@@ -224,10 +224,10 @@ export class ApiClient {
   /**
    * ファイルアップロード
    */
-  async uploadFile<T = any>(
+  async uploadFile<T = unknown>(
     url: string,
     file: File,
-    additionalData?: Record<string, any>,
+    additionalData?: Record<string, string | Blob>,
     options?: Partial<ApiRequestOptions>
   ): Promise<T> {
     const formData = new FormData();
@@ -235,7 +235,7 @@ export class ApiClient {
 
     if (additionalData) {
       Object.entries(additionalData).forEach(([key, value]) => {
-        formData.append(key, value);
+        formData.append(key, typeof value === 'string' ? value : value);
       });
     }
 
@@ -302,18 +302,18 @@ export class ApiClient {
     }
 
     if (contentType?.includes('text/')) {
-      return await response.text() as any;
+      return await response.text() as T;
     }
 
     // バイナリデータ
-    return await response.blob() as any;
+    return await response.blob() as T;
   }
 
   /**
    * エラーレスポンスを処理
    */
   private async handleErrorResponse(response: Response): Promise<AppError> {
-    let errorData: any = {};
+    let errorData: Record<string, unknown> | string = {};
 
     try {
       const contentType = response.headers.get('content-type');
@@ -325,19 +325,22 @@ export class ApiClient {
     }
 
     // AppErrorフォーマットの場合
-    if (errorData.code && errorData.message) {
+    if (typeof errorData === 'object' && errorData.code && errorData.message) {
       return new AppError(
-        errorData.message,
-        errorData.code,
+        errorData.message as string,
+        errorData.code as string,
         response.status,
         true,
-        errorData.userMessage || errorData.error,
-        errorData.details
+        (errorData.userMessage || errorData.error) as string | undefined,
+        errorData.details as Record<string, unknown> | undefined
       );
     }
 
     // 一般的なHTTPエラー
-    return this.createHttpError(response.status, errorData.error || errorData.message);
+    const errorMessage = typeof errorData === 'string' 
+      ? errorData 
+      : (typeof errorData === 'object' ? (errorData.error || errorData.message) as string | undefined : undefined);
+    return this.createHttpError(response.status, errorMessage);
   }
 
   /**

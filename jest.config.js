@@ -4,10 +4,10 @@ module.exports = {
   testEnvironment: 'node',
   roots: ['<rootDir>/src'],
   testMatch: [
-    '**/__tests__/**/*.test.ts',
-    '**/__tests__/**/*.test.tsx',
-    '**/*.spec.ts',
-    '**/*.spec.tsx'
+    '<rootDir>/src/**/__tests__/**/*.test.ts',
+    '<rootDir>/src/**/__tests__/**/*.test.tsx',
+    '<rootDir>/src/**/*.test.ts',
+    '<rootDir>/src/**/*.test.tsx'
   ],
   transform: {
     '^.+\\.tsx?$': ['ts-jest', {
@@ -43,6 +43,24 @@ module.exports = {
     }
   },
   moduleDirectories: ['node_modules', 'src'],
-  testPathIgnorePatterns: ['/node_modules/', '/.next/'],
+  testPathIgnorePatterns: [
+    '/node_modules/', 
+    '/.next/',
+    '/e2e/',
+    '/cypress/',
+    '/playwright.config.ts'
+  ],
+  // プロセス分離とクロスコンタミネーション防止
+  modulePathIgnorePatterns: [
+    '<rootDir>/e2e/',
+    '<rootDir>/playwright.config.ts',
+    '<rootDir>/auth.json',
+    '<rootDir>/test-results/',
+    '<rootDir>/playwright-report/'
+  ],
+  // プロセス制御強化
+  maxWorkers: 1,
+  forceExit: true,
+  detectOpenHandles: true,
   verbose: true
 };

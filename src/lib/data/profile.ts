@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import logger from '@/lib/logger';
 
 export interface Profile {
   id: string;
@@ -18,7 +19,7 @@ export async function getUserProfile(userId: string): Promise<Profile | null> {
     .single();
   
   if (error) {
-    console.error('Error fetching profile:', error);
+    logger.error('Error fetching profile:', error);
     // プロフィールがない場合は空のプロフィールを返す
     return {
       id: userId,

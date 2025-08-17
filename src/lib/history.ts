@@ -1,5 +1,7 @@
 // 翻訳履歴の管理
 
+import logger from '@/lib/logger';
+
 export interface TranslationHistoryItem {
   id: string;
   fileName: string;
@@ -32,7 +34,7 @@ export function getTranslationHistory(): TranslationHistoryItem[] {
       new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
   } catch (e) {
-    console.error('Failed to load translation history:', e);
+    logger.error('Failed to load translation history:', e);
     return [];
   }
 }
@@ -54,13 +56,13 @@ export function addToHistory(item: Omit<TranslationHistoryItem, 'id' | 'createdA
   try {
     localStorage.setItem(HISTORY_KEY, JSON.stringify(updatedHistory));
   } catch (e) {
-    console.error('Failed to save translation history:', e);
+    logger.error('Failed to save translation history:', e);
     // ストレージが満杯の場合は古い履歴を削除
     try {
       const reducedHistory = updatedHistory.slice(0, 20);
       localStorage.setItem(HISTORY_KEY, JSON.stringify(reducedHistory));
     } catch (e2) {
-      console.error('Failed to save even reduced history:', e2);
+      logger.error('Failed to save even reduced history:', e2);
     }
   }
   
@@ -73,7 +75,7 @@ export function updateHistoryItem(id: string, updates: Partial<TranslationHistor
   const index = history.findIndex(item => item.id === id);
   
   if (index === -1) {
-    console.error('History item not found:', id);
+    logger.error('History item not found:', id);
     return;
   }
   
@@ -86,7 +88,7 @@ export function updateHistoryItem(id: string, updates: Partial<TranslationHistor
   try {
     localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
   } catch (e) {
-    console.error('Failed to update translation history:', e);
+    logger.error('Failed to update translation history:', e);
   }
 }
 
@@ -98,7 +100,7 @@ export function deleteHistoryItem(id: string): void {
   try {
     localStorage.setItem(HISTORY_KEY, JSON.stringify(filtered));
   } catch (e) {
-    console.error('Failed to delete history item:', e);
+    logger.error('Failed to delete history item:', e);
   }
 }
 
@@ -107,7 +109,7 @@ export function clearHistory(): void {
   try {
     localStorage.removeItem(HISTORY_KEY);
   } catch (e) {
-    console.error('Failed to clear history:', e);
+    logger.error('Failed to clear history:', e);
   }
 }
 

@@ -1,4 +1,3 @@
-import { loginAction } from '@/app/actions/auth';
 import LoginForm from '@/components/auth/LoginForm';
 import Link from 'next/link';
 import { Suspense } from 'react';
@@ -23,7 +22,7 @@ export default function LoginPage() {
               <p className="text-slate-600 mt-2">アカウントにログイン</p>
             </div>
             
-            <LoginForm action={loginAction} />
+            <LoginForm />
             
             <div className="mt-4 text-center">
               <span className="text-slate-600 text-sm">アカウントをお持ちでない場合は </span>

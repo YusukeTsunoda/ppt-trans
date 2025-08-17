@@ -3,13 +3,14 @@
 import Script from 'next/script';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useEffect } from 'react';
+import type { JsonObject } from '@/types/common';
 
 declare global {
   interface Window {
     gtag: (
       command: string,
       targetId: string,
-      config?: Record<string, any>
+      config?: JsonObject
     ) => void;
   }
 }

@@ -1,5 +1,6 @@
 // import { Prisma } from '@prisma/client';
 import logger from '@/lib/logger';
+import type { JsonValue, JsonObject } from '@/types/common';
 
 /**
  * SQLインジェクション対策
@@ -69,7 +70,7 @@ export class SQLInjectionProtection {
    * Note: Supabase/PostgreSQLでは自動的にパラメータ化されるため、
    * この関数は主に追加の検証目的で使用
    */
-  static prepareQueryParam(value: any): any {
+  static prepareQueryParam(value: JsonValue): JsonValue {
     if (value === null || value === undefined) {
       return null;
     }
@@ -113,7 +114,7 @@ export class SQLInjectionProtection {
   /**
    * WHERE句の条件を安全に構築
    */
-  static buildWhereClause(conditions: Record<string, any>): string {
+  static buildWhereClause(conditions: JsonObject): string {
     const clauses: string[] = [];
     
     for (const [key, value] of Object.entries(conditions)) {

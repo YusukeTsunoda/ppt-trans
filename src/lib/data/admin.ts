@@ -1,10 +1,13 @@
 import { createClient } from '@/lib/supabase/server';
+import logger from '@/lib/logger';
 
 export interface AdminStats {
   totalUsers: number;
   totalFiles: number;
   totalTranslations: number;
   activeUsers: number;
+  storageUsed: number;
+  activeSubscriptions: number;
 }
 
 export interface AdminUser {
@@ -36,7 +39,9 @@ export async function getAdminDashboardData() {
       totalUsers: usersResult.count || 0,
       totalFiles: filesResult.count || 0,
       totalTranslations: 0,
-      activeUsers: 0
+      activeUsers: 0,
+      storageUsed: 0,
+      activeSubscriptions: 0
     };
     
     // 最近のユーザー一覧を取得
@@ -55,13 +60,15 @@ export async function getAdminDashboardData() {
       logs
     };
   } catch (error) {
-    console.error('Error fetching admin data:', error);
+    logger.error('Error fetching admin data:', error);
     return {
       stats: {
         totalUsers: 0,
         totalFiles: 0,
         totalTranslations: 0,
-        activeUsers: 0
+        activeUsers: 0,
+        storageUsed: 0,
+        activeSubscriptions: 0
       },
       users: [],
       logs: []

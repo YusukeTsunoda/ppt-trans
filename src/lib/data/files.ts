@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import logger from '@/lib/logger';
 
 export interface FileRecord {
   id: string;
@@ -34,7 +35,7 @@ export async function getUserFiles(): Promise<FileRecord[]> {
     .order('created_at', { ascending: false });
   
   if (error) {
-    console.error('Error fetching files:', error);
+    logger.error('Error fetching files:', error);
     return [];
   }
   

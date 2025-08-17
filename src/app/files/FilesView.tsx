@@ -1,14 +1,15 @@
 'use client';
 
 import { useState } from 'react';
-import { useFormState, useFormStatus } from 'react-dom';
+import { useActionState } from 'react';
+import { useFormStatus } from 'react-dom';
 import Link from 'next/link';
-import { deleteFileAction, downloadFileAction, type FilesState } from '@/app/actions/files';
+import { deleteFileAction, downloadFileAction } from '@/app/actions/files';
 import { FileRecord } from '@/lib/data/files';
 import { Loader2, Trash2, Download, FileText, AlertCircle } from 'lucide-react';
 import { DashboardLayout } from '@/components/DashboardLayout';
 
-function DeleteButton({ fileId }: { fileId: string }) {
+function DeleteButton() {
   const { pending } = useFormStatus();
   
   return (
@@ -51,10 +52,10 @@ interface FilesViewProps {
   initialFiles: FileRecord[];
 }
 
-export default function FilesView({ userEmail, initialFiles }: FilesViewProps) {
+export default function FilesView({ initialFiles }: FilesViewProps) {
   const [files, setFiles] = useState<FileRecord[]>(initialFiles);
-  const [deleteState, deleteFormAction] = useFormState(deleteFileAction, null);
-  const [downloadState, downloadFormAction] = useFormState(downloadFileAction, null);
+  const [deleteState, deleteFormAction] = useActionState(deleteFileAction, null);
+  const [downloadState, downloadFormAction] = useActionState(downloadFileAction, null);
   
   // ファイル削除時のOptimistic Update
   const handleDeleteWithOptimistic = (fileId: string) => {
@@ -209,7 +210,7 @@ export default function FilesView({ userEmail, initialFiles }: FilesViewProps) {
                       onSubmit={() => handleDeleteWithOptimistic(file.id)}
                     >
                       <input type="hidden" name="fileId" value={file.id} />
-                      <DeleteButton fileId={file.id} />
+                      <DeleteButton />
                     </form>
                   </div>
                 </div>

@@ -1,10 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import type { JsonValue } from '@/types/common';
 
 export interface GenerationProgressProps {
   jobId?: string;
-  onComplete?: (result: any) => void;
+  onComplete?: (result: JsonValue) => void;
   onError?: (error: string) => void;
 }
 

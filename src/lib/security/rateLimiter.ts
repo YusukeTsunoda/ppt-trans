@@ -61,6 +61,7 @@ export class RateLimiter {
     remaining: number;
     reset: Date;
     response?: NextResponse;
+    error?: string;
   }> {
     const key = this.generateKey(req);
     const now = Date.now();
@@ -149,12 +150,13 @@ export class RateLimiter {
     } catch (error) {
       logger.error('Rate limiter error', error);
       
-      // エラー時は通過させる（フェイルオープン）
+      // エラー時は安全側に倒す（フェイルクローズ）
       return {
-        success: true,
+        success: false,
         limit: this.config.max,
-        remaining: this.config.max,
+        remaining: 0,
         reset: new Date(now + this.config.windowMs),
+        error: 'Rate limiting service temporarily unavailable'
       };
     }
   }
@@ -247,6 +249,7 @@ export async function checkServerActionRateLimit(
   limit: number;
   remaining: number;
   reset: Date;
+  error?: string;
 }> {
   const redis = getRedisClient();
   const now = Date.now();
@@ -329,12 +332,13 @@ export async function checkServerActionRateLimit(
   } catch (error) {
     logger.error('Server Action rate limiter error', error);
     
-    // エラー時は通過させる（フェイルオープン）
+    // エラー時は安全側に倒す（フェイルクローズ）
     return {
-      success: true,
+      success: false,
       limit: finalConfig.max,
-      remaining: finalConfig.max,
+      remaining: 0,
       reset: new Date(now + finalConfig.windowMs),
+      error: 'Rate limiting service temporarily unavailable'
     };
   }
 }

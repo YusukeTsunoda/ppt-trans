@@ -5,6 +5,8 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import path from 'path';
 import fs from 'fs/promises';
+import type { JsonValue, JsonObject } from '@/types/common';
+import type { SlideData } from '@/types/index';
 
 const execAsync = promisify(exec);
 
@@ -14,19 +16,20 @@ export interface PPTXJobData {
   type: 'process' | 'generate';
   fileUrl: string;
   userId?: string;
-  metadata?: {
+  metadata?: JsonObject & {
     fileName?: string;
     fileSize?: number;
     slideCount?: number;
-    editedSlides?: any[];
-    [key: string]: any;
+    editedSlides?: SlideData[];
+    priority?: number;
+    delay?: number;
   };
 }
 
 export interface PPTXJobResult {
   success: boolean;
   outputUrl?: string;
-  slides?: any[];
+  slides?: SlideData[];
   error?: string;
   duration: number;
 }
@@ -218,7 +221,7 @@ export async function addPPTXJob(
   data: PPTXJobData
 ): Promise<Bull.Job<PPTXJobData>> {
   try {
-    const job = await pptxQueue.add(data, {
+    const job = await pptxQueue.add('process-pptx', data, {
       priority: data.metadata?.priority || 0,
       delay: data.metadata?.delay || 0,
     });

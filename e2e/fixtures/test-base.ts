@@ -7,12 +7,12 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'test-key'
 );
 
-// テストユーザー情報
+// テストユーザー情報（全テストで統一）
 export const TEST_USER = {
-  email: 'e2e.test@example.com',
-  password: 'Test123456!',
-  newEmail: 'e2e.new@example.com',
-  newPassword: 'NewTest123456!'
+  email: process.env.TEST_USER_EMAIL || 'test@example.com',
+  password: process.env.TEST_USER_PASSWORD || 'testpassword123',  // Supabaseに登録されている実際のパスワード
+  newEmail: 'test.new@example.com',
+  newPassword: 'NewPassword123!'
 };
 
 // カスタムフィクスチャ
@@ -21,9 +21,9 @@ type TestFixtures = {
 };
 
 export const test = base.extend<TestFixtures>({
-  authenticatedPage: async ({ page }, use) => {
+  authenticatedPage: async ({ page, baseURL }: { page: any; baseURL: string }, use: any) => {
     // テストユーザーでログイン
-    await page.goto('/login');
+    await page.goto(`${baseURL}/login`);
     await page.fill('input[type="email"]', TEST_USER.email);
     await page.fill('input[type="password"]', TEST_USER.password);
     await page.click('button[type="submit"]');

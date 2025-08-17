@@ -1,4 +1,3 @@
-import { signupAction } from '@/app/actions/auth';
 import SignupForm from '@/components/auth/SignupForm';
 import Link from 'next/link';
 
@@ -19,7 +18,7 @@ export default function RegisterPage() {
           </p>
         </div>
 
-        <SignupForm action={signupAction} />
+        <SignupForm />
       </div>
     </div>
   );

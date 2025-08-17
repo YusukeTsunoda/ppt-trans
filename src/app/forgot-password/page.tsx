@@ -1,4 +1,3 @@
-import { forgotPasswordAction } from '@/app/actions/auth';
 import ForgotPasswordForm from '@/components/auth/ForgotPasswordForm';
 import Link from 'next/link';
 
@@ -12,7 +11,7 @@ export default function ForgotPasswordPage() {
             <p className="text-slate-600 mt-2">登録されたメールアドレスにリセット用のリンクを送信します</p>
           </div>
           
-          <ForgotPasswordForm action={forgotPasswordAction} />
+          <ForgotPasswordForm />
           
           <div className="mt-4 text-center">
             <Link href="/login" className="text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors">

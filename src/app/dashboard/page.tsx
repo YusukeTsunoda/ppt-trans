@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getFiles } from '@/app/actions/dashboard';
 import DashboardView from '@/components/dashboard/DashboardView';
+import logger from '@/lib/logger';
 
 // 動的レンダリングを強制
 export const dynamic = 'force-dynamic';
@@ -20,7 +21,7 @@ export default async function DashboardPage() {
   const { files, error } = await getFiles();
   
   if (error) {
-    console.error('Error loading dashboard:', error);
+    logger.error('Error loading dashboard:', error);
   }
   
   return (

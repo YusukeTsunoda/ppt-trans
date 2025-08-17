@@ -1,6 +1,7 @@
 'use client';
 
-import { useFormState, useFormStatus } from 'react-dom';
+import { useActionState } from 'react';
+import { useFormStatus } from 'react-dom';
 import Link from 'next/link';
 import { updateProfileAction } from '@/app/actions/profile';
 import type { Profile } from '@/lib/data/profile';
@@ -26,7 +27,7 @@ interface ProfileClientProps {
 }
 
 export default function ProfileClient({ userId, userEmail, initialProfile }: ProfileClientProps) {
-  const [state, formAction] = useFormState(updateProfileAction, null);
+  const [state, formAction] = useActionState(updateProfileAction, null);
   
   return (
     <div className="min-h-screen bg-gray-50 py-8">

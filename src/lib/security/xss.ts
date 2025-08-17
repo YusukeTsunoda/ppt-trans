@@ -1,6 +1,7 @@
 import DOMPurify from 'isomorphic-dompurify';
 import type { Config } from 'dompurify';
 import logger from '@/lib/logger';
+import type { JsonObject } from '@/types/common';
 
 /**
  * XSS対策のためのサニタイザー
@@ -88,8 +89,8 @@ export class XSSProtection {
   /**
    * JSONデータをサニタイズ
    */
-  static sanitizeJSON<T extends Record<string, any>>(data: T): T {
-    const sanitized: any = {};
+  static sanitizeJSON<T extends JsonObject>(data: T): T {
+    const sanitized: JsonObject = {};
     
     for (const [key, value] of Object.entries(data)) {
       // キーをサニタイズ

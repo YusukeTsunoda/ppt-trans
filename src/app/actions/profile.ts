@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
+import logger from '@/lib/logger';
 
 export interface ProfileState {
   error?: string;
@@ -38,7 +39,7 @@ export async function updateProfileAction(
       });
 
     if (updateError) {
-      console.error('Profile update error:', updateError);
+      logger.error('Profile update error:', updateError);
       return { error: 'プロフィールの更新に失敗しました' };
     }
 
@@ -51,7 +52,7 @@ export async function updateProfileAction(
     };
 
   } catch (error) {
-    console.error('Profile action error:', error);
+    logger.error('Profile action error:', error);
     return { error: 'プロフィールの更新に失敗しました' };
   }
 }
@@ -94,7 +95,7 @@ export async function changePasswordAction(
     });
 
     if (updateError) {
-      console.error('Password update error:', updateError);
+      logger.error('Password update error:', updateError);
       return { 
         error: updateError.message.includes('incorrect') 
           ? '現在のパスワードが正しくありません'
@@ -110,7 +111,7 @@ export async function changePasswordAction(
     };
 
   } catch (error) {
-    console.error('Password change error:', error);
+    logger.error('Password change error:', error);
     return { error: 'パスワードの更新に失敗しました' };
   }
 }

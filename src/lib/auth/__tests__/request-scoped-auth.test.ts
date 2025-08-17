@@ -7,13 +7,40 @@ import { createServerClient } from '@supabase/ssr';
 // Supabase SSRのモック
 jest.mock('@supabase/ssr');
 
+// Next.jsのcookiesとcacheのモック
+jest.mock('next/headers', () => ({
+  cookies: jest.fn().mockResolvedValue({
+    getAll: jest.fn().mockReturnValue([]),
+    set: jest.fn(),
+  }),
+}));
+
+jest.mock('react', () => ({
+  cache: (fn: any) => fn,
+}));
+
 describe('Request-Scoped Authentication', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // 環境変数を設定
+    process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://test.supabase.co';
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'test-anon-key';
   });
 
   describe('getRequestScopedSupabase', () => {
     it('should create a Supabase client with request-scoped cookies', async () => {
+      // Supabaseクライアントのモックを設定
+      const mockClient = {
+        auth: {
+          getUser: jest.fn(),
+          signIn: jest.fn(),
+          signOut: jest.fn(),
+        },
+        from: jest.fn(),
+      };
+      
+      (createServerClient as jest.Mock).mockReturnValue(mockClient);
+      
       const { getRequestScopedSupabase } = await import('../request-scoped-auth');
       const client = await getRequestScopedSupabase();
       
@@ -23,6 +50,18 @@ describe('Request-Scoped Authentication', () => {
     });
 
     it('should be cached per request', async () => {
+      // Supabaseクライアントのモックを設定
+      const mockClient = {
+        auth: {
+          getUser: jest.fn(),
+          signIn: jest.fn(),
+          signOut: jest.fn(),
+        },
+        from: jest.fn(),
+      };
+      
+      (createServerClient as jest.Mock).mockReturnValue(mockClient);
+      
       const { getRequestScopedSupabase } = await import('../request-scoped-auth');
       
       const client1 = await getRequestScopedSupabase();

@@ -4,6 +4,7 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import path from 'path';
 import fs from 'fs/promises';
+import logger from '@/lib/logger';
 
 const execAsync = promisify(exec);
 
@@ -177,7 +178,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Translation error:', error);
+    logger.error('Translation error:', error);
     
     // エラー時はステータスをfailedに更新
     try {
@@ -195,7 +196,7 @@ export async function POST(request: NextRequest) {
           .eq('id', body.fileId);
       }
     } catch (e) {
-      console.error('Failed to update status:', e);
+      logger.error('Failed to update status:', e);
     }
     
     return NextResponse.json(

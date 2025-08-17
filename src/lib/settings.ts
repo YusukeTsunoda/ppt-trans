@@ -1,4 +1,6 @@
 // 型定義を一元化して循環参照を解消
+import logger from '@/lib/logger';
+
 export type TranslationModel = 
   | 'claude-3-haiku-20240307' 
   | 'claude-3-5-sonnet-20241022'
@@ -32,7 +34,7 @@ export function getSettings(): Settings {
       return JSON.parse(saved);
     }
   } catch (e) {
-    console.error('Failed to load settings:', e);
+    logger.error('Failed to load settings:', e);
   }
 
   return DEFAULT_SETTINGS;
@@ -46,6 +48,6 @@ export function saveSettings(settings: Settings): void {
   try {
     localStorage.setItem('pptx-translator-settings', JSON.stringify(settings));
   } catch (e) {
-    console.error('Failed to save settings:', e);
+    logger.error('Failed to save settings:', e);
   }
 }

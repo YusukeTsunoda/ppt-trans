@@ -5,6 +5,7 @@ import type { ProcessingResult, SlideData } from '@/types';
 import { getSettings } from '@/lib/settings';
 import { updateHistoryItem } from '@/lib/history';
 import { useResponsive } from '@/hooks/useResponsive';
+import logger from '@/lib/logger';
 
 // CSSアニメーションをグローバルスタイルとして追加
 const globalStyles = `
@@ -179,7 +180,7 @@ export function PreviewScreen({ data, onBack, onDataUpdate, historyId }: Preview
       }
 
     } catch (err) {
-      console.error('Translation error:', err);
+      logger.error('Translation error:', err);
       const errorMessage = err instanceof Error ? err.message : '翻訳中にエラーが発生しました。';
       setError(errorMessage);
     } finally {
@@ -293,7 +294,7 @@ export function PreviewScreen({ data, onBack, onDataUpdate, historyId }: Preview
         }))
       };
 
-      console.log('Generating translated PPTX...', requestData);
+      logger.debug('Generating translated PPTX...', requestData);
 
       // API Route経由でPPTXファイルを生成
       const response = await fetch('/api/generate/pptx', {
@@ -310,7 +311,7 @@ export function PreviewScreen({ data, onBack, onDataUpdate, historyId }: Preview
         throw new Error(result.error || 'PPTXファイルの生成に失敗しました');
       }
 
-      console.log('PPTX generation result:', result);
+      logger.debug('PPTX generation result:', result);
 
       // ダウンロード処理
       if (result.downloadUrl) {
@@ -340,7 +341,7 @@ export function PreviewScreen({ data, onBack, onDataUpdate, historyId }: Preview
             return;
           }
         } catch (corsError) {
-          console.log('Direct download failed, trying fallback method...', corsError);
+          logger.debug('Direct download failed, trying fallback method...', corsError);
         }
         
         // CORS エラーの場合はリンククリックでダウンロード
@@ -366,7 +367,7 @@ export function PreviewScreen({ data, onBack, onDataUpdate, historyId }: Preview
       }
       
     } catch (error) {
-      console.error('Download error:', error);
+      logger.error('Download error:', error);
       setError(`ダウンロードに失敗しました: ${error instanceof Error ? error.message : '不明なエラー'}`);
     } finally {
       setIsDownloading(false);
@@ -636,7 +637,7 @@ export function PreviewScreen({ data, onBack, onDataUpdate, historyId }: Preview
                         if (text.id !== highlightedTextId) return null;
                         
                         // デバッグ用ログ
-                        console.log('Highlighting text:', text.id, 'Position:', text.position);
+                        logger.debug('Highlighting text:', { id: text.id, position: text.position });
                         
                         // PowerPointのデフォルトスライドサイズ（ポイント単位）
                         // 標準的な16:9スライド: 幅960pt x 高さ540pt

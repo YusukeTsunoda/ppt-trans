@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { User } from '@supabase/supabase-js';
+import logger from '@/lib/logger';
 
 export function UserNav() {
   const [user, setUser] = useState<User | null>(null);
@@ -31,7 +32,7 @@ export function UserNav() {
           setUserRole(profile?.role || 'USER');
         }
       } catch (error) {
-        console.error('Auth check error:', error);
+        logger.error('Auth check error:', error);
       } finally {
         setLoading(false);
       }

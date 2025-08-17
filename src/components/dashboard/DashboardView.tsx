@@ -1,17 +1,19 @@
 'use client';
 
 import { useState } from 'react';
-import { useFormState, useFormStatus } from 'react-dom';
+import { useActionState } from 'react';
+import { useFormStatus } from 'react-dom';
 import { translateFileAction, deleteFileAction } from '@/app/actions/dashboard';
 import { logoutAction } from '@/app/actions/auth';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
+import logger from '@/lib/logger';
 
 interface FileRecord {
   id: string;
   filename: string;
-  original_filename: string;
+  original_name: string;  // original_filename -> original_nameに修正
   file_size: number;
   status: string;
   translation_result?: {
@@ -62,8 +64,8 @@ function DeleteButton({ fileId }: { fileId: string }) {
 }
 
 function FileCard({ file }: { file: FileRecord }) {
-  const [translateState, translateAction] = useFormState(translateFileAction, null);
-  const [deleteState, deleteAction] = useFormState(deleteFileAction, null);
+  const [translateState, translateAction] = useActionState(translateFileAction, null);
+  const [deleteState, deleteAction] = useActionState(deleteFileAction, null);
   const router = useRouter();
 
   const formatFileSize = (bytes: number) => {
@@ -122,7 +124,7 @@ function FileCard({ file }: { file: FileRecord }) {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch (error) {
-      console.error('Download error:', error);
+      logger.error('Download error:', error);
       alert('ダウンロードに失敗しました');
     }
   };
@@ -136,7 +138,7 @@ function FileCard({ file }: { file: FileRecord }) {
     <tr className="hover:bg-gray-50">
       <td className="px-6 py-4 whitespace-nowrap">
         <div className="text-sm font-medium text-gray-900">
-          {file.original_filename}
+          {file.original_name}
         </div>
         {file.translation_result?.slide_count && (
           <div className="text-xs text-gray-500">
@@ -167,11 +169,21 @@ function FileCard({ file }: { file: FileRecord }) {
         <div className="flex gap-2">
           {/* 元ファイルダウンロード */}
           <button
-            onClick={() => handleDownload(file.filename, file.original_filename)}
+            onClick={() => handleDownload(file.filename, file.original_name)}
             className="text-sm text-blue-600 hover:text-blue-800"
           >
             元ファイル
           </button>
+          
+          {/* プレビューボタン */}
+          {file.status === 'uploaded' && (
+            <Link
+              href={`/preview/${file.id}`}
+              className="text-sm bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-all duration-200"
+            >
+              📄 プレビュー
+            </Link>
+          )}
           
           {/* 翻訳ボタン */}
           {file.status === 'uploaded' && (
@@ -192,7 +204,7 @@ function FileCard({ file }: { file: FileRecord }) {
             <button
               onClick={() => handleDownload(
                 file.translation_result!.translated_path!,
-                `translated_${file.original_filename}`
+                `translated_${file.original_name}`
               )}
               className="text-sm bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-all duration-200"
             >
@@ -235,6 +247,7 @@ export default function DashboardView({ userEmail, initialFiles }: DashboardView
               <Link
                 href="/upload"
                 className="btn-accent"
+                data-testid="new-upload-link"
               >
                 📄 新規アップロード
               </Link>
@@ -255,7 +268,7 @@ export default function DashboardView({ userEmail, initialFiles }: DashboardView
         {/* ファイル一覧 */}
         <div className="card">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-slate-900">アップロードしたファイル</h2>
+            <h2 className="text-xl font-semibold text-slate-900" data-testid="uploaded-files-title">アップロードしたファイル</h2>
             <button
               onClick={() => router.refresh()}
               className="text-blue-600 hover:text-blue-700 transition-colors"
@@ -268,7 +281,7 @@ export default function DashboardView({ userEmail, initialFiles }: DashboardView
           </div>
           
           {files.length === 0 ? (
-            <div className="p-12 text-center">
+            <div className="p-12 text-center" data-testid="empty-file-list">
               <svg className="mx-auto h-24 w-24 text-slate-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
               </svg>
@@ -281,7 +294,7 @@ export default function DashboardView({ userEmail, initialFiles }: DashboardView
               </Link>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto file-list" data-testid="file-list">
               <table className="w-full">
                 <thead className="bg-gray-50">
                   <tr>

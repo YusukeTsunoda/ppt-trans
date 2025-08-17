@@ -2,8 +2,7 @@
 
 import { useEffect } from 'react';
 import Link from 'next/link';
-import * as Sentry from '@sentry/nextjs';
-import { trackError } from '@/components/Analytics';
+import logger from '@/lib/logger';
 
 export default function Error({
   error,
@@ -13,14 +12,13 @@ export default function Error({
   reset: () => void;
 }) {
   useEffect(() => {
-    // エラーをSentryに送信
-    Sentry.captureException(error);
+    // コンソールにログ出力
+    logger.error('Application error:', error);
     
-    // Google Analyticsにエラーを記録
-    trackError('app_error', error.message);
-    
-    // コンソールにもログ出力
-    console.error('Application error:', error);
+    // Sentryが設定されている場合のみ送信
+    if (typeof window !== 'undefined' && (window as any).Sentry) {
+      (window as any).Sentry.captureException(error);
+    }
   }, [error]);
 
   return (
