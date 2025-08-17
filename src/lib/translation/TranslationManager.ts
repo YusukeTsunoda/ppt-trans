@@ -1,7 +1,7 @@
 import { AppError } from '@/lib/errors/AppError';
 import { ErrorCodes } from '@/lib/errors/ErrorCodes';
 import logger from '@/lib/logger';
-import { ApiClient } from '@/lib/api/ApiClient';
+import Anthropic from '@anthropic-ai/sdk';
 
 export interface TranslationChunk {
   id: string;
@@ -246,37 +246,49 @@ export class TranslationManager {
 ${(!sourceLanguage || sourceLanguage === 'auto') ? 'Automatically detect the source language.' : ''}
 Maintain the original formatting and style. This is slide ${slideNumber ? `#${slideNumber}` : 'content'} from a presentation.`;
 
-    const apiClient = new ApiClient();
-    const response = await apiClient.request<{ translatedText: string }>({
-      url: '/api/translate',
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        text,
-        model,
-        targetLanguage,
-        sourceLanguage,
-        systemPrompt
-      }),
-      retries: 3,
-      timeout: 120000, // 2分
-    });
+    try {
+      const anthropic = new Anthropic({ apiKey });
+      const response = await anthropic.messages.create({
+        model: model || 'claude-3-haiku-20240307',
+        max_tokens: 4096,
+        system: systemPrompt,
+        messages: [
+          {
+            role: 'user',
+            content: text,
+          },
+        ],
+      });
 
-    if (!response.data) {
-      throw response.error || new AppError(
-        'Translation API error',
-        ErrorCodes.TRANSLATION_API_ERROR,
-        response.status,
-        true,
-        '翻訳APIでエラーが発生しました',
-        { slideNumber, textLength: text.length }
-      );
+      const translatedText = response.content[0].type === 'text' 
+        ? response.content[0].text 
+        : '';
+
+      if (!translatedText) {
+        throw new AppError(
+          'Translation returned empty result',
+          ErrorCodes.TRANSLATION_API_ERROR,
+          500,
+          true,
+          '翻訳結果が空でした',
+          { slideNumber, textLength: text.length }
+        );
+      }
+
+      return translatedText;
+    } catch (error) {
+      if (error instanceof Anthropic.APIError) {
+        throw new AppError(
+          error.message,
+          ErrorCodes.TRANSLATION_API_ERROR,
+          error.status || 500,
+          true,
+          '翻訳APIでエラーが発生しました',
+          { slideNumber, textLength: text.length, anthropicError: error.error?.type }
+        );
+      }
+      throw error;
     }
-
-    return response.data.translatedText;
   }
 
   /**
@@ -308,51 +320,63 @@ Maintain the original formatting and style. This is slide ${slideNumber ? `#${sl
       );
     }
 
+    const effectiveSourceLanguage = (!sourceLanguage || sourceLanguage === 'auto') 
+      ? 'the source language (auto-detect)' 
+      : sourceLanguage;
+
     const batchPrompt = texts.map((text, index) => 
       `[TEXT_${index}]\n${text}\n[/TEXT_${index}]`
     ).join('\n\n');
 
-    const systemPrompt = `You are a professional translator. Translate each text block from ${sourceLanguage} to ${targetLanguage}.
-Return the translations in the same format with [TRANSLATION_N] tags.`;
+    const systemPrompt = `You are a professional translator. Translate each text block from ${effectiveSourceLanguage} to ${targetLanguage}.
+${(!sourceLanguage || sourceLanguage === 'auto') ? 'Automatically detect the source language for each text block.' : ''}
+Return the translations in the same format with [TRANSLATION_N] tags, maintaining original formatting and style.`;
 
     try {
-      const apiClient = new ApiClient();
-      const response = await apiClient.request<{ translatedText: string }>({
-        url: '/api/translate',
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
-        },
-        body: JSON.stringify({
-          text: batchPrompt,
-          model,
-          targetLanguage,
-          sourceLanguage,
-          systemPrompt,
-          isBatch: true
-        }),
-        retries: 3,
-        timeout: 180000, // 3分（バッチ処理用）
+      const anthropic = new Anthropic({ apiKey });
+      const response = await anthropic.messages.create({
+        model: model || 'claude-3-haiku-20240307',
+        max_tokens: 4096,
+        system: systemPrompt,
+        messages: [
+          {
+            role: 'user',
+            content: batchPrompt,
+          },
+        ],
       });
 
-      if (!response.data) {
-        throw response.error || new AppError(
-          'Batch translation failed',
+      const translatedText = response.content[0].type === 'text' 
+        ? response.content[0].text 
+        : '';
+
+      if (!translatedText) {
+        throw new AppError(
+          'Batch translation returned empty result',
           ErrorCodes.TRANSLATION_API_ERROR,
-          response.status
+          500,
+          true,
+          'バッチ翻訳結果が空でした'
         );
       }
-
-      const result = response.data;
       
       // バッチ応答をパース
-      const translations = this.parseBatchResponse(result.translatedText, texts.length);
+      const translations = this.parseBatchResponse(translatedText, texts.length);
       return translations;
 
     } catch (error) {
-      logger.error('Batch translation failed', error);
+      if (error instanceof Anthropic.APIError) {
+        logger.error('Batch translation failed with Anthropic API error', {
+          error: error.message,
+          type: error.error?.type,
+          status: error.status
+        });
+      } else {
+        logger.error('Batch translation failed', error);
+      }
+      
       // フォールバック: 個別に翻訳
+      logger.info('Falling back to individual translation for each text');
       return Promise.all(
         texts.map(text => 
           this.translateSingleChunk(text, apiKey, {

@@ -1,4 +1,4 @@
-import prisma from '@/lib/prisma';
+import { serverDb } from '@/lib/supabase/database';
 import logger from '@/lib/logger';
 
 export type ActivityAction = 
@@ -29,15 +29,16 @@ interface LogActivityParams {
  */
 export async function logActivity(params: LogActivityParams) {
   try {
-    await prisma.activityLog.create({
-      data: {
-        userId: params.userId,
-        action: params.action,
+    await serverDb.logActivity({
+      user_id: params.userId,
+      action: params.action,
+      description: `${params.action} on ${params.targetType || 'system'}`,
+      metadata: {
         targetType: params.targetType,
         targetId: params.targetId,
         fileId: params.fileId,
-        metadata: params.metadata || undefined,
-      },
+        ...params.metadata
+      }
     });
     logger.info('Activity logged', { action: params.action, userId: params.userId });
   } catch (error) {

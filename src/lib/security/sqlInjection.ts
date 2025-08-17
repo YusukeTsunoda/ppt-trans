@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client';
+// import { Prisma } from '@prisma/client';
 import logger from '@/lib/logger';
 
 /**
@@ -25,275 +25,174 @@ export class SQLInjectionProtection {
     if (!input) return '';
     
     // 基本的なサニタイゼーション
-    let sanitized = input
+    const sanitized = input
       .replace(/'/g, "''") // シングルクォートをエスケープ
       .replace(/\\/g, '\\\\') // バックスラッシュをエスケープ
-      .replace(/\0/g, '') // NUL文字を削除
-      .replace(/\n/g, ' ') // 改行をスペースに
-      .replace(/\r/g, ' ') // キャリッジリターンをスペースに
-      .replace(/\t/g, ' ') // タブをスペースに
-      .trim();
-    
-    // 危険なパターンの検出
-    for (const pattern of this.DANGEROUS_PATTERNS) {
-      if (pattern.test(sanitized)) {
-        logger.warn('Potential SQL injection detected', {
-          input: sanitized.substring(0, 100),
-          pattern: pattern.toString(),
-        });
-        // 危険な文字列を削除
-        sanitized = sanitized.replace(pattern, '');
-      }
-    }
+      .replace(/\0/g, '\\0') // NULL文字をエスケープ
+      .replace(/\n/g, '\\n') // 改行をエスケープ
+      .replace(/\r/g, '\\r') // キャリッジリターンをエスケープ
+      .replace(/\x1a/g, '\\Z'); // Ctrl+Zをエスケープ
     
     return sanitized;
   }
   
   /**
-   * 数値入力の検証
+   * SQLインジェクションの可能性を検証
    */
-  static validateNumericInput(input: any): number | null {
-    const num = Number(input);
-    
-    if (isNaN(num) || !isFinite(num)) {
-      logger.warn('Invalid numeric input', { input });
-      return null;
+  static validateInput(input: string): { isValid: boolean; reason?: string } {
+    if (!input) {
+      return { isValid: true };
     }
     
-    // 整数の範囲チェック
-    if (num > Number.MAX_SAFE_INTEGER || num < Number.MIN_SAFE_INTEGER) {
-      logger.warn('Numeric input out of safe range', { input: num });
-      return null;
+    // 危険なパターンをチェック
+    for (const pattern of this.DANGEROUS_PATTERNS) {
+      if (pattern.test(input)) {
+        const match = input.match(pattern);
+        logger.warn('Potential SQL injection detected', {
+          input: input.substring(0, 100),
+          pattern: pattern.toString(),
+          match: match?.[0]
+        });
+        
+        return {
+          isValid: false,
+          reason: `危険なパターンが検出されました: ${match?.[0]}`
+        };
+      }
     }
     
-    return num;
+    return { isValid: true };
   }
   
   /**
-   * LIKE句用の入力をエスケープ
+   * パラメータ化クエリ用の値を準備
+   * Note: Supabase/PostgreSQLでは自動的にパラメータ化されるため、
+   * この関数は主に追加の検証目的で使用
    */
-  static escapeLikePattern(pattern: string): string {
-    return pattern
-      .replace(/\\/g, '\\\\') // バックスラッシュをエスケープ
-      .replace(/%/g, '\\%') // パーセント記号をエスケープ
-      .replace(/_/g, '\\_'); // アンダースコアをエスケープ
-  }
-  
-  /**
-   * Prismaクエリ用の安全なパラメータを生成
-   */
-  static buildSafeWhereClause(
-    field: string,
-    value: any,
-    operator: 'equals' | 'contains' | 'startsWith' | 'endsWith' | 'in' | 'notIn' = 'equals'
-  ): Record<string, any> {
-    // フィールド名の検証
-    if (!/^[a-zA-Z][a-zA-Z0-9_]*$/.test(field)) {
-      logger.warn('Invalid field name', { field });
-      throw new Error('Invalid field name');
+  static prepareQueryParam(value: any): any {
+    if (value === null || value === undefined) {
+      return null;
     }
-    
-    // 値のサニタイゼーション
-    let sanitizedValue: any;
     
     if (typeof value === 'string') {
-      sanitizedValue = this.sanitizeInput(value);
-      
-      // LIKE操作の場合は追加のエスケープ
-      if (['contains', 'startsWith', 'endsWith'].includes(operator)) {
-        sanitizedValue = this.escapeLikePattern(sanitizedValue);
-      }
-    } else if (typeof value === 'number') {
-      sanitizedValue = this.validateNumericInput(value);
-      if (sanitizedValue === null) {
-        throw new Error('Invalid numeric value');
-      }
-    } else if (Array.isArray(value)) {
-      sanitizedValue = value.map(v => 
-        typeof v === 'string' ? this.sanitizeInput(v) : v
-      );
-    } else {
-      sanitizedValue = value;
+      // 文字列の場合はサニタイズ
+      return this.sanitizeInput(value);
     }
     
-    // Prismaクエリオブジェクトを構築
-    return {
-      [field]: {
-        [operator]: sanitizedValue,
-      },
-    };
+    if (typeof value === 'number') {
+      // 数値の場合は範囲チェック
+      if (!isFinite(value)) {
+        throw new Error('Invalid number value');
+      }
+      return value;
+    }
+    
+    if (value instanceof Date) {
+      // 日付の場合はISO文字列に変換
+      return value.toISOString();
+    }
+    
+    if (typeof value === 'boolean') {
+      return value;
+    }
+    
+    if (Array.isArray(value)) {
+      // 配列の場合は各要素を処理
+      return value.map(v => this.prepareQueryParam(v));
+    }
+    
+    if (typeof value === 'object') {
+      // オブジェクトの場合はJSON文字列化
+      return JSON.stringify(value);
+    }
+    
+    // その他の型は拒否
+    throw new Error(`Unsupported parameter type: ${typeof value}`);
   }
   
   /**
-   * 複数条件のWHERE句を安全に構築
+   * WHERE句の条件を安全に構築
    */
-  static buildSafeWhereConditions(
-    conditions: Array<{
-      field: string;
-      value: any;
-      operator?: 'equals' | 'contains' | 'startsWith' | 'endsWith' | 'in' | 'notIn';
-    }>
-  ): Prisma.JsonObject {
-    const whereClause: any = {
-      AND: [],
-    };
+  static buildWhereClause(conditions: Record<string, any>): string {
+    const clauses: string[] = [];
     
-    for (const condition of conditions) {
-      try {
-        const safeCondition = this.buildSafeWhereClause(
-          condition.field,
-          condition.value,
-          condition.operator
+    for (const [key, value] of Object.entries(conditions)) {
+      // カラム名の検証（英数字とアンダースコアのみ）
+      if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(key)) {
+        throw new Error(`Invalid column name: ${key}`);
+      }
+      
+      if (value === null) {
+        clauses.push(`${key} IS NULL`);
+      } else if (Array.isArray(value)) {
+        // IN句の構築
+        const sanitizedValues = value.map(v => 
+          typeof v === 'string' ? `'${this.sanitizeInput(v)}'` : v
         );
-        whereClause.AND.push(safeCondition);
-      } catch (error) {
-        logger.error('Failed to build safe WHERE condition', { condition, error });
-        // 無効な条件はスキップ
+        clauses.push(`${key} IN (${sanitizedValues.join(', ')})`);
+      } else if (typeof value === 'string') {
+        clauses.push(`${key} = '${this.sanitizeInput(value)}'`);
+      } else {
+        clauses.push(`${key} = ${value}`);
       }
     }
     
-    return whereClause;
+    return clauses.join(' AND ');
   }
   
   /**
    * ORDER BY句を安全に構築
    */
-  static buildSafeOrderBy(
-    field: string,
-    direction: 'asc' | 'desc' = 'asc'
-  ): Record<string, 'asc' | 'desc'> {
-    // フィールド名の検証
-    if (!/^[a-zA-Z][a-zA-Z0-9_]*$/.test(field)) {
-      logger.warn('Invalid field name for ORDER BY', { field });
-      throw new Error('Invalid field name');
+  static buildOrderByClause(
+    column: string,
+    direction: 'ASC' | 'DESC' = 'ASC'
+  ): string {
+    // カラム名の検証
+    if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(column)) {
+      throw new Error(`Invalid column name for ORDER BY: ${column}`);
     }
     
     // 方向の検証
-    if (!['asc', 'desc'].includes(direction.toLowerCase())) {
-      logger.warn('Invalid sort direction', { direction });
-      throw new Error('Invalid sort direction');
+    if (!['ASC', 'DESC'].includes(direction.toUpperCase())) {
+      throw new Error(`Invalid sort direction: ${direction}`);
     }
     
-    return {
-      [field]: direction.toLowerCase() as 'asc' | 'desc',
-    };
+    return `${column} ${direction}`;
   }
   
   /**
-   * LIMIT/OFFSETを安全に設定
+   * LIMIT句を安全に構築
    */
-  static buildSafePagination(
-    page: number = 1,
-    limit: number = 20
-  ): { take: number; skip: number } {
-    // ページ番号の検証
-    const safePage = Math.max(1, Math.floor(page));
+  static buildLimitClause(limit: number, offset?: number): string {
+    // 数値の検証
+    if (!Number.isInteger(limit) || limit < 0) {
+      throw new Error(`Invalid limit value: ${limit}`);
+    }
     
-    // 制限値の検証（最大100件）
-    const safeLimit = Math.min(100, Math.max(1, Math.floor(limit)));
+    if (offset !== undefined && (!Number.isInteger(offset) || offset < 0)) {
+      throw new Error(`Invalid offset value: ${offset}`);
+    }
     
-    return {
-      take: safeLimit,
-      skip: (safePage - 1) * safeLimit,
-    };
+    return offset !== undefined 
+      ? `LIMIT ${limit} OFFSET ${offset}`
+      : `LIMIT ${limit}`;
   }
   
   /**
-   * JSONパスを安全に構築
+   * テーブル名を検証
    */
-  static buildSafeJsonPath(path: string[]): string {
-    return path
-      .filter(p => /^[a-zA-Z][a-zA-Z0-9_]*$/.test(p))
-      .map(p => `'${p}'`)
-      .join('.');
+  static validateTableName(tableName: string): boolean {
+    // テーブル名は英数字、アンダースコア、ドットのみ（スキーマ付きの場合）
+    return /^[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_][a-zA-Z0-9_]*)?$/.test(tableName);
   }
   
   /**
-   * Raw SQLクエリを検証（使用は推奨されない）
+   * カラム名を検証
    */
-  static validateRawQuery(query: string): boolean {
-    // 危険なキーワードをチェック
-    const dangerousKeywords = [
-      'DROP', 'DELETE', 'TRUNCATE', 'ALTER', 'CREATE',
-      'EXEC', 'EXECUTE', 'xp_', 'sp_', 'GRANT', 'REVOKE',
-    ];
-    
-    const upperQuery = query.toUpperCase();
-    
-    for (const keyword of dangerousKeywords) {
-      if (upperQuery.includes(keyword)) {
-        logger.error('Dangerous keyword detected in raw query', {
-          keyword,
-          query: query.substring(0, 100),
-        });
-        return false;
-      }
-    }
-    
-    // 複数ステートメントの検出
-    if (query.includes(';')) {
-      logger.error('Multiple statements detected in raw query');
-      return false;
-    }
-    
-    return true;
+  static validateColumnName(columnName: string): boolean {
+    // カラム名は英数字とアンダースコアのみ
+    return /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(columnName);
   }
 }
 
-/**
- * Prismaクエリビルダーのセキュアラッパー
- */
-export class SecurePrismaQueryBuilder {
-  /**
-   * 安全な検索クエリを構築
-   */
-  static buildSearchQuery(
-    searchTerm: string,
-    fields: string[],
-    additionalWhere?: Prisma.JsonObject
-  ): Prisma.JsonObject {
-    const sanitized = SQLInjectionProtection.sanitizeInput(searchTerm);
-    
-    const searchConditions = fields.map(field => ({
-      [field]: {
-        contains: sanitized,
-        mode: 'insensitive' as const,
-      },
-    }));
-    
-    return {
-      AND: [
-        { OR: searchConditions },
-        ...(additionalWhere ? [additionalWhere] : []),
-      ],
-    };
-  }
-  
-  /**
-   * 安全なフィルタークエリを構築
-   */
-  static buildFilterQuery(
-    filters: Record<string, any>
-  ): Prisma.JsonObject {
-    const conditions: any[] = [];
-    
-    for (const [key, value] of Object.entries(filters)) {
-      if (value === null || value === undefined || value === '') {
-        continue;
-      }
-      
-      try {
-        const condition = SQLInjectionProtection.buildSafeWhereClause(
-          key,
-          value,
-          Array.isArray(value) ? 'in' : 'equals'
-        );
-        conditions.push(condition);
-      } catch (error) {
-        logger.warn('Invalid filter condition', { key, value, error });
-      }
-    }
-    
-    return conditions.length > 0 ? { AND: conditions } : {};
-  }
-}
+export default SQLInjectionProtection;

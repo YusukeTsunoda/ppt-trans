@@ -1,106 +1,267 @@
-# PowerPoint 翻訳アプリ
+# PowerPoint Translator 🌐
 
-PowerPointファイルをアップロードして翻訳し、編集できるWebアプリケーションです。
+AIを活用してPowerPointプレゼンテーションを自動翻訳するWebアプリケーション
 
-## セットアップ
+[![CI](https://github.com/yourusername/ppt-trans/actions/workflows/ci.yml/badge.svg)](https://github.com/yourusername/ppt-trans/actions/workflows/ci.yml)
+[![Deploy](https://github.com/yourusername/ppt-trans/actions/workflows/deploy.yml/badge.svg)](https://github.com/yourusername/ppt-trans/actions/workflows/deploy.yml)
+
+## ✨ 機能
+
+- 📤 **PowerPointファイルアップロード** - .pptx/.ppt形式対応（最大50MB）
+- 🤖 **AI翻訳** - Anthropic Claude APIによる高品質翻訳
+- 📊 **プレゼンテーション構造保持** - レイアウトを崩さず翻訳
+- 👤 **ユーザー認証** - Supabase Authによるセキュアな認証
+- 📁 **ファイル管理** - アップロード履歴と翻訳済みファイル管理
+- ⚡ **リアルタイム処理** - 進捗状況のリアルタイム表示
+- 🔒 **セキュリティ** - レート制限、CORS、CSP対応
+- 📈 **モニタリング** - Sentry、Google Analytics統合
+
+## 🚀 クイックスタート
 
 ### 前提条件
 
 - Node.js 18以上
-- Python 3.8以上
-- npm または yarn
+- Docker Desktop
+- Python 3.9以上（python-pptx用）
+- Supabase CLI
 
-### インストール手順
+### セットアップ
 
 1. **リポジトリをクローン**
 ```bash
-git clone https://github.com/YusukeTsunoda/ppt-trans.git
+git clone https://github.com/yourusername/ppt-trans.git
 cd ppt-trans
 ```
 
-2. **Node.js依存関係をインストール**
+2. **依存関係をインストール**
 ```bash
+# Node.js依存関係
 npm install
-```
 
-3. **Python仮想環境を作成・有効化**
-```bash
-# 仮想環境を作成
+# Python依存関係（仮想環境推奨）
 python3 -m venv venv
-
-# 仮想環境を有効化
-# macOS/Linux:
-source venv/bin/activate
-# Windows:
-# venv\Scripts\activate
+source venv/bin/activate  # macOS/Linux
+pip install python-pptx
 ```
 
-4. **Python依存関係をインストール**
+3. **環境変数を設定**
 ```bash
-pip install -r requirements.txt
+cp .env.local.example .env.local
+# .env.localを編集して必要な値を設定
 ```
 
-5. **環境変数を設定**
-`.env.local`ファイルを作成し、必要な環境変数を設定してください：
-```env
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-ANTHROPIC_API_KEY=your_anthropic_api_key
-```
-
-6. **開発サーバーを起動**
+4. **Supabaseローカル環境を起動**
 ```bash
-# デフォルト (ポート3000)
+supabase start
+```
+
+5. **開発サーバー起動**
+```bash
 npm run dev
-
-# 複数ポートでの起動も可能
-npm run dev:3001  # ポート3001
-npm run dev:3002  # ポート3002
 ```
 
-アプリケーションは以下のURLで利用できます：
-- `http://localhost:3000` (デフォルト)
-- `http://localhost:3001` (複数ポート対応)
-- `http://localhost:3002` (複数ポート対応)
+アプリケーションは http://localhost:3000 で利用可能です。
 
-## 開発
+## 🛠️ 技術スタック
 
-### venv環境の管理
+### フロントエンド
+- **Next.js 15** - React フレームワーク（App Router）
+- **TypeScript** - 型安全な開発
+- **Tailwind CSS** - ユーティリティファーストCSS
+- **shadcn/ui** - 再利用可能なUIコンポーネント
 
-- **有効化**: `source venv/bin/activate`
-- **無効化**: `deactivate`
-- **依存関係の更新**: `pip install -r requirements.txt`
-- **新しいパッケージの追加**: `pip install package_name && pip freeze > requirements.txt`
+### バックエンド
+- **Supabase** 
+  - 認証（Auth）
+  - データベース（PostgreSQL）
+  - ファイルストレージ
+  - リアルタイム機能
+- **Anthropic Claude API** - AI翻訳エンジン
+- **Python (python-pptx)** - PowerPoint処理
 
-### ファイル構成
+### DevOps & モニタリング
+- **Vercel** - ホスティング、エッジ関数
+- **GitHub Actions** - CI/CD
+- **Sentry** - エラーモニタリング
+- **Google Analytics** - 利用状況分析
+- **Docker** - 開発環境の統一
+
+## 📦 主要コマンド
+
+```bash
+# 開発
+npm run dev              # 開発サーバー起動
+npm run build            # プロダクションビルド
+npm run start            # プロダクションサーバー起動
+
+# コード品質
+npm run type-check       # TypeScriptチェック
+npm run lint             # ESLintチェック
+npm run test             # テスト実行
+npm run test:coverage    # カバレッジレポート
+
+# データベース
+npm run db:setup         # データベースセットアップ
+npm run db:types         # 型定義生成
+
+# その他
+npm run validate         # 全チェック実行
+npm run health:check     # ヘルスチェック
+```
+
+## 📁 プロジェクト構造
 
 ```
-pptx-translator/
-├── app/                    # Next.js 13 App Router
-│   ├── api/               # API エンドポイント
-│   └── page.tsx           # メインページ
-├── lib/                    # ユーティリティ
-├── venv/                   # Python仮想環境
-├── requirements.txt        # Python依存関係
-└── package.json           # Node.js依存関係
+ppt-trans/
+├── src/
+│   ├── app/              # Next.js App Router
+│   │   ├── api/          # APIエンドポイント
+│   │   ├── (auth)/       # 認証関連ページ
+│   │   └── dashboard/    # ダッシュボード
+│   ├── components/       # Reactコンポーネント
+│   ├── lib/              # ユーティリティ関数
+│   │   ├── supabase/     # Supabase設定
+│   │   ├── pptx/         # PowerPoint処理
+│   │   └── errors/       # エラーハンドリング
+│   └── types/            # TypeScript型定義
+├── public/               # 静的ファイル
+├── supabase/            # Supabase設定
+│   └── migrations/      # DBマイグレーション
+├── scripts/             # ビルド・セットアップスクリプト
+├── .github/             # GitHub Actions
+│   └── workflows/       # CI/CDワークフロー
+└── tests/               # テストファイル
 ```
 
-## 機能
+## 🔒 セキュリティ
 
-- PowerPointファイルのアップロード
-- スライドの画像化（LibreOffice + pdf2image）
-- テキスト抽出と翻訳（Claude API）
-- 翻訳文の編集
-- 翻訳版PowerPointのダウンロード
+- **認証**: Supabase Auth (JWT)
+- **認可**: Row Level Security (RLS)
+- **レート制限**: API呼び出し制限
+  - 認証: 15分あたり10回
+  - 翻訳: 1時間あたり50回
+  - アップロード: 1時間あたり20ファイル
+- **CSP**: Content Security Policy
+- **CORS**: Cross-Origin Resource Sharing設定
+- **暗号化**: HTTPS通信
 
-## 技術スタック
+## 🧪 テスト
 
-- **フロントエンド**: Next.js 13, TypeScript, Tailwind CSS
-- **バックエンド**: Python (Vercel Functions)
-- **データベース**: Supabase
-- **翻訳**: Anthropic Claude API
-- **画像処理**: LibreOffice, pdf2image, Pillow
+```bash
+# ユニットテスト
+npm run test
 
-## ライセンス
+# テストをウォッチモードで実行
+npm run test:watch
 
-MIT License
+# カバレッジレポート生成
+npm run test:coverage
+
+# CI環境でのテスト
+npm run test:ci
+```
+
+## 🚢 デプロイ
+
+### Vercelへのデプロイ
+
+1. GitHubリポジトリをフォーク
+2. Vercelでプロジェクト作成
+3. 環境変数を設定:
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - `SUPABASE_SERVICE_ROLE_KEY`
+   - `ANTHROPIC_API_KEY`
+4. デプロイ実行
+
+詳細は[DEPLOYMENT.md](./DEPLOYMENT.md)を参照
+
+## 📊 モニタリング
+
+### エラー監視（Sentry）
+```bash
+# 環境変数に追加
+NEXT_PUBLIC_SENTRY_DSN=your-sentry-dsn
+```
+
+### アクセス解析（Google Analytics）
+```bash
+# 環境変数に追加
+NEXT_PUBLIC_GA_MEASUREMENT_ID=G-XXXXXXXXXX
+```
+
+## 🤝 コントリビューション
+
+1. このリポジトリをフォーク
+2. フィーチャーブランチを作成 (`git checkout -b feature/AmazingFeature`)
+3. 変更をコミット (`git commit -m 'Add some AmazingFeature'`)
+4. ブランチにプッシュ (`git push origin feature/AmazingFeature`)
+5. プルリクエストを作成
+
+## 📝 API仕様
+
+### 認証エンドポイント
+- `POST /api/auth/login` - ユーザーログイン
+- `POST /api/auth/logout` - ログアウト
+- `POST /api/auth/register` - 新規登録
+- `POST /api/auth/renew-session` - セッション更新
+
+### ファイル操作
+- `POST /api/upload` - ファイルアップロード
+- `GET /api/files` - ファイル一覧取得
+- `DELETE /api/files/:id` - ファイル削除
+- `GET /api/files/:id/download` - ファイルダウンロード
+
+### 翻訳
+- `POST /api/translate-pptx` - PowerPoint翻訳実行
+- `GET /api/translate/status/:id` - 翻訳ステータス確認
+
+### ヘルスチェック
+- `GET /api/health` - システムヘルスチェック
+
+## 🐛 トラブルシューティング
+
+### よくある問題
+
+1. **Supabaseが起動しない**
+   ```bash
+   supabase stop --no-backup
+   docker system prune -a
+   supabase start
+   ```
+
+2. **Python依存関係エラー**
+   ```bash
+   deactivate
+   rm -rf venv
+   python3 -m venv venv
+   source venv/bin/activate
+   pip install python-pptx
+   ```
+
+3. **ビルドエラー**
+   ```bash
+   rm -rf .next node_modules
+   npm install
+   npm run build
+   ```
+
+## 📄 ライセンス
+
+MIT License - 詳細は[LICENSE](./LICENSE)を参照
+
+## 👥 開発者
+
+- [@YusukeTsunoda](https://github.com/YusukeTsunoda)
+
+## 🙏 謝辞
+
+- [Next.js](https://nextjs.org/)
+- [Supabase](https://supabase.com/)
+- [Anthropic](https://www.anthropic.com/)
+- [Vercel](https://vercel.com/)
+- [shadcn/ui](https://ui.shadcn.com/)
+
+---
+
+Built with ❤️ using Next.js and Supabase

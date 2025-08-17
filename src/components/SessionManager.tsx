@@ -12,7 +12,7 @@ export function SessionManager() {
     const supabase = createClient();
     
     // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: any, session: any) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: any, _session: any) => {
       if (event === 'SIGNED_OUT') {
         logger.info('User signed out');
         router.push('/login');
