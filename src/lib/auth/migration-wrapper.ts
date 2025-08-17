@@ -5,6 +5,7 @@
 import { getAuthenticatedUser, requireAuthentication, requireAdminRole } from './request-scoped-auth';
 import { NextResponse } from 'next/server';
 import { serverDb } from '@/lib/supabase/database';
+import logger from '@/lib/logger';
 
 // 既存のgetCurrentUser互換ラッパー
 export async function getCurrentUser() {
@@ -25,7 +26,7 @@ export async function getCurrentUser() {
       settings
     };
   } catch (_error) {
-    console.error('getCurrentUser error:', _error);
+    logger.error('getCurrentUser error:', _error);
     return null;
   }
 }
@@ -98,6 +99,6 @@ export async function logAuditAction(
       }
     });
   } catch (_error) {
-    console.error('Failed to log audit action:', _error);
+    logger.error('Failed to log audit action:', _error);
   }
 }

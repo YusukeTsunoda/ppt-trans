@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
+import logger from '@/lib/logger';
 
 export interface DashboardState {
   error?: string;
@@ -33,7 +34,7 @@ export async function getFiles() {
     .order('created_at', { ascending: false });
   
   if (error) {
-    console.error('Error fetching files:', error);
+    logger.error('Error fetching files:', error);
     return { files: [], error: error.message };
   }
   
@@ -95,7 +96,7 @@ export async function translateFileAction(
     };
     
   } catch (error) {
-    console.error('Translation error:', error);
+    logger.error('Translation error:', error);
     return { error: '翻訳処理中にエラーが発生しました' };
   }
 }
@@ -140,7 +141,7 @@ export async function deleteFileAction(
         .remove([file.filename]);
       
       if (storageError) {
-        console.error('Storage delete error:', storageError);
+        logger.error('Storage delete error:', storageError);
       }
     }
     
@@ -163,7 +164,7 @@ export async function deleteFileAction(
     };
     
   } catch (error) {
-    console.error('Delete error:', error);
+    logger.error('Delete error:', error);
     return { error: 'ファイル削除中にエラーが発生しました' };
   }
 }

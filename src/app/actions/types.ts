@@ -2,6 +2,8 @@
  * Server Actions共通の型定義
  */
 
+import logger from '@/lib/logger';
+
 // 基本的なアクション結果の型
 export interface ActionResult<T = void> {
   success?: boolean;
@@ -12,7 +14,7 @@ export interface ActionResult<T = void> {
 
 // エラーレスポンスの生成
 export function createErrorResponse(error: unknown, defaultMessage: string): ActionResult {
-  console.error('Action error:', error);
+  logger.error('Action error:', error);
   
   if (error instanceof Error) {
     // Supabase Auth エラーの特別処理

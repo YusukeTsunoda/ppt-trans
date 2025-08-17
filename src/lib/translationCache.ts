@@ -3,6 +3,8 @@
  * 同じテキストの再翻訳を防ぎ、パフォーマンスを向上
  */
 
+import logger from '@/lib/logger';
+
 interface CacheEntry {
   translated: string;
   timestamp: number;
@@ -180,7 +182,7 @@ export function getTranslationCache(): TranslationCache {
       setInterval(() => {
         const removed = cacheInstance?.cleanup() || 0;
         if (removed > 0) {
-          console.log(`Translation cache cleanup: removed ${removed} expired entries`);
+          logger.debug(`Translation cache cleanup: removed ${removed} expired entries`);
         }
       }, 10 * 60 * 1000);
     }

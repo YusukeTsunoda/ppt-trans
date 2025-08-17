@@ -1,7 +1,8 @@
 'use client';
 
-import { useFormState, useFormStatus } from 'react-dom';
-import { AuthState } from '@/app/actions/auth';
+import { useActionState } from 'react';
+import { useFormStatus } from 'react-dom';
+import { forgotPasswordAction } from '@/app/actions/auth';
 import Link from 'next/link';
 
 function SubmitButton() {
@@ -28,12 +29,8 @@ function SubmitButton() {
   );
 }
 
-interface ForgotPasswordFormProps {
-  action: (prevState: AuthState | null, formData: FormData) => Promise<AuthState>;
-}
-
-export default function ForgotPasswordForm({ action }: ForgotPasswordFormProps) {
-  const [state, formAction] = useFormState(action, null);
+export default function ForgotPasswordForm() {
+  const [state, formAction] = useActionState(forgotPasswordAction, null);
   
   if (state?.success) {
     return (

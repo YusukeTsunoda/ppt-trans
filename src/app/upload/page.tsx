@@ -1,4 +1,3 @@
-import { uploadFileAction } from '@/app/actions/upload';
 import UploadForm from '@/components/upload/UploadForm';
 import Link from 'next/link';
 
@@ -9,7 +8,7 @@ export default function UploadPage() {
         <div className="bg-white rounded-lg shadow p-6">
           <h1 className="text-2xl font-bold mb-6">PowerPointファイルのアップロード</h1>
           
-          <UploadForm action={uploadFileAction} />
+          <UploadForm />
           
           <div className="mt-6">
             <Link 

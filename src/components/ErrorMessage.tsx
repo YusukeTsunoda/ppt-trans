@@ -3,6 +3,8 @@
 import React from 'react';
 import { AppError } from '@/lib/errors/AppError';
 import { getRecoveryMessage } from '@/lib/errors/ErrorMessages';
+import type { ErrorCode } from '@/lib/errors/ErrorCodes';
+import type { JsonValue } from '@/types/common';
 
 interface ErrorMessageProps {
   error: Error | AppError | string;
@@ -27,7 +29,7 @@ export function ErrorMessage({
     code?: string;
     isRetryable: boolean;
     recovery?: string;
-    details?: any;
+    details?: JsonValue;
   };
 
   const getErrorInfo = (): ErrorInfo => {
@@ -42,13 +44,13 @@ export function ErrorMessage({
     }
 
     if (error instanceof AppError) {
-      const recoveryMessage = getRecoveryMessage(error.code as any);
+      const recoveryMessage = getRecoveryMessage(error.code as ErrorCode);
       return {
         message: error.userMessage,
         code: error.code,
         isRetryable: error.isRetryable(),
         recovery: recoveryMessage || undefined,
-        details: error.details
+        details: error.details as JsonValue | undefined
       };
     }
 

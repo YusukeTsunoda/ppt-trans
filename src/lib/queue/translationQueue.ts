@@ -1,6 +1,7 @@
 import Bull from 'bull';
 import { getRedisClient, redisConfig, cacheKeys, cacheTTL, isRedisAvailable } from './config';
 import logger from '@/lib/logger';
+import type { JsonObject } from '@/types/common';
 
 // 翻訳ジョブの型定義
 export interface TranslationJobData {
@@ -12,7 +13,7 @@ export interface TranslationJobData {
   targetLanguage: string;
   model: string;
   userId?: string;
-  metadata?: Record<string, any>;
+  metadata?: JsonObject;
 }
 
 export interface TranslationJobResult {
@@ -202,9 +203,12 @@ export async function addTranslationJob(
   }
   
   try {
-    const job = await translationQueue.add(data, {
-      priority: data.metadata?.priority || 0,
-      delay: data.metadata?.delay || 0,
+    const priority = typeof data.metadata?.priority === 'number' ? data.metadata.priority : 0;
+    const delay = typeof data.metadata?.delay === 'number' ? data.metadata.delay : 0;
+    
+    const job = await translationQueue.add('translate', data, {
+      priority,
+      delay,
     });
 
     logger.info('Translation job added to queue', {

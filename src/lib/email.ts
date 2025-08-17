@@ -4,6 +4,8 @@
  * Resend または SendGrid を使用してメールを送信
  */
 
+import logger from '@/lib/logger';
+
 interface EmailOptions {
   to: string;
   subject: string;
@@ -27,7 +29,7 @@ export async function sendEmail({ to, subject, html, text }: EmailOptions): Prom
         const resendModule = await import('resend');
         Resend = resendModule.Resend;
       } catch {
-        console.warn('Resend package not installed. Please install "resend" to use Resend email service.');
+        logger.warn('Resend package not installed. Please install "resend" to use Resend email service.');
         return false;
       }
       
@@ -42,14 +44,14 @@ export async function sendEmail({ to, subject, html, text }: EmailOptions): Prom
       });
 
       if (error) {
-        console.error('Resend error:', error);
+        logger.error('Resend error:', error);
         return false;
       }
 
-      console.log('Email sent via Resend:', data);
+      logger.debug('Email sent via Resend:', data);
       return true;
     } catch (error) {
-      console.error('Failed to send email via Resend:', error);
+      logger.error('Failed to send email via Resend:', error);
       return false;
     }
   }
@@ -63,7 +65,7 @@ export async function sendEmail({ to, subject, html, text }: EmailOptions): Prom
         // @ts-expect-error - オプショナルなパッケージ
         sgMail = await import('@sendgrid/mail');
       } catch {
-        console.warn('SendGrid package not installed. Please install "@sendgrid/mail" to use SendGrid email service.');
+        logger.warn('SendGrid package not installed. Please install "@sendgrid/mail" to use SendGrid email service.');
         return false;
       }
       
@@ -77,17 +79,17 @@ export async function sendEmail({ to, subject, html, text }: EmailOptions): Prom
         text: text || html.replace(/<[^>]*>/g, ''), // HTMLタグを除去
       });
 
-      console.log('Email sent via SendGrid');
+      logger.debug('Email sent via SendGrid');
       return true;
     } catch (error) {
-      console.error('Failed to send email via SendGrid:', error);
+      logger.error('Failed to send email via SendGrid:', error);
       return false;
     }
   }
 
   // メールサービスが設定されていない場合（開発環境）
   if (process.env.NODE_ENV === 'development') {
-    console.log('📧 Development Email:', {
+    logger.debug('📧 Development Email:', {
       to,
       from,
       subject,
@@ -96,7 +98,7 @@ export async function sendEmail({ to, subject, html, text }: EmailOptions): Prom
     return true;
   }
 
-  console.warn('No email service configured');
+  logger.warn('No email service configured');
   return false;
 }
 

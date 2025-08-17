@@ -4,10 +4,70 @@ import { useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { ja } from 'date-fns/locale';
 
+interface Stats {
+  totalUsers: number;
+  activeUsers: number;
+  totalFiles: number;
+  totalTranslations: number;
+  storageUsed: number;
+  activeSubscriptions: number;
+  overview?: {
+    totalUsers: number;
+    activeUsers: number;
+    totalFiles: number;
+    totalTranslations: number;
+    userGrowthRate?: number;
+  };
+  files?: {
+    totalFiles: number;
+    totalSize: number;
+    averageSize: number;
+    processingFiles: number;
+    fileGrowthRate?: number;
+  };
+  usage?: {
+    dailyActiveUsers: number;
+    weeklyActiveUsers: number;
+    monthlyActiveUsers: number;
+    totalTranslations?: number;
+  };
+}
+
+interface User {
+  id: string;
+  email: string;
+  name?: string;
+  role: string;
+  created_at: string;
+  last_sign_in_at?: string;
+  lastLoginAt?: string;
+  files_count?: number;
+  storage_used?: number;
+  isActive?: boolean;
+  _count?: {
+    files: number;
+    translations?: number;
+  };
+}
+
+interface Activity {
+  id: string;
+  user_id: string;
+  action: string;
+  details?: Record<string, unknown>;
+  targetType?: string;
+  created_at: string;
+  createdAt?: string;
+  user?: {
+    email: string;
+    name?: string;
+  };
+}
+
 interface AdminDashboardClientProps {
-  initialStats: any;
-  initialUsers: any[];
-  initialActivities: any[];
+  initialStats: Stats;
+  initialUsers: User[];
+  initialActivities: Activity[];
 }
 
 export default function AdminDashboardClient({
@@ -152,7 +212,7 @@ export default function AdminDashboardClient({
                 </tr>
               </thead>
               <tbody className="bg-white dark:bg-secondary-800 divide-y divide-secondary-200 dark:divide-secondary-700">
-                {initialUsers.map((user: any) => (
+                {initialUsers.map((user) => (
                   <tr key={user.id}>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
@@ -206,7 +266,7 @@ export default function AdminDashboardClient({
               <h3 className="text-lg font-medium text-foreground">最近のアクティビティ</h3>
             </div>
             <ul className="divide-y divide-secondary-200 dark:divide-secondary-700">
-              {initialActivities.map((activity: any) => (
+              {initialActivities.map((activity) => (
                 <li key={activity.id} className="px-4 py-3">
                   <div className="flex items-center space-x-4">
                     <div className="flex-1 min-w-0">
@@ -218,10 +278,12 @@ export default function AdminDashboardClient({
                       </p>
                     </div>
                     <div className="text-sm text-secondary-500 dark:text-secondary-400">
-                      {formatDistanceToNow(new Date(activity.createdAt), { 
-                        addSuffix: true, 
-                        locale: ja 
-                      })}
+                      {activity.createdAt 
+                        ? formatDistanceToNow(new Date(activity.createdAt), { 
+                            addSuffix: true, 
+                            locale: ja 
+                          })
+                        : 'N/A'}
                     </div>
                   </div>
                 </li>

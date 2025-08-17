@@ -24,12 +24,12 @@ export function validatePPTXFile(file: File | null): { valid: boolean; error?: s
     };
   }
 
-  // ファイルサイズの確認（50MB制限）
-  const maxSize = 50 * 1024 * 1024; // 50MB
+  // ファイルサイズの確認（100MB制限）
+  const maxSize = 100 * 1024 * 1024; // 100MB
   if (file.size > maxSize) {
     return { 
       valid: false, 
-      error: 'ファイルサイズは50MB以下にしてください' 
+      error: 'ファイルサイズは100MB以下にしてください' 
     };
   }
 

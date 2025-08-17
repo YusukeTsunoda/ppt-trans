@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import type { Database } from '@/types/database';
 import type { User } from '@supabase/supabase-js';
+import logger from '@/lib/logger';
 
 // リクエストスコープのSupabaseクライアント生成（React cache使用）
 export const getRequestScopedSupabase = cache(async () => {
@@ -43,7 +44,7 @@ export const getRequestScopedUser = cache(async (): Promise<User | null> => {
     
     return user;
   } catch (error) {
-    console.error('Failed to get user:', error);
+    logger.error('Failed to get user:', error);
     return null;
   }
 });
@@ -67,13 +68,13 @@ export const getRequestScopedProfile = cache(async (userId?: string) => {
       .single();
     
     if (error) {
-      console.error('Failed to get profile:', error);
+      logger.error('Failed to get profile:', error);
       return null;
     }
     
     return profile;
   } catch (error) {
-    console.error('Failed to get profile:', error);
+    logger.error('Failed to get profile:', error);
     return null;
   }
 });
@@ -144,7 +145,7 @@ export async function refreshSession() {
     
     return session;
   } catch (error) {
-    console.error('Failed to refresh session:', error);
+    logger.error('Failed to refresh session:', error);
     return null;
   }
 }

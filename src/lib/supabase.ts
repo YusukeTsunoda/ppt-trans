@@ -1,4 +1,5 @@
 import { createClient } from './supabase/client';
+import logger from '@/lib/logger';
 
 // 互換性のため両方エクスポート
 export const supabase = createClient();
@@ -11,7 +12,7 @@ export async function signIn(email: string, password: string) {
   });
   
   if (error) {
-    console.error('Sign in error:', error);
+    logger.error('Sign in error:', error);
     return { success: false, error: error.message };
   }
   
@@ -22,7 +23,7 @@ export async function signOut() {
   const { error } = await supabase.auth.signOut();
   
   if (error) {
-    console.error('Sign out error:', error);
+    logger.error('Sign out error:', error);
     return { success: false, error: error.message };
   }
   
@@ -33,7 +34,7 @@ export async function getUser() {
   const { data: { user }, error } = await supabase.auth.getUser();
   
   if (error) {
-    console.error('Get user error:', error);
+    logger.error('Get user error:', error);
     return null;
   }
   

@@ -1,5 +1,6 @@
 import logger from '@/lib/logger';
 import crypto from 'crypto';
+import type { JsonObject } from '@/types/common';
 // stream-mmmagicは利用できないため、ファイルタイプ検証は別の方法で実装
 
 // ファイルタイプ設定
@@ -183,7 +184,7 @@ export class FileValidator {
         // 警告のみ（一部のファイルは正しく検出されない場合がある）
       }
     } catch (error) {
-      logger.debug('MIME type detection failed', error as Record<string, any>);
+      logger.debug('MIME type detection failed', error as JsonObject);
     }
     
     return {

@@ -5,6 +5,8 @@
  * USE_REQUEST_SCOPED_AUTH=true で新実装を使用
  */
 
+import logger from '@/lib/logger';
+
 // 移行フラグ（環境変数またはフィーチャーフラグで制御）
 const USE_REQUEST_SCOPED_AUTH = process.env.USE_REQUEST_SCOPED_AUTH === 'true';
 
@@ -94,7 +96,7 @@ async function logAuditActionLegacy(
       }
     });
   } catch (error) {
-    console.error('Failed to log audit action:', error);
+    logger.error('Failed to log audit action:', error);
   }
 }
 

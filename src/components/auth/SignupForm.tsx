@@ -1,9 +1,10 @@
 'use client';
 
-import { useFormState, useFormStatus } from 'react-dom';
+import { useActionState } from 'react';
+import { useFormStatus } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import { AuthState } from '@/app/actions/auth';
+import { signupAction } from '@/app/actions/auth';
 import Link from 'next/link';
 
 function SubmitButton() {
@@ -30,12 +31,8 @@ function SubmitButton() {
   );
 }
 
-interface SignupFormProps {
-  action: (prevState: AuthState | null, formData: FormData) => Promise<AuthState>;
-}
-
-export default function SignupForm({ action }: SignupFormProps) {
-  const [state, formAction] = useFormState(action, null);
+export default function SignupForm() {
+  const [state, formAction] = useActionState(signupAction, null);
   const router = useRouter();
   
   useEffect(() => {

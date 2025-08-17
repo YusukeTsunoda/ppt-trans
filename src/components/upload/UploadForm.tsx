@@ -1,19 +1,22 @@
 'use client';
 
-import { useFormState, useFormStatus } from 'react-dom';
-import { UploadState } from '@/app/actions/upload';
+import { useActionState } from 'react';
+import { useFormStatus } from 'react-dom';
+import { uploadFileAction } from '@/app/actions/upload';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { FILE_EXTENSIONS, FILE_SIZE_LIMITS } from '@/constants/mime-types';
 
-function SubmitButton() {
+function SubmitButton({ disabled = false }: { disabled?: boolean }) {
   const { pending } = useFormStatus();
   
   return (
     <button
       type="submit"
-      disabled={pending}
+      disabled={pending || disabled}
       className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+      data-testid="upload-button"
+      aria-label={pending ? "ファイルをアップロード中" : "ファイルをアップロード"}
     >
       {pending ? (
         <>
@@ -30,14 +33,11 @@ function SubmitButton() {
   );
 }
 
-interface UploadFormProps {
-  action: (prevState: UploadState | null, formData: FormData) => Promise<UploadState>;
-}
-
-export default function UploadForm({ action }: UploadFormProps) {
-  const [state, formAction] = useFormState(action, null);
+export default function UploadForm() {
+  const [state, formAction] = useActionState(uploadFileAction, null);
   const [fileName, setFileName] = useState<string>('');
   const [fileSize, setFileSize] = useState<number>(0);
+  const [clientError, setClientError] = useState<string>('');
   const router = useRouter();
   
   // 成功時にダッシュボードへリダイレクト
@@ -52,7 +52,29 @@ export default function UploadForm({ action }: UploadFormProps) {
   
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    setClientError(''); // エラーをクリア
+    
     if (file) {
+      // ファイル形式のバリデーション
+      const fileExtension = file.name.toLowerCase().slice(file.name.lastIndexOf('.'));
+      if (fileExtension !== '.ppt' && fileExtension !== '.pptx') {
+        setClientError('PowerPointファイル（.ppt, .pptx）のみアップロード可能です');
+        e.target.value = ''; // ファイル選択をクリア
+        setFileName('');
+        setFileSize(0);
+        return;
+      }
+      
+      // ファイルサイズのバリデーション
+      if (file.size > FILE_SIZE_LIMITS.MAX_FILE_SIZE) {
+        setClientError(`ファイルサイズが大きすぎます。最大${FILE_SIZE_LIMITS.MAX_FILE_SIZE_LABEL}までアップロード可能です。（現在: ${(file.size / 1024 / 1024).toFixed(2)}MB）`);
+        e.target.value = ''; // ファイル選択をクリア
+        setFileName('');
+        setFileSize(0);
+        return;
+      }
+      
+      // バリデーションが成功した場合のみファイル情報を設定
       setFileName(file.name);
       setFileSize(file.size);
     } else {
@@ -62,21 +84,24 @@ export default function UploadForm({ action }: UploadFormProps) {
   };
   
   return (
-    <form action={formAction} className="space-y-4">
+    <form action={formAction} className="space-y-4" data-testid="upload-form" id="upload-form">
       <div>
-        <label className="block text-sm font-medium mb-2">
+        <label htmlFor="file-input" className="block text-sm font-medium mb-2">
           ファイルを選択
         </label>
         <input
+          id="file-input"
           type="file"
           name="file"
           accept={FILE_EXTENSIONS.POWERPOINT}
           onChange={handleFileChange}
           disabled={state?.success}
           required
+          aria-label="PowerPointファイルを選択"
+          aria-describedby="file-help"
           className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 disabled:opacity-50"
         />
-        <p className="mt-1 text-sm text-gray-500">
+        <p id="file-help" className="mt-1 text-sm text-gray-500">
           対応形式: .pptx, .ppt（最大{FILE_SIZE_LIMITS.MAX_FILE_SIZE_LABEL}）
         </p>
       </div>
@@ -92,21 +117,21 @@ export default function UploadForm({ action }: UploadFormProps) {
         </div>
       )}
       
-      {state?.error && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded">
-          <p className="text-red-700 text-sm">{state.error}</p>
+      {(clientError || state?.error) && (
+        <div className="p-3 bg-red-50 border border-red-200 rounded" data-testid="upload-error">
+          <p className="text-red-700 text-sm">{clientError || state?.error}</p>
         </div>
       )}
       
       {state?.success && (
-        <div className="p-3 bg-green-50 border border-green-200 rounded">
+        <div className="p-3 bg-green-50 border border-green-200 rounded" data-testid="upload-success">
           <p className="text-green-700 text-sm">
             {state.message} ダッシュボードに移動します...
           </p>
         </div>
       )}
       
-      <SubmitButton />
+      <SubmitButton disabled={!!clientError || !fileName} />
     </form>
   );
 }

@@ -8,6 +8,7 @@
 import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { createClient } from '@/lib/supabase/client';
+import logger from '@/lib/logger';
 
 // ローディング表示
 const AdminLoadingSkeleton = () => (
@@ -37,17 +38,11 @@ const DynamicAdminDashboard = dynamic(
   }
 );
 
-// 管理者統計ページの動的インポート
-const DynamicAdminStats = dynamic(
-  () => import('@/app/admin/stats/page').then(mod => mod.default),
-  {
-    loading: () => <AdminLoadingSkeleton />,
-    ssr: false,
-  }
-);
+// 管理者統計ページは動的インポートしない
+// ページコンポーネントはNext.jsのルーティングで処理する
 
 interface DynamicAdminLoaderProps {
-  type: 'dashboard' | 'stats';
+  type: 'dashboard';
 }
 
 export function DynamicAdminLoader({ type }: DynamicAdminLoaderProps) {
@@ -72,7 +67,7 @@ export function DynamicAdminLoader({ type }: DynamicAdminLoaderProps) {
           setIsAdmin(profile?.role === 'ADMIN');
         }
       } catch (error) {
-        console.error('Auth check error:', error);
+        logger.error('Auth check error:', error);
       } finally {
         setLoading(false);
       }
@@ -123,13 +118,9 @@ export function DynamicAdminLoader({ type }: DynamicAdminLoaderProps) {
     );
   }
 
-  // 管理者の場合、対応するコンポーネントを動的にロード
-  if (type === 'stats') {
-    return <DynamicAdminStats />;
-  }
-
+  // 管理者ダッシュボードを動的にロード
   return <DynamicAdminDashboard />;
 }
 
-// 個別エクスポート（必要に応じて使用）
-export { DynamicAdminDashboard, DynamicAdminStats };
+// 個別エクスポート
+export { DynamicAdminDashboard };

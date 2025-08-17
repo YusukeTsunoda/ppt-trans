@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { FileRecord } from '@/lib/data/files';
+import logger from '@/lib/logger';
 
 export interface FilesState {
   files?: FileRecord[];
@@ -50,7 +51,7 @@ export async function deleteFileAction(
       .remove([file.storage_path]);
     
     if (storageError) {
-      console.error('Storage deletion error:', storageError);
+      logger.error('Storage deletion error:', storageError);
       // Continue with database deletion even if storage fails
     }
     
@@ -79,7 +80,7 @@ export async function deleteFileAction(
       message: 'File deleted successfully' 
     };
   } catch (error) {
-    console.error('Delete error:', error);
+    logger.error('Delete error:', error);
     return { error: 'An unexpected error occurred' };
   }
 }
@@ -139,7 +140,7 @@ export async function downloadFileAction(
       message: urlData.signedUrl
     };
   } catch (error) {
-    console.error('Download error:', error);
+    logger.error('Download error:', error);
     return { error: 'An unexpected error occurred' };
   }
 }

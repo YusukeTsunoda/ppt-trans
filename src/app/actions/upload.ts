@@ -2,7 +2,8 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
-import { ALLOWED_MIME_TYPES } from '@/constants/mime-types';
+import { ALLOWED_MIME_TYPES, FILE_SIZE_LIMITS } from '@/constants/mime-types';
+import logger from '@/lib/logger';
 
 export interface UploadState {
   error?: string;
@@ -10,8 +11,6 @@ export interface UploadState {
   message?: string;
   fileId?: string;
 }
-
-const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
 
 function isValidMimeType(mimeType: string): boolean {
   return Object.values(ALLOWED_MIME_TYPES).includes(mimeType as any);
@@ -30,9 +29,9 @@ export async function uploadFileAction(
     }
 
     // ファイルサイズの検証
-    if (file.size > MAX_FILE_SIZE) {
+    if (file.size > FILE_SIZE_LIMITS.MAX_FILE_SIZE) {
       return { 
-        error: `ファイルサイズが大きすぎます。最大100MBまでアップロード可能です。（現在: ${(file.size / 1024 / 1024).toFixed(2)}MB）`
+        error: `ファイルサイズが大きすぎます。最大${FILE_SIZE_LIMITS.MAX_FILE_SIZE_LABEL}までアップロード可能です。（現在: ${(file.size / 1024 / 1024).toFixed(2)}MB）`
       };
     }
 
@@ -70,7 +69,7 @@ export async function uploadFileAction(
       });
 
     if (uploadError) {
-      console.error('Storage upload error:', uploadError);
+      logger.error('Storage upload error:', uploadError);
       
       let errorMessage = 'ファイルのアップロードに失敗しました';
       if (uploadError.message?.includes('row-level security')) {
@@ -88,17 +87,17 @@ export async function uploadFileAction(
       .insert({
         user_id: user.id,
         filename: fileName,
-        original_filename: file.name,
+        original_name: file.name,  // original_filename -> original_name に修正
         file_size: buffer.length,
         mime_type: file.type,
-        storage_path: uploadData.path,
+        file_path: uploadData.path,  // storage_path -> file_path に修正
         status: 'uploaded'
       })
       .select()
       .single();
 
     if (dbError) {
-      console.error('Database insert error:', dbError);
+      logger.error('Database insert error:', dbError);
       
       // ストレージからファイルを削除（ロールバック）
       await supabase.storage.from('uploads').remove([fileName]);
@@ -119,7 +118,7 @@ export async function uploadFileAction(
     };
 
   } catch (error) {
-    console.error('Upload action error:', error);
+    logger.error('Upload action error:', error);
     return { 
       error: '予期しないエラーが発生しました。もう一度お試しください。'
     };

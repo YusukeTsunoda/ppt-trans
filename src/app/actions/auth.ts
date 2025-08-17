@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 import { 
   ActionResult, 
   createErrorResponse, 
@@ -11,7 +12,34 @@ import {
 
 export type AuthState = ActionResult;
 
-// ログインアクション
+// Client-side用のリダイレクトなしログインアクション
+export async function loginActionWithoutRedirect(
+  formData: FormData
+): Promise<AuthState> {
+  const email = formData.get('email') as string;
+  const password = formData.get('password') as string;
+
+  // バリデーション
+  if (!email || !password) {
+    return createValidationError('メールアドレスとパスワードを入力してください');
+  }
+
+  const supabase = await createClient();
+
+  const { error, data } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
+
+  if (error) {
+    return createErrorResponse(error, 'メールアドレスまたはパスワードが正しくありません');
+  }
+
+  revalidatePath('/dashboard');
+  return createSuccessResponse('ログインに成功しました');
+}
+
+// ログインアクション（Server-First / E2E対応）
 export async function loginAction(
   prevState: AuthState | null,
   formData: FormData
@@ -26,20 +54,21 @@ export async function loginAction(
 
   const supabase = await createClient();
 
-  const { error } = await supabase.auth.signInWithPassword({
+  const { error, data } = await supabase.auth.signInWithPassword({
     email,
     password,
   });
 
   if (error) {
-    return createErrorResponse(error, 'ログインに失敗しました。もう一度お試しください。');
+    return createErrorResponse(error, 'メールアドレスまたはパスワードが正しくありません');
   }
 
   revalidatePath('/dashboard');
+  // 成功時は成功レスポンスを返す（リダイレクトはクライアント側で処理）
   return createSuccessResponse('ログインに成功しました');
 }
 
-// サインアップアクション
+// サインアップアクション  
 export async function signupAction(
   prevState: AuthState | null,
   formData: FormData
@@ -79,7 +108,7 @@ export async function signupAction(
   // session が存在する場合は、メール確認不要で直接ログインできる
   if (data?.session) {
     revalidatePath('/dashboard');
-    return createSuccessResponse('アカウントを作成しました。');
+    redirect('/dashboard');
   }
 
   // メール確認が必要な場合

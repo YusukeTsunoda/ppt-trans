@@ -3,6 +3,7 @@
  */
 
 import logger from '@/lib/logger';
+import type { CacheEntry, CacheStats, JsonValue } from '@/types/memory';
 
 interface MemoryInfo {
   used: number;        // 使用中メモリ (MB)
@@ -25,7 +26,7 @@ class MemoryManager {
     emergency: 95,
   };
 
-  private cache = new Map<string, { data: any; timestamp: number; size: number }>();
+  private cache = new Map<string, CacheEntry<JsonValue>>();
   private maxCacheSize = 50 * 1024 * 1024; // 50MB
   private currentCacheSize = 0;
 
@@ -134,7 +135,7 @@ class MemoryManager {
   /**
    * キャッシュにデータを保存
    */
-  public setCache(key: string, data: any, ttlMs: number = 10 * 60 * 1000): void {
+  public setCache(key: string, data: JsonValue, ttlMs: number = 10 * 60 * 1000): void {
     const dataStr = JSON.stringify(data);
     const size = Buffer.byteLength(dataStr, 'utf8');
 
@@ -150,8 +151,12 @@ class MemoryManager {
     }
 
     this.cache.set(key, {
-      data,
-      timestamp: Date.now() + ttlMs,
+      key,
+      value: data,
+      timestamp: Date.now(),
+      ttl: ttlMs,
+      accessCount: 0,
+      lastAccessed: Date.now(),
       size,
     });
 
@@ -161,18 +166,24 @@ class MemoryManager {
   /**
    * キャッシュからデータを取得
    */
-  public getCache(key: string): any | null {
+  public getCache<T extends JsonValue = JsonValue>(key: string): T | null {
     const entry = this.cache.get(key);
     if (!entry) return null;
 
     // 有効期限をチェック
-    if (Date.now() > entry.timestamp) {
+    const now = Date.now();
+    const expiryTime = entry.timestamp + (entry.ttl || 0);
+    if (now > expiryTime) {
       this.currentCacheSize -= entry.size;
       this.cache.delete(key);
       return null;
     }
 
-    return entry.data;
+    // アクセス統計を更新
+    entry.accessCount++;
+    entry.lastAccessed = now;
+
+    return entry.value as T;
   }
 
   /**
@@ -183,7 +194,10 @@ class MemoryManager {
     const now = Date.now();
 
     // 期限切れのエントリを削除
-    const expiredEntries = entries.filter(([, entry]) => now > entry.timestamp);
+    const expiredEntries = entries.filter(([, entry]) => {
+      const expiryTime = entry.timestamp + (entry.ttl || 0);
+      return now > expiryTime;
+    });
     for (const [key, entry] of expiredEntries) {
       this.currentCacheSize -= entry.size;
       this.cache.delete(key);
@@ -192,7 +206,7 @@ class MemoryManager {
     // 必要に応じて古いエントリを追加削除
     if (ratio < 1.0) {
       const remainingEntries = Array.from(this.cache.entries());
-      const sortedEntries = remainingEntries.sort(([, a], [, b]) => a.timestamp - b.timestamp);
+      const sortedEntries = remainingEntries.sort(([, a], [, b]) => a.lastAccessed - b.lastAccessed);
       const deleteCount = Math.floor(sortedEntries.length * ratio);
 
       for (let i = 0; i < deleteCount; i++) {
@@ -276,15 +290,19 @@ class MemoryManager {
   /**
    * メモリ使用量の統計情報を取得
    */
-  public getMemoryStats(): any {
+  public getMemoryStats(): { memory: MemoryInfo; cache: CacheStats; thresholds: MemoryThresholds } {
     const info = this.getMemoryInfo();
     
     return {
       memory: info,
       cache: {
-        entries: this.cache.size,
-        sizeMB: Math.round(this.currentCacheSize / 1024 / 1024 * 100) / 100,
-        maxSizeMB: Math.round(this.maxCacheSize / 1024 / 1024 * 100) / 100,
+        totalEntries: this.cache.size,
+        memoryUsage: Math.round(this.currentCacheSize / 1024 / 1024 * 100) / 100,
+        hitRate: 0, // TODO: 実装が必要
+        missRate: 0, // TODO: 実装が必要
+        evictionCount: 0, // TODO: 実装が必要
+        oldestEntry: Math.min(...Array.from(this.cache.values()).map(e => e.lastAccessed)),
+        newestEntry: Math.max(...Array.from(this.cache.values()).map(e => e.lastAccessed)),
       },
       thresholds: this.thresholds,
     };
