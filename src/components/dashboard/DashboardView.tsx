@@ -46,27 +46,10 @@ function TranslateButton({ fileId }: { fileId: string }) {
   );
 }
 
-function DeleteButton({ fileId }: { fileId: string }) {
-  const { pending } = useFormStatus();
-  
-  return (
-    <>
-      <input type="hidden" name="fileId" value={fileId} />
-      <button
-        type="submit"
-        disabled={pending}
-        className="text-sm text-red-600 hover:text-red-800 disabled:opacity-50"
-      >
-        {pending ? '削除中...' : '削除'}
-      </button>
-    </>
-  );
-}
 
-function FileCard({ file }: { file: FileRecord }) {
+function FileCard({ file, onDelete }: { file: FileRecord; onDelete: (fileId: string) => void }) {
   const [translateState, translateAction] = useActionState(translateFileAction, null);
-  const [deleteState, deleteAction] = useActionState(deleteFileAction, null);
-  const router = useRouter();
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const formatFileSize = (bytes: number) => {
     if (bytes < 1024) return bytes + ' B';
@@ -129,10 +112,18 @@ function FileCard({ file }: { file: FileRecord }) {
     }
   };
 
-  // 状態に応じてページをリフレッシュ
-  if (translateState?.success || deleteState?.success) {
-    router.refresh();
-  }
+  // 削除ボタンのクリックハンドラ
+  const handleDelete = async () => {
+    if (!confirm('このファイルを削除してもよろしいですか？')) {
+      return;
+    }
+    setIsDeleting(true);
+    try {
+      await onDelete(file.id);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   return (
     <tr className="hover:bg-gray-50">
@@ -213,9 +204,13 @@ function FileCard({ file }: { file: FileRecord }) {
           )}
           
           {/* 削除ボタン */}
-          <form action={deleteAction}>
-            <DeleteButton fileId={file.id} />
-          </form>
+          <button
+            onClick={handleDelete}
+            disabled={isDeleting}
+            className="text-sm text-red-600 hover:text-red-800 disabled:opacity-50"
+          >
+            {isDeleting ? '削除中...' : '削除'}
+          </button>
         </div>
       </td>
     </tr>
@@ -223,13 +218,32 @@ function FileCard({ file }: { file: FileRecord }) {
 }
 
 export default function DashboardView({ userEmail, initialFiles }: DashboardViewProps) {
-  const [files] = useState(initialFiles);
+  const [files, setFiles] = useState(initialFiles);
   const router = useRouter();
 
   const handleLogout = async () => {
     const result = await logoutAction();
     if (result.success) {
       router.push('/login');
+    }
+  };
+
+  const handleDeleteFile = async (fileId: string) => {
+    try {
+      // FormDataにfileIdを追加
+      const formData = new FormData();
+      formData.append('fileId', fileId);
+      const deleteResult = await deleteFileAction(null, formData);
+      
+      if (deleteResult.success) {
+        // ローカルの状態を更新（楽観的UI更新）
+        setFiles(prevFiles => prevFiles.filter(f => f.id !== fileId));
+      } else {
+        alert(deleteResult.error || 'ファイルの削除に失敗しました');
+      }
+    } catch (error) {
+      logger.error('Delete error:', error);
+      alert('ファイルの削除中にエラーが発生しました');
     }
   };
 
@@ -270,7 +284,10 @@ export default function DashboardView({ userEmail, initialFiles }: DashboardView
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-semibold text-slate-900" data-testid="uploaded-files-title">アップロードしたファイル</h2>
             <button
-              onClick={() => router.refresh()}
+              onClick={async () => {
+                // ダッシュボードページをリロードして最新データを取得
+                window.location.reload();
+              }}
               className="text-blue-600 hover:text-blue-700 transition-colors"
               title="更新"
             >
@@ -317,7 +334,7 @@ export default function DashboardView({ userEmail, initialFiles }: DashboardView
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {files.map((file) => (
-                    <FileCard key={file.id} file={file} />
+                    <FileCard key={file.id} file={file} onDelete={handleDeleteFile} />
                   ))}
                 </tbody>
               </table>

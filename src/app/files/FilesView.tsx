@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useActionState } from 'react';
 import { useFormStatus } from 'react-dom';
 import Link from 'next/link';
@@ -56,15 +56,23 @@ export default function FilesView({ initialFiles }: FilesViewProps) {
   const [files, setFiles] = useState<FileRecord[]>(initialFiles);
   const [deleteState, deleteFormAction] = useActionState(deleteFileAction, null);
   const [downloadState, downloadFormAction] = useActionState(downloadFileAction, null);
+  const [deletingFileId, setDeletingFileId] = useState<string | null>(null);
   
-  // ファイル削除時のOptimistic Update
-  const handleDeleteWithOptimistic = (fileId: string) => {
+  // 削除成功時にファイルリストを更新
+  useEffect(() => {
+    if (deleteState?.success && deletingFileId) {
+      setFiles(prevFiles => prevFiles.filter(f => f.id !== deletingFileId));
+      setDeletingFileId(null);
+    }
+  }, [deleteState, deletingFileId]);
+  
+  // ファイル削除時の処理
+  const handleDeleteSubmit = (e: React.FormEvent<HTMLFormElement>, fileId: string) => {
     if (!confirm('このファイルを削除してもよろしいですか？')) {
+      e.preventDefault();
       return;
     }
-    
-    // Optimistic update
-    setFiles(prevFiles => prevFiles.filter(f => f.id !== fileId));
+    setDeletingFileId(fileId);
   };
   
   // フォーマット関数
@@ -207,7 +215,7 @@ export default function FilesView({ initialFiles }: FilesViewProps) {
                     {/* 削除ボタン */}
                     <form 
                       action={deleteFormAction}
-                      onSubmit={() => handleDeleteWithOptimistic(file.id)}
+                      onSubmit={(e) => handleDeleteSubmit(e, file.id)}
                     >
                       <input type="hidden" name="fileId" value={file.id} />
                       <DeleteButton />
