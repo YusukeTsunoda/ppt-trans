@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import logger from '@/lib/logger';
+import { User, LogOut, Upload } from 'lucide-react';
 
 interface FileRecord {
   id: string;
@@ -251,26 +252,44 @@ export default function DashboardView({ userEmail, initialFiles }: DashboardView
     <div className="min-h-screen gradient-bg animate-fadeIn">
       {/* ヘッダー */}
       <div className="header-gradient text-white shadow-lg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-3xl font-bold">PowerPoint Translator</h1>
-              <p className="text-blue-100 mt-1">ようこそ、{userEmail}さん</p>
+              <h1 className="text-2xl sm:text-3xl font-bold">PowerPoint Translator</h1>
+              <p className="text-blue-100 text-sm mt-1">ようこそ、{userEmail}さん</p>
             </div>
-            <div className="flex gap-3">
+            <div className="flex items-center gap-2">
+              {/* プロフィールボタン */}
+              <Link
+                href="/profile"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 backdrop-blur rounded-lg transition-all duration-200 text-sm"
+                title="プロフィール設定"
+              >
+                <div className="w-6 h-6 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                  {userEmail.charAt(0).toUpperCase()}
+                </div>
+                <span className="hidden sm:inline">プロフィール</span>
+              </Link>
+              
+              {/* 新規アップロードボタン */}
               <Link
                 href="/upload"
-                className="btn-accent"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition-all duration-200 text-sm font-medium"
                 data-testid="new-upload-link"
               >
-                📄 新規アップロード
+                <Upload className="w-4 h-4" />
+                <span>新規アップロード</span>
               </Link>
+              
+              {/* ログアウトボタン */}
               <form action={handleLogout}>
                 <button
                   type="submit"
-                  className="btn-secondary bg-white/20 hover:bg-white/30 text-white backdrop-blur"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white backdrop-blur rounded-lg transition-all duration-200 text-sm"
+                  title="ログアウト"
                 >
-                  ログアウト
+                  <LogOut className="w-4 h-4" />
+                  <span className="hidden sm:inline">ログアウト</span>
                 </button>
               </form>
             </div>

@@ -1,10 +1,12 @@
 'use client';
 
+import { useState } from 'react';
 import { useActionState } from 'react';
 import { useFormStatus } from 'react-dom';
 import Link from 'next/link';
 import { updateProfileAction } from '@/app/actions/profile';
 import type { Profile } from '@/lib/data/profile';
+import { User, Settings, Bell, Shield, Palette, Globe, ChevronRight, Camera, Mail, Phone, MapPin, Calendar } from 'lucide-react';
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -13,9 +15,9 @@ function SubmitButton() {
     <button
       type="submit"
       disabled={pending}
-      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+      className="btn-primary"
     >
-      {pending ? '保存中...' : '保存'}
+      {pending ? '保存中...' : '変更を保存'}
     </button>
   );
 }
@@ -26,92 +28,462 @@ interface ProfileClientProps {
   initialProfile: Profile | null;
 }
 
+type TabType = 'profile' | 'settings' | 'notifications' | 'security';
+
 export default function ProfileClient({ userId, userEmail, initialProfile }: ProfileClientProps) {
   const [state, formAction] = useActionState(updateProfileAction, null);
+  const [activeTab, setActiveTab] = useState<TabType>('profile');
+  const [settings, setSettings] = useState({
+    language: 'ja',
+    theme: 'light',
+    autoTranslate: false,
+    emailNotifications: true,
+    pushNotifications: false,
+    twoFactorEnabled: false,
+  });
+  
+  const tabs = [
+    { id: 'profile' as TabType, label: 'プロフィール', icon: User },
+    { id: 'settings' as TabType, label: '一般設定', icon: Settings },
+    { id: 'notifications' as TabType, label: '通知設定', icon: Bell },
+    { id: 'security' as TabType, label: 'セキュリティ', icon: Shield },
+  ];
   
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-4xl mx-auto px-4">
-        {/* ヘッダー */}
-        <div className="bg-white shadow rounded-lg p-6 mb-6">
-          <div className="flex justify-between items-start">
+    <div className="min-h-screen gradient-bg animate-fadeIn">
+      {/* ヘッダー */}
+      <div className="header-gradient text-white shadow-lg">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">プロフィール</h1>
-              <p className="mt-1 text-sm text-gray-600">アカウント情報と設定</p>
+              <h1 className="text-3xl font-bold">アカウント設定</h1>
+              <p className="text-blue-100 mt-1">プロフィールと各種設定を管理</p>
             </div>
             <Link 
               href="/dashboard" 
-              className="text-blue-600 hover:text-blue-700"
+              className="btn-secondary bg-white/20 hover:bg-white/30 text-white backdrop-blur"
             >
               ← ダッシュボードに戻る
             </Link>
           </div>
         </div>
+      </div>
 
-        {/* アカウント情報 */}
-        <div className="bg-white shadow rounded-lg p-6 mb-6">
-          <h2 className="text-lg font-semibold mb-4">アカウント情報</h2>
-          <div className="space-y-3">
-            <div>
-              <label className="text-sm font-medium text-gray-500">ユーザーID</label>
-              <p className="text-gray-900">{userId}</p>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-500">メールアドレス</label>
-              <p className="text-gray-900">{userEmail}</p>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex flex-col lg:flex-row gap-6">
+          {/* サイドバー */}
+          <div className="lg:w-64">
+            <div className="card">
+              <nav className="space-y-1">
+                {tabs.map((tab) => {
+                  const Icon = tab.icon;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
+                        activeTab === tab.id 
+                          ? 'bg-blue-50 text-blue-600 font-medium' 
+                          : 'text-slate-600 hover:bg-slate-50'
+                      }`}
+                    >
+                      <Icon className="w-5 h-5" />
+                      <span>{tab.label}</span>
+                      {activeTab === tab.id && (
+                        <ChevronRight className="w-4 h-4 ml-auto" />
+                      )}
+                    </button>
+                  );
+                })}
+              </nav>
             </div>
           </div>
-        </div>
 
-        {/* プロフィール編集フォーム */}
-        <div className="bg-white shadow rounded-lg p-6">
-          <h2 className="text-lg font-semibold mb-4">プロフィール設定</h2>
-          
-          {state?.success && (
-            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded">
-              <p className="text-green-700 text-sm">{state.message}</p>
-            </div>
-          )}
-          
-          {state?.error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded">
-              <p className="text-red-700 text-sm">{state.error}</p>
-            </div>
-          )}
-          
-          <form action={formAction} className="space-y-4">
-            <div>
-              <label htmlFor="displayName" className="block text-sm font-medium text-gray-700 mb-1">
-                表示名
-              </label>
-              <input
-                type="text"
-                id="displayName"
-                name="displayName"
-                defaultValue={initialProfile?.display_name || ''}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                placeholder="表示名を入力"
-              />
-            </div>
+          {/* メインコンテンツ */}
+          <div className="flex-1">
+            {/* 成功・エラーメッセージ */}
+            {state?.success && (
+              <div className="mb-6 p-4 bg-emerald-50 border border-emerald-200 rounded-lg animate-scaleIn">
+                <p className="text-emerald-700">{state.message}</p>
+              </div>
+            )}
             
-            <div>
-              <label htmlFor="bio" className="block text-sm font-medium text-gray-700 mb-1">
-                自己紹介
-              </label>
-              <textarea
-                id="bio"
-                name="bio"
-                rows={4}
-                defaultValue={initialProfile?.bio || ''}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                placeholder="自己紹介を入力"
-              />
-            </div>
-            
-            <div className="flex justify-end">
-              <SubmitButton />
-            </div>
-          </form>
+            {state?.error && (
+              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg animate-scaleIn">
+                <p className="text-red-700">{state.error}</p>
+              </div>
+            )}
+
+            {/* プロフィールタブ */}
+            {activeTab === 'profile' && (
+              <div className="card animate-fadeIn">
+                <h2 className="text-xl font-semibold text-slate-900 mb-6">プロフィール情報</h2>
+                
+                {/* アバター */}
+                <div className="mb-8">
+                  <div className="flex items-center gap-6">
+                    <div className="relative">
+                      <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-3xl font-bold">
+                        {userEmail.charAt(0).toUpperCase()}
+                      </div>
+                      <button className="absolute bottom-0 right-0 bg-white rounded-full p-2 shadow-lg hover:shadow-xl transition-shadow">
+                        <Camera className="w-4 h-4 text-slate-600" />
+                      </button>
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-medium text-slate-900">{initialProfile?.display_name || userEmail.split('@')[0]}</h3>
+                      <p className="text-sm text-slate-500">{userEmail}</p>
+                      <p className="text-xs text-slate-400 mt-1">ユーザーID: {userId.slice(0, 8)}...</p>
+                    </div>
+                  </div>
+                </div>
+                
+                <form action={formAction} className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label htmlFor="displayName" className="block text-sm font-medium text-slate-700 mb-2">
+                        <User className="w-4 h-4 inline mr-1" />
+                        表示名
+                      </label>
+                      <input
+                        type="text"
+                        id="displayName"
+                        name="displayName"
+                        defaultValue={initialProfile?.display_name || ''}
+                        className="input"
+                        placeholder="表示名を入力"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label htmlFor="phone" className="block text-sm font-medium text-slate-700 mb-2">
+                        <Phone className="w-4 h-4 inline mr-1" />
+                        電話番号
+                      </label>
+                      <input
+                        type="tel"
+                        id="phone"
+                        name="phone"
+                        className="input"
+                        placeholder="090-1234-5678"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label htmlFor="location" className="block text-sm font-medium text-slate-700 mb-2">
+                        <MapPin className="w-4 h-4 inline mr-1" />
+                        所在地
+                      </label>
+                      <input
+                        type="text"
+                        id="location"
+                        name="location"
+                        className="input"
+                        placeholder="東京都"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label htmlFor="birthday" className="block text-sm font-medium text-slate-700 mb-2">
+                        <Calendar className="w-4 h-4 inline mr-1" />
+                        生年月日
+                      </label>
+                      <input
+                        type="date"
+                        id="birthday"
+                        name="birthday"
+                        className="input"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="bio" className="block text-sm font-medium text-slate-700 mb-2">
+                      自己紹介
+                    </label>
+                    <textarea
+                      id="bio"
+                      name="bio"
+                      rows={4}
+                      defaultValue={initialProfile?.bio || ''}
+                      className="input resize-none"
+                      placeholder="自己紹介を入力してください"
+                    />
+                  </div>
+                  
+                  <div className="flex justify-end">
+                    <SubmitButton />
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {/* 一般設定タブ */}
+            {activeTab === 'settings' && (
+              <div className="card animate-fadeIn">
+                <h2 className="text-xl font-semibold text-slate-900 mb-6">一般設定</h2>
+                
+                <div className="space-y-6">
+                  {/* 言語設定 */}
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                      <Globe className="w-4 h-4 inline mr-1" />
+                      表示言語
+                    </label>
+                    <select 
+                      className="input"
+                      value={settings.language}
+                      onChange={(e) => setSettings({...settings, language: e.target.value})}
+                    >
+                      <option value="ja">日本語</option>
+                      <option value="en">English</option>
+                      <option value="zh">中文</option>
+                      <option value="ko">한국어</option>
+                    </select>
+                  </div>
+                  
+                  {/* テーマ設定 */}
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                      <Palette className="w-4 h-4 inline mr-1" />
+                      テーマ
+                    </label>
+                    <div className="flex gap-4">
+                      <label className="flex items-center">
+                        <input
+                          type="radio"
+                          name="theme"
+                          value="light"
+                          checked={settings.theme === 'light'}
+                          onChange={(e) => setSettings({...settings, theme: e.target.value})}
+                          className="mr-2"
+                        />
+                        <span>ライトモード</span>
+                      </label>
+                      <label className="flex items-center">
+                        <input
+                          type="radio"
+                          name="theme"
+                          value="dark"
+                          checked={settings.theme === 'dark'}
+                          onChange={(e) => setSettings({...settings, theme: e.target.value})}
+                          className="mr-2"
+                        />
+                        <span>ダークモード</span>
+                      </label>
+                      <label className="flex items-center">
+                        <input
+                          type="radio"
+                          name="theme"
+                          value="auto"
+                          checked={settings.theme === 'auto'}
+                          onChange={(e) => setSettings({...settings, theme: e.target.value})}
+                          className="mr-2"
+                        />
+                        <span>自動</span>
+                      </label>
+                    </div>
+                  </div>
+                  
+                  {/* 自動翻訳設定 */}
+                  <div>
+                    <label className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-slate-700">
+                        アップロード時に自動翻訳
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setSettings({...settings, autoTranslate: !settings.autoTranslate})}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                          settings.autoTranslate ? 'bg-blue-600' : 'bg-slate-200'
+                        }`}
+                      >
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          settings.autoTranslate ? 'translate-x-6' : 'translate-x-1'
+                        }`} />
+                      </button>
+                    </label>
+                    <p className="text-xs text-slate-500 mt-1">
+                      ファイルアップロード後、自動的に翻訳処理を開始します
+                    </p>
+                  </div>
+                  
+                  <div className="pt-4">
+                    <button className="btn-primary">
+                      設定を保存
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 通知設定タブ */}
+            {activeTab === 'notifications' && (
+              <div className="card animate-fadeIn">
+                <h2 className="text-xl font-semibold text-slate-900 mb-6">通知設定</h2>
+                
+                <div className="space-y-6">
+                  {/* メール通知 */}
+                  <div>
+                    <label className="flex items-center justify-between">
+                      <div>
+                        <span className="text-sm font-medium text-slate-700 flex items-center gap-2">
+                          <Mail className="w-4 h-4" />
+                          メール通知
+                        </span>
+                        <p className="text-xs text-slate-500 mt-1">
+                          重要なお知らせをメールで受け取る
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setSettings({...settings, emailNotifications: !settings.emailNotifications})}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                          settings.emailNotifications ? 'bg-blue-600' : 'bg-slate-200'
+                        }`}
+                      >
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          settings.emailNotifications ? 'translate-x-6' : 'translate-x-1'
+                        }`} />
+                      </button>
+                    </label>
+                  </div>
+                  
+                  {/* プッシュ通知 */}
+                  <div>
+                    <label className="flex items-center justify-between">
+                      <div>
+                        <span className="text-sm font-medium text-slate-700 flex items-center gap-2">
+                          <Bell className="w-4 h-4" />
+                          プッシュ通知
+                        </span>
+                        <p className="text-xs text-slate-500 mt-1">
+                          ブラウザでリアルタイム通知を受け取る
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setSettings({...settings, pushNotifications: !settings.pushNotifications})}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                          settings.pushNotifications ? 'bg-blue-600' : 'bg-slate-200'
+                        }`}
+                      >
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          settings.pushNotifications ? 'translate-x-6' : 'translate-x-1'
+                        }`} />
+                      </button>
+                    </label>
+                  </div>
+                  
+                  {/* 通知カテゴリ */}
+                  <div className="border-t pt-6">
+                    <h3 className="text-sm font-medium text-slate-700 mb-4">通知カテゴリ</h3>
+                    <div className="space-y-3">
+                      {[
+                        { label: '翻訳完了通知', checked: true },
+                        { label: 'システムアップデート', checked: true },
+                        { label: 'アカウント関連', checked: true },
+                        { label: 'プロモーション・お知らせ', checked: false },
+                      ].map((item, index) => (
+                        <label key={index} className="flex items-center">
+                          <input
+                            type="checkbox"
+                            defaultChecked={item.checked}
+                            className="mr-3 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="text-sm text-slate-600">{item.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <div className="pt-4">
+                    <button className="btn-primary">
+                      通知設定を保存
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* セキュリティタブ */}
+            {activeTab === 'security' && (
+              <div className="card animate-fadeIn">
+                <h2 className="text-xl font-semibold text-slate-900 mb-6">セキュリティ設定</h2>
+                
+                <div className="space-y-6">
+                  {/* パスワード変更 */}
+                  <div className="border-b pb-6">
+                    <h3 className="text-sm font-medium text-slate-700 mb-4">パスワード</h3>
+                    <p className="text-sm text-slate-600 mb-4">
+                      定期的にパスワードを変更することをお勧めします
+                    </p>
+                    <button className="btn-secondary">
+                      パスワードを変更
+                    </button>
+                  </div>
+                  
+                  {/* 2段階認証 */}
+                  <div className="border-b pb-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <h3 className="text-sm font-medium text-slate-700">2段階認証</h3>
+                        <p className="text-sm text-slate-600 mt-1">
+                          アカウントのセキュリティを強化します
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setSettings({...settings, twoFactorEnabled: !settings.twoFactorEnabled})}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                          settings.twoFactorEnabled ? 'bg-blue-600' : 'bg-slate-200'
+                        }`}
+                      >
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          settings.twoFactorEnabled ? 'translate-x-6' : 'translate-x-1'
+                        }`} />
+                      </button>
+                    </div>
+                    {settings.twoFactorEnabled && (
+                      <div className="bg-blue-50 p-4 rounded-lg">
+                        <p className="text-sm text-blue-800">
+                          2段階認証が有効になっています。認証アプリを使用してログイン時に追加の確認を行います。
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* ログインセッション */}
+                  <div>
+                    <h3 className="text-sm font-medium text-slate-700 mb-4">アクティブなセッション</h3>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                        <div>
+                          <p className="text-sm font-medium text-slate-900">現在のセッション</p>
+                          <p className="text-xs text-slate-500">Chrome • 東京, 日本</p>
+                        </div>
+                        <span className="text-xs text-emerald-600 bg-emerald-50 px-2 py-1 rounded">アクティブ</span>
+                      </div>
+                    </div>
+                    <button className="btn-secondary mt-4">
+                      すべてのセッションからログアウト
+                    </button>
+                  </div>
+                  
+                  {/* アカウント削除 */}
+                  <div className="border-t pt-6">
+                    <h3 className="text-sm font-medium text-red-600 mb-2">危険な操作</h3>
+                    <p className="text-sm text-slate-600 mb-4">
+                      アカウントを削除すると、すべてのデータが失われます。この操作は取り消せません。
+                    </p>
+                    <button className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+                      アカウントを削除
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
