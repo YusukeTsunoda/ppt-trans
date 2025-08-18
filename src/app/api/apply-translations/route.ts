@@ -7,11 +7,11 @@ import logger from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
-    const { fileId, filePath } = await request.json();
+    const { fileId, filePath, translations } = await request.json();
     
-    if (!fileId || !filePath) {
+    if (!fileId || !filePath || !translations) {
       return NextResponse.json(
-        { success: false, error: 'ファイル情報が不足しています' },
+        { success: false, error: '必要な情報が不足しています' },
         { status: 400 }
       );
     }
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Supabase Storageからファイルをダウンロード
+    // Supabase Storageから元のファイルをダウンロード
     const { data: fileData, error: downloadError } = await supabase.storage
       .from('uploads')
       .download(filePath);
@@ -59,15 +59,35 @@ export async function POST(request: NextRequest) {
     
     // 一時ファイルとして保存
     const tempDir = '/tmp';
-    const tempFilePath = path.join(tempDir, `temp_${fileId}.pptx`);
+    const inputFilePath = path.join(tempDir, `input_${fileId}.pptx`);
+    const outputFilePath = path.join(tempDir, `translated_${fileId}.pptx`);
     const buffer = Buffer.from(await fileData.arrayBuffer());
-    await fs.writeFile(tempFilePath, buffer);
+    await fs.writeFile(inputFilePath, buffer);
     
-    // Pythonスクリプトを実行してテキストを抽出
-    const pythonScriptPath = path.join(process.cwd(), 'src/lib/pptx/extract_text.py');
+    // 翻訳データを整形（シェイプインデックスを追加）
+    const formattedTranslations = {
+      slides: translations.slides.map((slide: any) => ({
+        slide_number: slide.slide_number,
+        translations: slide.texts.map((text: any, index: number) => ({
+          original: text.original,
+          translated: text.translated || text.original,
+          shape_index: index,
+          // テーブルの場合の処理
+          table_translations: text.isTable ? text.tableData : null
+        }))
+      }))
+    };
+    
+    // Pythonスクリプトを実行して翻訳を適用
+    const pythonScriptPath = path.join(process.cwd(), 'src/lib/pptx/apply_translations.py');
     
     return new Promise((resolve) => {
-      const pythonProcess = spawn('python3', [pythonScriptPath, tempFilePath]);
+      const pythonProcess = spawn('python3', [
+        pythonScriptPath,
+        inputFilePath,
+        outputFilePath,
+        JSON.stringify(formattedTranslations)
+      ]);
       
       let outputData = '';
       let errorData = '';
@@ -81,24 +101,26 @@ export async function POST(request: NextRequest) {
       });
       
       pythonProcess.on('close', async (code) => {
-        // 一時ファイルを削除（ファイルが存在する場合のみ）
+        // 入力ファイルを削除
         try {
-          await fs.access(tempFilePath);
-          await fs.unlink(tempFilePath);
+          await fs.unlink(inputFilePath);
         } catch (err) {
-          // ファイルが存在しない場合は無視
-          if (err.code !== 'ENOENT') {
-            logger.error('Failed to delete temp file:', err);
-          }
+          logger.error('Failed to delete input temp file:', err);
         }
         
         if (code !== 0) {
           logger.error('Python script error:', errorData);
+          // 出力ファイルも削除
+          try {
+            await fs.unlink(outputFilePath);
+          } catch (err) {
+            // エラーは無視
+          }
           resolve(
             NextResponse.json(
               { 
                 success: false, 
-                error: 'テキスト抽出に失敗しました',
+                error: '翻訳の適用に失敗しました',
                 details: errorData 
               },
               { status: 500 }
@@ -111,11 +133,17 @@ export async function POST(request: NextRequest) {
           const result = JSON.parse(outputData);
           
           if (!result.success) {
+            // 出力ファイルを削除
+            try {
+              await fs.unlink(outputFilePath);
+            } catch (err) {
+              // エラーは無視
+            }
             resolve(
               NextResponse.json(
                 { 
                   success: false, 
-                  error: result.error || 'テキスト抽出に失敗しました' 
+                  error: result.error || '翻訳の適用に失敗しました' 
                 },
                 { status: 500 }
               )
@@ -123,14 +151,42 @@ export async function POST(request: NextRequest) {
             return;
           }
           
+          // 翻訳済みファイルを読み込む
+          const translatedFile = await fs.readFile(outputFilePath);
+          
+          // 一時ファイルを削除
+          try {
+            await fs.unlink(outputFilePath);
+          } catch (err) {
+            logger.error('Failed to delete output temp file:', err);
+          }
+          
+          // ファイル名を生成
+          const originalName = file.original_name || 'presentation.pptx';
+          const nameWithoutExt = originalName.replace(/\.pptx$/i, '');
+          const translatedFileName = `${nameWithoutExt}_translated.pptx`;
+          
+          // ファイルをBase64エンコード
+          const base64Data = translatedFile.toString('base64');
+          const dataUri = `data:application/vnd.openxmlformats-officedocument.presentationml.presentation;base64,${base64Data}`;
+          
           resolve(
             NextResponse.json({
               success: true,
-              data: result
+              dataUri: dataUri,
+              fileName: translatedFileName,
+              appliedCount: result.applied_count,
+              message: result.message
             })
           );
         } catch (parseError) {
           logger.error('JSON parse error:', parseError);
+          // 出力ファイルを削除
+          try {
+            await fs.unlink(outputFilePath);
+          } catch (err) {
+            // エラーは無視
+          }
           resolve(
             NextResponse.json(
               { 
@@ -144,7 +200,7 @@ export async function POST(request: NextRequest) {
       });
     }) as Promise<NextResponse>;
   } catch (error) {
-    logger.error('Extract API error:', error);
+    logger.error('Apply translations API error:', error);
     return NextResponse.json(
       { 
         success: false, 

@@ -4,11 +4,13 @@
 - alert
 - heading "PowerPoint Translator" [level=1]
 - paragraph: アカウントにログイン
-- text: ログインに失敗しました メールアドレス
-- textbox "your@email.com"
+- text: メールアドレス
+- textbox "your@email.com": test@example.com
 - text: パスワード
-- textbox "••••••••"
-- button "ログイン"
+- textbox "••••••••": wrongpassword
+- button "ログイン中..." [disabled]:
+  - img
+  - text: ログイン中...
 - text: アカウントをお持ちでない場合は
 - link "新規登録":
   - /url: /register
