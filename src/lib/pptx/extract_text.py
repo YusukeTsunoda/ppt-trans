@@ -31,6 +31,17 @@ def extract_text_from_pptx(file_path: str) -> Dict[str, Any]:
                         "text": shape.text.strip()
                     }
                     
+                    # 位置情報を追加（EMUからピクセルに変換）
+                    # PowerPointのEMU (English Metric Units) を ピクセルに変換
+                    # 1インチ = 914400 EMU = 96ピクセル
+                    if hasattr(shape, 'left') and hasattr(shape, 'top') and hasattr(shape, 'width') and hasattr(shape, 'height'):
+                        text_data["position"] = {
+                            "x": int(shape.left * 96 / 914400) if shape.left else 0,
+                            "y": int(shape.top * 96 / 914400) if shape.top else 0,
+                            "width": int(shape.width * 96 / 914400) if shape.width else 0,
+                            "height": int(shape.height * 96 / 914400) if shape.height else 0
+                        }
+                    
                     # タイトルかどうかの判定
                     if shape == slide.shapes.title:
                         text_data["is_title"] = True
@@ -47,10 +58,21 @@ def extract_text_from_pptx(file_path: str) -> Dict[str, Any]:
                         table_data.append(row_data)
                     
                     if table_data:
-                        slide_texts.append({
+                        table_text_data = {
                             "shape_type": "TABLE",
                             "table": table_data
-                        })
+                        }
+                        
+                        # テーブルの位置情報を追加
+                        if hasattr(shape, 'left') and hasattr(shape, 'top') and hasattr(shape, 'width') and hasattr(shape, 'height'):
+                            table_text_data["position"] = {
+                                "x": int(shape.left * 96 / 914400) if shape.left else 0,
+                                "y": int(shape.top * 96 / 914400) if shape.top else 0,
+                                "width": int(shape.width * 96 / 914400) if shape.width else 0,
+                                "height": int(shape.height * 96 / 914400) if shape.height else 0
+                            }
+                        
+                        slide_texts.append(table_text_data)
             
             if slide_texts:
                 slides_data.append({
