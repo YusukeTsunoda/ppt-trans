@@ -57,7 +57,7 @@ export function getRedisClient(): Redis | null {
 
     // 接続を試みる（失敗しても続行）
     redisClient.connect().catch((err) => {
-      logger.warn('⚠️ Redis is not available, continuing without cache:', err.message);
+      logger.warn('⚠️ Redis is not available, continuing without cache:', { message: err.message });
       redisAvailable = false;
     });
   }

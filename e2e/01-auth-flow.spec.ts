@@ -73,11 +73,21 @@ test.describe('認証フロー統合テスト', () => {
       
       await page.click('button:has-text("ログイン")');
       
-      // エラーメッセージが必須で表示される
-      await expect(page.locator('text=/メールアドレスまたはパスワードが正しくありません|Invalid login credentials|ログインに失敗しました/')).toBeVisible({
+      // エラーメッセージが必須で表示される（厳格化: 正確な文言のみ許可）
+      const errorMessage = await page.locator('.bg-red-50, [role="alert"], .error-message').first();
+      await expect(errorMessage).toBeVisible({
         timeout: 5000,
         message: 'ログインエラーメッセージが表示されていません'
       });
+      
+      // エラーメッセージの内容を検証（正確な文言）
+      const errorText = await errorMessage.textContent();
+      const validErrorMessages = [
+        'メールアドレスまたはパスワードが正しくありません',
+        'Invalid login credentials'
+      ];
+      
+      expect(validErrorMessages.some(msg => errorText?.includes(msg))).toBeTruthy();
       
       // ダッシュボードには遷移しない
       await expect(page).toHaveURL(/.*login/);

@@ -294,7 +294,7 @@ export function PreviewScreen({ data, onBack, onDataUpdate, historyId }: Preview
         }))
       };
 
-      logger.debug('Generating translated PPTX...', requestData);
+      logger.debug('Generating translated PPTX...', { requestData });
 
       // API Route経由でPPTXファイルを生成
       const response = await fetch('/api/generate/pptx', {
@@ -311,7 +311,7 @@ export function PreviewScreen({ data, onBack, onDataUpdate, historyId }: Preview
         throw new Error(result.error || 'PPTXファイルの生成に失敗しました');
       }
 
-      logger.debug('PPTX generation result:', result);
+      logger.debug('PPTX generation result:', { result });
 
       // ダウンロード処理
       if (result.downloadUrl) {
@@ -341,7 +341,10 @@ export function PreviewScreen({ data, onBack, onDataUpdate, historyId }: Preview
             return;
           }
         } catch (corsError) {
-          logger.debug('Direct download failed, trying fallback method...', corsError);
+          logger.debug('Direct download failed, trying fallback method...', {
+            error: corsError instanceof Error ? corsError.message : String(corsError),
+            stack: corsError instanceof Error ? corsError.stack : undefined
+          });
         }
         
         // CORS エラーの場合はリンククリックでダウンロード

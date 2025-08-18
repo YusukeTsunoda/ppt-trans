@@ -42,7 +42,7 @@ export async function logActivity(params: LogActivityParams) {
     });
     logger.info('Activity logged', { action: params.action, userId: params.userId });
   } catch (error) {
-    logger.error('Failed to log activity', { error, params });
+    logger.error('Failed to log activity', error, { params });
     // アクティビティログの失敗は処理を中断させない
   }
 }

@@ -13,6 +13,7 @@ interface ExtractedData {
     slide_number: number;
     texts: Array<{
       text?: string;
+      table?: string[][];  // テーブルデータ用の型を追加
       shape_type?: string;
       position?: {
         x: number;
@@ -94,12 +95,28 @@ export default function PreviewView({ file }: PreviewViewProps) {
       // スライドデータを整形
       const formattedSlides: SlideData[] = result.data.slides.map((slide: ExtractedData['slides'][0]) => ({
         pageNumber: slide.slide_number,
-        texts: slide.texts.map((text: ExtractedData['slides'][0]['texts'][0], index: number) => ({
-          id: `${slide.slide_number}-${index}`,
-          original: typeof text === 'string' ? text : text.text || '',
-          type: text.shape_type || 'text',
-          position: text.position || undefined,
-        })),
+        // MVPとしてプレースホルダー画像を使用
+        // TODO: 将来的には実際のスライド画像を生成
+        imageUrl: `https://via.placeholder.com/1280x720/f8f9fa/6c757d?text=Slide+${slide.slide_number}`,
+        texts: slide.texts.map((text: ExtractedData['slides'][0]['texts'][0], index: number) => {
+          let originalText = '';
+          
+          if (typeof text === 'string') {
+            originalText = text;
+          } else if (text.text) {
+            originalText = text.text;
+          } else if (text.table) {
+            // テーブルデータを文字列に変換
+            originalText = text.table.map((row: string[]) => row.join('\t')).join('\n');
+          }
+          
+          return {
+            id: `${slide.slide_number}-${index}`,
+            original: originalText,
+            type: text.shape_type || 'text',
+            position: text.position || undefined,
+          };
+        }),
       }));
       
       setSlides(formattedSlides);
@@ -130,12 +147,28 @@ export default function PreviewView({ file }: PreviewViewProps) {
       // スライドデータを整形
       const formattedSlides: SlideData[] = file.extracted_data.slides.map((slide: ExtractedData['slides'][0]) => ({
         pageNumber: slide.slide_number,
-        texts: slide.texts.map((text: ExtractedData['slides'][0]['texts'][0], index: number) => ({
-          id: `${slide.slide_number}-${index}`,
-          original: typeof text === 'string' ? text : text.text || '',
-          type: text.shape_type || 'text',
-          position: text.position || undefined,
-        })),
+        // MVPとしてプレースホルダー画像を使用
+        // TODO: 将来的には実際のスライド画像を生成
+        imageUrl: `https://via.placeholder.com/1280x720/f8f9fa/6c757d?text=Slide+${slide.slide_number}`,
+        texts: slide.texts.map((text: ExtractedData['slides'][0]['texts'][0], index: number) => {
+          let originalText = '';
+          
+          if (typeof text === 'string') {
+            originalText = text;
+          } else if (text.text) {
+            originalText = text.text;
+          } else if (text.table) {
+            // テーブルデータを文字列に変換
+            originalText = text.table.map((row: string[]) => row.join('\t')).join('\n');
+          }
+          
+          return {
+            id: `${slide.slide_number}-${index}`,
+            original: originalText,
+            type: text.shape_type || 'text',
+            position: text.position || undefined,
+          };
+        }),
       }));
       
       setSlides(formattedSlides);
@@ -267,6 +300,22 @@ export default function PreviewView({ file }: PreviewViewProps) {
         {/* メインコンテンツ */}
         {!isExtracting && slides.length > 0 && (
           <>
+            {/* MVP説明メッセージ */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+              <div className="flex items-start gap-3">
+                <svg className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div className="flex-1">
+                  <p className="text-sm text-blue-800">
+                    <strong>お知らせ：</strong> 現在、スライドのプレビュー画像は準備中です。
+                    今後のアップデートで実際のスライド画像が表示されるようになります。
+                    現在はテキスト内容の確認と翻訳機能をご利用いただけます。
+                  </p>
+                </div>
+              </div>
+            </div>
+            
             {/* スライドナビゲーション */}
             <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
               <div className="flex items-center justify-between mb-4">
@@ -317,14 +366,52 @@ export default function PreviewView({ file }: PreviewViewProps) {
               </div>
             </div>
             
+            {/* スライドプレビュー（プレースホルダー） */}
+            <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+              <h3 className="text-lg font-semibold mb-4">スライドプレビュー</h3>
+              <div className="relative bg-gray-100 rounded-lg overflow-hidden" style={{ aspectRatio: '16/9' }}>
+                {currentSlide?.imageUrl && (
+                  <>
+                    <img 
+                      src={currentSlide.imageUrl} 
+                      alt={`スライド ${currentSlide.pageNumber}`}
+                      className="w-full h-full object-contain"
+                    />
+                    <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                      <div className="bg-white rounded-lg p-4 max-w-sm text-center">
+                        <svg className="w-12 h-12 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <p className="text-sm text-gray-600">
+                          スライドプレビューは準備中です
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          次回アップデートで追加予定
+                        </p>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+            
             {/* テキスト内容 */}
-            <div className="bg-white rounded-lg shadow-sm p-6" data-testid="preview-container">
-              <h3 className="text-lg font-semibold mb-4">
-                テキスト内容 ({currentSlide?.texts.length || 0} 項目)
-              </h3>
+            <div className="bg-white rounded-lg shadow-sm" data-testid="preview-container">
+              <div className="px-6 py-4 border-b border-gray-200">
+                <h3 className="text-lg font-semibold">
+                  テキスト内容 ({currentSlide?.texts.length || 0} 項目)
+                </h3>
+              </div>
               
               {currentSlide && currentSlide.texts.length > 0 ? (
-                <div className="space-y-4">
+                <div 
+                  className="p-6 space-y-4 overflow-y-auto custom-scrollbar"
+                  style={{ 
+                    maxHeight: '500px',
+                    scrollbarWidth: 'thin',
+                    scrollbarColor: '#CBD5E0 #F7FAFC'
+                  }}
+                >
                   {currentSlide.texts.map((text, index) => (
                     <div key={text.id} className="border rounded-lg p-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -351,9 +438,11 @@ export default function PreviewView({ file }: PreviewViewProps) {
                   ))}
                 </div>
               ) : (
-                <p className="text-gray-500 text-center py-8">
-                  このスライドにはテキストが含まれていません
-                </p>
+                <div className="p-6">
+                  <p className="text-gray-500 text-center py-8">
+                    このスライドにはテキストが含まれていません
+                  </p>
+                </div>
               )}
             </div>
           </>
