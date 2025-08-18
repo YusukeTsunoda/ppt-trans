@@ -1,0 +1,11 @@
+{
+  "scripts": {
+    "test:e2e:strict": "playwright test e2e/*-strict.spec.ts",
+    "test:e2e:strict:auth": "playwright test e2e/01-auth-flow-strict.spec.ts",
+    "test:e2e:strict:upload": "playwright test e2e/02-upload-flow-strict.spec.ts",
+    "test:e2e:strict:skipped": "playwright test e2e/03-skipped-tests-resolution.spec.ts",
+    "test:e2e:strict:all": "npm run test:e2e:strict:auth && npm run test:e2e:strict:upload && npm run test:e2e:strict:skipped",
+    "test:e2e:validate": "node e2e/scripts/validate-test-env.js && npm run test:e2e:strict:all",
+    "test:e2e:ci": "CI=true npm run test:e2e:validate"
+  }
+}

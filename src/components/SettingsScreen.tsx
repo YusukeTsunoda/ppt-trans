@@ -138,7 +138,10 @@ export function SettingsScreen({ onSettingsChange }: SettingsScreenProps) {
             return;
           }
         } catch (fetchError) {
-          logger.debug('Fetch download failed, trying direct link...', fetchError);
+          logger.debug('Fetch download failed, trying direct link...', { 
+            error: fetchError instanceof Error ? fetchError.message : String(fetchError),
+            stack: fetchError instanceof Error ? fetchError.stack : undefined
+          });
         }
         
         // 方法2: 直接リンクでダウンロード（CORSエラーの場合）

@@ -78,7 +78,7 @@ Translation:`
         });
         
       } catch (err) {
-        logger.error('Translation error for item:', { item, error: err });
+        logger.error('Translation error for item:', err, { item });
         // エラーが発生した場合は元のテキストをそのまま返す
         translations.push({
           id: item.id,

@@ -94,7 +94,7 @@ test.describe('改善版: アップロードフロー統合テスト', () => {
       }
     });
 
-    test.skip('アップロード後のファイル一覧表示と操作（非同期処理の競合により一時スキップ）', async ({ page, baseURL }) => {
+    test('アップロード後のファイル一覧表示と操作（非同期処理対応版）', async ({ page, baseURL }) => {
       // 前提: ファイルをアップロード
       await page.goto(`${baseURL}/upload`);
       const fileInput = page.locator('input[type="file"]');
@@ -161,17 +161,35 @@ test.describe('改善版: アップロードフロー統合テスト', () => {
       }
     });
 
-    test.skip('ネットワークエラー時の適切なフォールバック（Server Actions未対応）', async ({ page, baseURL, context }) => {
-      // Next.js Server Actionsのネットワークエラーは
-      // Playwrightのroute interceptでは適切にテストできないためスキップ
-      // このテストケースは単体テストでカバーすることを推奨
+    test('ネットワークエラー時の適切なフォールバック', async ({ page, baseURL, context }) => {
+      await page.goto(`${baseURL}/upload`);
+      
+      // ネットワークエラーをシミュレート
+      await context.setOffline(true);
+      
+      const fileInput = page.locator('input[type="file"]');
+      await fileInput.setInputFiles(validPPTXPath);
+      
+      // アップロード試行
+      const uploadButton = page.locator('button:has-text("アップロード")');
+      await uploadButton.click();
+      
+      // エラーメッセージの表示を確認
+      const errorMessage = page.locator('text=/ネットワークエラー|接続エラー|オフライン/');
+      await expect(errorMessage).toBeVisible({ timeout: 5000 });
+      
+      // オンラインに戻す
+      await context.setOffline(false);
     });
   });
 
   test.describe('パフォーマンステスト', () => {
     test('大容量ファイルアップロードのタイムアウト処理', async ({ page, baseURL }) => {
-      // 注: 実際の大容量ファイルテストは環境により異なる
-      test.skip(process.env.CI === 'true', 'CI環境ではスキップ');
+      // CI環境でも実行（タイムアウトを調整）
+      const isCI = process.env.CI === 'true';
+      if (isCI) {
+        test.setTimeout(60000); // CI環境では60秒に延長
+      }
       
       await page.goto(`${baseURL}/upload`);
       
