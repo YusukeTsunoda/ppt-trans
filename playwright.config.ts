@@ -19,7 +19,8 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: 1,
-  globalSetup: './e2e/fixtures/global-setup.ts',
+  // globalSetupを一時的に無効化 - テストの独立性を確保するため
+  // globalSetup: './e2e/fixtures/global-setup.ts',
   // Jest関連ファイルの明示的除外（クロスコンタミネーション防止）
   testIgnore: [
     '**/src/**/*.test.ts',

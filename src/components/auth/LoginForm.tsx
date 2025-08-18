@@ -83,7 +83,7 @@ export default function LoginForm() {
   };
   
   // エラーメッセージの決定（stateとclientErrorのどちらかを表示）
-  const error = state && !state.success ? state.message : clientError;
+  const error = state && !state.success ? (state.error || state.message) : clientError;
 
   return (
     <form action={enhancedAction} className="space-y-4">

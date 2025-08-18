@@ -431,23 +431,23 @@ export default function PreviewView({ file }: PreviewViewProps) {
       <div className="max-w-7xl mx-auto px-4 py-6">
         {/* ヘッダー */}
         <div className="card animate-fadeIn mb-6">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="flex items-center gap-3">
               <Link
                 href="/dashboard"
-                className="text-slate-600 hover:text-slate-900 transition-colors duration-200"
+                className="text-slate-600 hover:text-slate-900 transition-colors duration-200 text-sm"
               >
                 ← ダッシュボードに戻る
               </Link>
-              <h1 className="text-2xl font-bold text-slate-900">
-                {file.original_name} - プレビュー
+              <h1 className="text-lg sm:text-xl font-bold text-slate-900">
+                {file.original_name}
               </h1>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 flex-wrap">
               <select
                 value={targetLanguage}
                 onChange={(e) => setTargetLanguage(e.target.value)}
-                className="input"
+                className="input text-sm px-3 py-1.5"
                 disabled={isTranslating}
               >
                 <option value="ja">日本語</option>
@@ -458,34 +458,34 @@ export default function PreviewView({ file }: PreviewViewProps) {
               <button
                 onClick={() => handleTranslate(false)}
                 disabled={isTranslating || !currentSlide}
-                className="btn-primary"
+                className="px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-all duration-200 text-sm font-medium"
               >
                 {isTranslating ? '翻訳中...' : '現在のスライドを翻訳'}
               </button>
               <button
                 onClick={() => handleTranslate(true)}
                 disabled={isTranslating || slides.length === 0}
-                className="btn-accent"
+                className="px-3 py-1.5 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 disabled:opacity-50 transition-all duration-200 text-sm font-medium"
               >
                 すべて翻訳
               </button>
               
               {/* ダウンロードボタン */}
-              <div className="border-l pl-3 ml-3">
+              <div className="border-l pl-2 ml-2">
                 <button
                   onClick={downloadTranslatedPPTX}
                   disabled={isDownloading || slides.length === 0 || !slides.some(s => s.texts.some(t => t.translated))}
-                  className="btn-primary bg-purple-600 hover:bg-purple-700 flex items-center gap-2"
+                  className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg disabled:opacity-50 transition-all duration-200 text-sm font-medium flex items-center gap-1.5"
                   title="翻訳済みのPowerPointファイルをダウンロード"
                 >
                   {isDownloading ? (
                     <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
                       <span>生成中...</span>
                     </>
                   ) : (
                     <>
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>
                       <span>翻訳済みをダウンロード</span>
