@@ -427,19 +427,19 @@ export default function PreviewView({ file }: PreviewViewProps) {
   };
   
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-slate-50">
       <div className="max-w-7xl mx-auto px-4 py-6">
         {/* ヘッダー */}
-        <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
+        <div className="card animate-fadeIn mb-6">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-4">
               <Link
                 href="/dashboard"
-                className="text-gray-600 hover:text-gray-900"
+                className="text-slate-600 hover:text-slate-900 transition-colors duration-200"
               >
                 ← ダッシュボードに戻る
               </Link>
-              <h1 className="text-2xl font-bold">
+              <h1 className="text-2xl font-bold text-slate-900">
                 {file.original_name} - プレビュー
               </h1>
             </div>
@@ -447,7 +447,7 @@ export default function PreviewView({ file }: PreviewViewProps) {
               <select
                 value={targetLanguage}
                 onChange={(e) => setTargetLanguage(e.target.value)}
-                className="px-3 py-2 border rounded-lg"
+                className="input"
                 disabled={isTranslating}
               >
                 <option value="ja">日本語</option>
@@ -458,14 +458,14 @@ export default function PreviewView({ file }: PreviewViewProps) {
               <button
                 onClick={() => handleTranslate(false)}
                 disabled={isTranslating || !currentSlide}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                className="btn-primary"
               >
                 {isTranslating ? '翻訳中...' : '現在のスライドを翻訳'}
               </button>
               <button
                 onClick={() => handleTranslate(true)}
                 disabled={isTranslating || slides.length === 0}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+                className="btn-accent"
               >
                 すべて翻訳
               </button>
@@ -475,7 +475,7 @@ export default function PreviewView({ file }: PreviewViewProps) {
                 <button
                   onClick={downloadTranslatedPPTX}
                   disabled={isDownloading || slides.length === 0 || !slides.some(s => s.texts.some(t => t.translated))}
-                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 flex items-center gap-2"
+                  className="btn-primary bg-purple-600 hover:bg-purple-700 flex items-center gap-2"
                   title="翻訳済みのPowerPointファイルをダウンロード"
                 >
                   {isDownloading ? (
@@ -499,16 +499,16 @@ export default function PreviewView({ file }: PreviewViewProps) {
         
         {/* エラー表示 */}
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-            <p className="text-red-700">{error}</p>
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6 animate-fadeIn">
+            <p className="text-red-700 dark:text-red-300">{error}</p>
           </div>
         )}
         
         {/* ローディング */}
         {isExtracting && (
-          <div className="bg-white rounded-lg shadow-sm p-8 text-center">
+          <div className="card p-8 text-center animate-scaleIn">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">PowerPointファイルからテキストを抽出中...</p>
+            <p className="text-slate-600">PowerPointファイルからテキストを抽出中...</p>
           </div>
         )}
         
@@ -516,7 +516,7 @@ export default function PreviewView({ file }: PreviewViewProps) {
         {!isExtracting && slides.length > 0 && (
           <>
             {/* MVP説明メッセージ */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6 animate-fadeIn">
               <div className="flex items-start gap-3">
                 <svg className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />

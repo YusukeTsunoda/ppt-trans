@@ -42,24 +42,40 @@ export async function deleteFileAction(
       .single();
     
     if (fileError || !file) {
-      return { error: 'File not found' };
+      logger.error('File not found:', { fileId, userId: user.id, error: fileError });
+      return { error: 'ファイルが見つかりません' };
     }
     
-    // ストレージからファイルを削除
-    const { error: storageError } = await supabase.storage
-      .from('uploads')
-      .remove([file.storage_path]);
+    // ストレージパスを決定（storage_path, file_path, filename のいずれか）
+    const storagePath = file.storage_path || file.file_path || file.filename;
     
-    if (storageError) {
-      logger.error('Storage deletion error:', storageError);
-      // Continue with database deletion even if storage fails
+    if (storagePath) {
+      // ストレージからファイルを削除
+      const { error: storageError } = await supabase.storage
+        .from('uploads')
+        .remove([storagePath]);
+      
+      if (storageError) {
+        logger.error('Storage deletion error:', { 
+          path: storagePath, 
+          error: storageError 
+        });
+        // ストレージ削除が失敗してもデータベース削除は続行
+      }
     }
     
     // 翻訳済みファイルがあれば削除
     if (file.translation_result?.translated_path) {
-      await supabase.storage
+      const { error: translatedStorageError } = await supabase.storage
         .from('uploads')
         .remove([file.translation_result.translated_path]);
+        
+      if (translatedStorageError) {
+        logger.error('Translated file deletion error:', { 
+          path: file.translation_result.translated_path,
+          error: translatedStorageError 
+        });
+      }
     }
     
     // データベースから削除
@@ -70,14 +86,18 @@ export async function deleteFileAction(
       .eq('user_id', user.id);
     
     if (deleteError) {
-      return { error: 'Failed to delete file' };
+      logger.error('Database deletion error:', { 
+        fileId,
+        error: deleteError 
+      });
+      return { error: 'ファイルの削除に失敗しました' };
     }
     
     revalidatePath('/files');
     
     return { 
       success: true, 
-      message: 'File deleted successfully' 
+      message: 'ファイルを削除しました' 
     };
   } catch (error) {
     logger.error('Delete error:', error);
