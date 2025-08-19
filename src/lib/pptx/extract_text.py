@@ -50,27 +50,54 @@ def extract_text_from_pptx(file_path: str) -> Dict[str, Any]:
                     
                 # テーブルの場合
                 elif shape.has_table:
-                    table_data = []
-                    for row in shape.table.rows:
-                        row_data = []
-                        for cell in row.cells:
-                            row_data.append(cell.text.strip())
-                        table_data.append(row_data)
+                    table = shape.table
+                    rows_count = len(table.rows)
+                    cols_count = len(table.columns)
                     
-                    if table_data:
+                    # テーブル全体の位置情報
+                    table_x = int(shape.left * 96 / 914400) if shape.left else 0
+                    table_y = int(shape.top * 96 / 914400) if shape.top else 0
+                    table_width = int(shape.width * 96 / 914400) if shape.width else 0
+                    table_height = int(shape.height * 96 / 914400) if shape.height else 0
+                    
+                    # 各セルの幅と高さを計算（均等割りで簡易計算）
+                    cell_width = table_width // cols_count if cols_count > 0 else 0
+                    cell_height = table_height // rows_count if rows_count > 0 else 0
+                    
+                    # セルごとのデータを構築
+                    cells_data = []
+                    for row_idx, row in enumerate(table.rows):
+                        for col_idx, cell in enumerate(row.cells):
+                            cell_text = cell.text.strip()
+                            if cell_text:  # 空のセルはスキップ
+                                cell_data = {
+                                    "text": cell_text,
+                                    "row": row_idx,
+                                    "col": col_idx,
+                                    "position": {
+                                        "x": table_x + (col_idx * cell_width),
+                                        "y": table_y + (row_idx * cell_height),
+                                        "width": cell_width,
+                                        "height": cell_height
+                                    }
+                                }
+                                cells_data.append(cell_data)
+                    
+                    if cells_data:
                         table_text_data = {
                             "shape_type": "TABLE",
-                            "table": table_data
+                            "table_info": {
+                                "rows": rows_count,
+                                "cols": cols_count,
+                                "position": {
+                                    "x": table_x,
+                                    "y": table_y,
+                                    "width": table_width,
+                                    "height": table_height
+                                }
+                            },
+                            "cells": cells_data  # 各セルの個別データ
                         }
-                        
-                        # テーブルの位置情報を追加
-                        if hasattr(shape, 'left') and hasattr(shape, 'top') and hasattr(shape, 'width') and hasattr(shape, 'height'):
-                            table_text_data["position"] = {
-                                "x": int(shape.left * 96 / 914400) if shape.left else 0,
-                                "y": int(shape.top * 96 / 914400) if shape.top else 0,
-                                "width": int(shape.width * 96 / 914400) if shape.width else 0,
-                                "height": int(shape.height * 96 / 914400) if shape.height else 0
-                            }
                         
                         slide_texts.append(table_text_data)
             

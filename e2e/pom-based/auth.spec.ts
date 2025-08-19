@@ -1,8 +1,10 @@
 import { test } from '../fixtures/pages';
 import { expect } from '@playwright/test';
+import { TEST_USER } from '../fixtures/test-base';
 
 /**
  * Page Object Modelベースの認証テスト
+ * 各テストで独立した認証を行う
  */
 test.describe('POM: 認証フロー', () => {
   
@@ -11,15 +13,24 @@ test.describe('POM: 認証フロー', () => {
       // ログインページへ遷移
       await loginPage.goto();
       
-      // 認証情報を入力してログイン
-      await loginPage.login('test@example.com', 'password123');
+      // 既存のテストユーザーでログイン（デバッグ用）
+      const loginSuccess = await loginPage.login(TEST_USER.email, TEST_USER.password);
       
-      // ダッシュボードへリダイレクトされることを確認
-      await expect(page).toHaveURL(/\/dashboard/);
-      
-      // ログイン状態を確認
-      const isLoggedIn = await loginPage.isLoggedIn();
-      expect(isLoggedIn).toBeTruthy();
+      if (loginSuccess) {
+        // ダッシュボードへリダイレクトされることを確認
+        await expect(page).toHaveURL(/\/dashboard/);
+        
+        // ログイン状態を確認
+        const isLoggedIn = await loginPage.isLoggedIn();
+        expect(isLoggedIn).toBeTruthy();
+      } else {
+        // ログイン失敗の詳細を取得
+        const errorMsg = await loginPage.getErrorMessage();
+        console.error('Login failed with error:', errorMsg);
+        
+        // テストを失敗させる
+        expect(loginSuccess).toBeTruthy();
+      }
     });
 
     test('無効な認証情報でのエラー表示', async ({ loginPage }) => {

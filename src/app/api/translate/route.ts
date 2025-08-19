@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
               role: 'user',
               content: `Translate the following text to ${targetLang}. Return only the translated text without any explanation or additional comments.
 
-Text to translate: "${item.text}"
+Text to translate: ${item.text}
 
 Translation:`
             }

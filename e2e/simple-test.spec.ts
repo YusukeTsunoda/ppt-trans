@@ -36,6 +36,7 @@ test.describe('基本動作確認', () => {
     
     // フォーム要素を待つ
     await page.waitForSelector('input[type="email"]', { state: 'visible' });
+    await page.waitForLoadState('networkidle');
     
     // テスト用の認証情報を入力
     await page.fill('input[type="email"]', 'test@example.com');
@@ -43,11 +44,27 @@ test.describe('基本動作確認', () => {
     
     // ログインボタンをクリック
     const submitButton = page.locator('button[type="submit"]').first();
+    
+    // ボタンの状態変化を監視しながらクリック
+    await expect(submitButton).toContainText('ログイン');
     await submitButton.click();
     
-    // ログイン後のページ遷移を確認（ダッシュボードまたはホーム）
-    await page.waitForTimeout(3000); // 処理待ち
+    // Server Actionの完了を待つ（以下のいずれか）
+    // Option 1: ページ遷移を待つ
+    const responsePromise = page.waitForResponse(
+      response => response.url().includes('/login') && response.status() === 200,
+      { timeout: 5000 }
+    ).catch(() => null);
     
+    // Option 2: ボタンの状態変化を待つ
+    await Promise.race([
+      // ログイン成功：ページ遷移
+      page.waitForURL('**/dashboard', { timeout: 5000 }).catch(() => null),
+      // ログイン失敗：エラーメッセージ表示
+      page.locator('.bg-red-50').waitFor({ state: 'visible', timeout: 5000 }).catch(() => null),
+    ]);
+    
+    // 現在のURLを確認
     const currentUrl = page.url();
     const isLoggedIn = currentUrl.includes('/dashboard') || 
                        currentUrl.includes('/upload') ||

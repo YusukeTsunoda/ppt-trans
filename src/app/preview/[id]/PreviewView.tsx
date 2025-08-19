@@ -13,7 +13,7 @@ interface ExtractedData {
     slide_number: number;
     texts: Array<{
       text?: string;
-      table?: string[][];  // テーブルデータ用の型を追加
+      table?: string[][];  // 旧フォーマット（互換性のため残す）
       shape_type?: string;
       position?: {
         x: number;
@@ -21,6 +21,28 @@ interface ExtractedData {
         width: number;
         height: number;
       };
+      // 新しいテーブル形式
+      table_info?: {
+        rows: number;
+        cols: number;
+        position: {
+          x: number;
+          y: number;
+          width: number;
+          height: number;
+        };
+      };
+      cells?: Array<{
+        text: string;
+        row: number;
+        col: number;
+        position: {
+          x: number;
+          y: number;
+          width: number;
+          height: number;
+        };
+      }>;
     }>;
   }>;
 }
@@ -50,6 +72,12 @@ interface SlideData {
       height: number;
     };
     type?: string;
+    tableInfo?: {
+      row: number;
+      col: number;
+      totalRows?: number;
+      totalCols?: number;
+    };
   }>;
 }
 
@@ -65,6 +93,8 @@ export default function PreviewView({ file }: PreviewViewProps) {
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [isTranslating, setIsTranslating] = useState(false);
+  const [translationProgress, setTranslationProgress] = useState(0);
+  const [translationMessage, setTranslationMessage] = useState('');
   const [targetLanguage, setTargetLanguage] = useState('ja');
   const [selectedTextId, setSelectedTextId] = useState<string | null>(null);
   const [editingTextId, setEditingTextId] = useState<string | null>(null);
@@ -103,31 +133,53 @@ export default function PreviewView({ file }: PreviewViewProps) {
       setExtractedData(result.data);
       
       // スライドデータを整形
-      const formattedSlides: SlideData[] = result.data.slides.map((slide: ExtractedData['slides'][0]) => ({
-        pageNumber: slide.slide_number,
-        // MVPとしてプレースホルダー画像を使用
-        // TODO: 将来的には実際のスライド画像を生成
-        imageUrl: `https://via.placeholder.com/1280x720/f8f9fa/6c757d?text=Slide+${slide.slide_number}`,
-        texts: slide.texts.map((text: ExtractedData['slides'][0]['texts'][0], index: number) => {
-          let originalText = '';
-          
-          if (typeof text === 'string') {
-            originalText = text;
-          } else if (text.text) {
-            originalText = text.text;
+      const formattedSlides: SlideData[] = result.data.slides.map((slide: ExtractedData['slides'][0]) => {
+        const texts: any[] = [];
+        let textIndex = 0;
+        
+        slide.texts.forEach((text: ExtractedData['slides'][0]['texts'][0]) => {
+          if (text.cells) {
+            // 新しいテーブル形式：各セルを個別のテキストとして扱う
+            text.cells.forEach((cell) => {
+              texts.push({
+                id: `${slide.slide_number}-${textIndex++}`,
+                original: cell.text,
+                type: 'TABLE_CELL',
+                position: cell.position,
+                tableInfo: {
+                  row: cell.row,
+                  col: cell.col,
+                  totalRows: text.table_info?.rows,
+                  totalCols: text.table_info?.cols,
+                },
+              });
+            });
           } else if (text.table) {
-            // テーブルデータを文字列に変換
-            originalText = text.table.map((row: string[]) => row.join('\t')).join('\n');
+            // 旧フォーマット（互換性のため）
+            const tableText = text.table.map((row: string[]) => row.join('\t')).join('\n');
+            texts.push({
+              id: `${slide.slide_number}-${textIndex++}`,
+              original: tableText,
+              type: 'TABLE',
+              position: text.position,
+            });
+          } else if (text.text) {
+            // 通常のテキスト
+            texts.push({
+              id: `${slide.slide_number}-${textIndex++}`,
+              original: text.text,
+              type: text.shape_type || 'text',
+              position: text.position,
+            });
           }
-          
-          return {
-            id: `${slide.slide_number}-${index}`,
-            original: originalText,
-            type: text.shape_type || 'text',
-            position: text.position || undefined,
-          };
-        }),
-      }));
+        });
+        
+        return {
+          pageNumber: slide.slide_number,
+          imageUrl: `https://via.placeholder.com/1280x720/f8f9fa/6c757d?text=Slide+${slide.slide_number}`,
+          texts,
+        };
+      });
       
       setSlides(formattedSlides);
       
@@ -175,31 +227,53 @@ export default function PreviewView({ file }: PreviewViewProps) {
       setExtractedData(file.extracted_data);
       
       // スライドデータを整形
-      const formattedSlides: SlideData[] = file.extracted_data.slides.map((slide: ExtractedData['slides'][0]) => ({
-        pageNumber: slide.slide_number,
-        // MVPとしてプレースホルダー画像を使用
-        // TODO: 将来的には実際のスライド画像を生成
-        imageUrl: `https://via.placeholder.com/1280x720/f8f9fa/6c757d?text=Slide+${slide.slide_number}`,
-        texts: slide.texts.map((text: ExtractedData['slides'][0]['texts'][0], index: number) => {
-          let originalText = '';
-          
-          if (typeof text === 'string') {
-            originalText = text;
-          } else if (text.text) {
-            originalText = text.text;
+      const formattedSlides: SlideData[] = file.extracted_data.slides.map((slide: ExtractedData['slides'][0]) => {
+        const texts: any[] = [];
+        let textIndex = 0;
+        
+        slide.texts.forEach((text: ExtractedData['slides'][0]['texts'][0]) => {
+          if (text.cells) {
+            // 新しいテーブル形式：各セルを個別のテキストとして扱う
+            text.cells.forEach((cell) => {
+              texts.push({
+                id: `${slide.slide_number}-${textIndex++}`,
+                original: cell.text,
+                type: 'TABLE_CELL',
+                position: cell.position,
+                tableInfo: {
+                  row: cell.row,
+                  col: cell.col,
+                  totalRows: text.table_info?.rows,
+                  totalCols: text.table_info?.cols,
+                },
+              });
+            });
           } else if (text.table) {
-            // テーブルデータを文字列に変換
-            originalText = text.table.map((row: string[]) => row.join('\t')).join('\n');
+            // 旧フォーマット（互換性のため）
+            const tableText = text.table.map((row: string[]) => row.join('\t')).join('\n');
+            texts.push({
+              id: `${slide.slide_number}-${textIndex++}`,
+              original: tableText,
+              type: 'TABLE',
+              position: text.position,
+            });
+          } else if (text.text) {
+            // 通常のテキスト
+            texts.push({
+              id: `${slide.slide_number}-${textIndex++}`,
+              original: text.text,
+              type: text.shape_type || 'text',
+              position: text.position,
+            });
           }
-          
-          return {
-            id: `${slide.slide_number}-${index}`,
-            original: originalText,
-            type: text.shape_type || 'text',
-            position: text.position || undefined,
-          };
-        }),
-      }));
+        });
+        
+        return {
+          pageNumber: slide.slide_number,
+          imageUrl: `https://via.placeholder.com/1280x720/f8f9fa/6c757d?text=Slide+${slide.slide_number}`,
+          texts,
+        };
+      });
       
       setSlides(formattedSlides);
     } else {
@@ -211,6 +285,8 @@ export default function PreviewView({ file }: PreviewViewProps) {
   // 翻訳処理
   const handleTranslate = async (allSlides: boolean = false) => {
     setIsTranslating(true);
+    setTranslationProgress(1); // 0ではなく1から開始してバーを表示
+    setTranslationMessage('翻訳を準備中...');
     setError(null);
     
     try {
@@ -226,26 +302,63 @@ export default function PreviewView({ file }: PreviewViewProps) {
             text: text.original,
           }));
       
-      const response = await fetch('/api/translate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          texts: textsToTranslate,
-          targetLanguage,
-        }),
-      });
+      const totalTexts = textsToTranslate.length;
+      let translatedCount = 0;
       
-      const result = await response.json();
+      // バッチサイズを設定（一度に送信するテキスト数）
+      const batchSize = 10;
+      const batches = [];
+      for (let i = 0; i < textsToTranslate.length; i += batchSize) {
+        batches.push(textsToTranslate.slice(i, i + batchSize));
+      }
       
-      if (!result.success) {
-        throw new Error(result.error || '翻訳に失敗しました');
+      const allTranslations = [];
+      
+      for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+        const batch = batches[batchIndex];
+        const currentBatchStart = translatedCount + 1;
+        const currentBatchEnd = Math.min(translatedCount + batch.length, totalTexts);
+        
+        // 現在処理中のバッチの情報を表示
+        setTranslationMessage(`翻訳中... (${currentBatchStart}-${currentBatchEnd}/${totalTexts})`);
+        
+        // 現在処理中の進捗率を表示（処理開始時点）
+        const progressBeforeTranslation = Math.max(1, Math.round((translatedCount / totalTexts) * 100));
+        setTranslationProgress(progressBeforeTranslation);
+        
+        const response = await fetch('/api/translate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            texts: batch,
+            targetLanguage,
+          }),
+        });
+        
+        const result = await response.json();
+        
+        if (!result.success) {
+          throw new Error(result.error || '翻訳に失敗しました');
+        }
+        
+        allTranslations.push(...result.translations);
+        translatedCount += batch.length;
+        
+        // 翻訳完了後の進捗率を更新
+        const progressAfterTranslation = Math.round((translatedCount / totalTexts) * 100);
+        setTranslationProgress(progressAfterTranslation);
+        
+        // APIレート制限を考慮して、バッチ間に短いウェイトを入れる（最後のバッチ以外）
+        if (batchIndex < batches.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 500)); // 0.5秒のウェイト
+        }
       }
       
       // 翻訳結果を反映
       const updatedSlides = [...slides];
-      result.translations.forEach((translation: { id: string; original: string; translated: string }) => {
+      allTranslations.forEach((translation: { id: string; original: string; translated: string }) => {
         const [slideNum, textIndex] = translation.id.split('-').map(Number);
         const slideIndex = slideNum - 1;
         if (updatedSlides[slideIndex] && updatedSlides[slideIndex].texts[textIndex]) {
@@ -254,10 +367,19 @@ export default function PreviewView({ file }: PreviewViewProps) {
       });
       
       setSlides(updatedSlides);
+      setTranslationMessage('翻訳が完了しました');
+      
+      // 完了メッセージを数秒後にクリア
+      setTimeout(() => {
+        setTranslationMessage('');
+        setTranslationProgress(0);
+      }, 3000);
       
     } catch (err) {
       logger.error('Translation error:', err);
       setError(err instanceof Error ? err.message : '翻訳中にエラーが発生しました');
+      setTranslationProgress(0);
+      setTranslationMessage('');
     } finally {
       setIsTranslating(false);
     }
@@ -282,6 +404,45 @@ export default function PreviewView({ file }: PreviewViewProps) {
     
     return yDiff;
   }) : [];
+  
+  // テーブルセルをグループ化して表示用に整理
+  const groupTableCells = (texts: any[]) => {
+    const grouped: any[] = [];
+    const tableGroups = new Map();
+    
+    texts.forEach(text => {
+      if (text.type === 'TABLE_CELL' && text.tableInfo) {
+        const key = `${text.tableInfo.totalRows}-${text.tableInfo.totalCols}`;
+        if (!tableGroups.has(key)) {
+          tableGroups.set(key, {
+            type: 'TABLE_GROUP',
+            cells: [],
+            totalRows: text.tableInfo.totalRows,
+            totalCols: text.tableInfo.totalCols
+          });
+        }
+        tableGroups.get(key).cells.push(text);
+      } else {
+        grouped.push(text);
+      }
+    });
+    
+    // テーブルグループを追加
+    tableGroups.forEach(group => {
+      // セルを行・列順にソート
+      group.cells.sort((a: any, b: any) => {
+        if (a.tableInfo.row !== b.tableInfo.row) {
+          return a.tableInfo.row - b.tableInfo.row;
+        }
+        return a.tableInfo.col - b.tableInfo.col;
+      });
+      grouped.push(group);
+    });
+    
+    return grouped;
+  };
+  
+  const displayTexts = groupTableCells(sortedTexts);
   
   // ズーム関連のハンドラー
   const handleZoomIn = () => {
@@ -367,10 +528,12 @@ export default function PreviewView({ file }: PreviewViewProps) {
       const translationsData = {
         slides: slides.map(slide => ({
           slide_number: slide.pageNumber,
-          texts: slide.texts.map(text => ({
+          translations: slide.texts.map(text => ({
             original: text.original,
             translated: text.translated || text.original,
-            isTable: text.type === 'TABLE'
+            isTable: text.type === 'TABLE',
+            isTableCell: text.type === 'TABLE_CELL',
+            tableInfo: text.tableInfo
           }))
         }))
       };
@@ -501,6 +664,22 @@ export default function PreviewView({ file }: PreviewViewProps) {
         {error && (
           <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6 animate-fadeIn">
             <p className="text-red-700 dark:text-red-300">{error}</p>
+          </div>
+        )}
+        
+        {/* 翻訳進捗バー */}
+        {isTranslating && translationProgress > 0 && (
+          <div className="bg-white rounded-lg shadow-sm p-4 mb-6 animate-fadeIn">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-gray-700">{translationMessage}</span>
+              <span className="text-sm font-medium text-blue-600">{translationProgress}%</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2.5">
+              <div 
+                className="bg-blue-600 h-2.5 rounded-full transition-all duration-300 ease-out"
+                style={{ width: `${translationProgress}%` }}
+              />
+            </div>
           </div>
         )}
         
@@ -740,10 +919,10 @@ export default function PreviewView({ file }: PreviewViewProps) {
                           onClick={() => setSelectedTextId(selectedTextId === text.id ? null : text.id)}
                         >
                           <div className="text-sm font-medium text-gray-600 mb-1 flex items-center gap-2">
-                            原文 {text.type && `(${text.type})`}
-                            {text.position && (
-                              <span className="text-xs text-gray-400">
-                                ({Math.round(text.position.x)}, {Math.round(text.position.y)})
+                            原文 
+                            {text.type === 'TABLE_CELL' && text.tableInfo && (
+                              <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                                表[{text.tableInfo.row + 1},{text.tableInfo.col + 1}]
                               </span>
                             )}
                             {selectedTextId === text.id && (

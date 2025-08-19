@@ -49,14 +49,21 @@ def apply_translations_to_pptx(input_path: str, output_path: str, translations_j
                         'type': 'text'
                     })
                 elif shape.has_table:
-                    # テーブルの内容を文字列化して比較用に保存
-                    table_content = []
-                    for row in shape.table.rows:
-                        row_content = [cell.text.strip() for cell in row.cells]
-                        table_content.append(row_content)
+                    # テーブルの各セルを個別に管理
+                    table_cells = []
+                    for row_idx, row in enumerate(shape.table.rows):
+                        for col_idx, cell in enumerate(row.cells):
+                            cell_text = cell.text.strip()
+                            if cell_text:  # 空のセルはスキップ
+                                table_cells.append({
+                                    'cell': cell,
+                                    'original_text': cell_text,
+                                    'row': row_idx,
+                                    'col': col_idx
+                                })
                     shape_text_map.append({
                         'shape': shape,
-                        'table_content': table_content,
+                        'table_cells': table_cells,
                         'type': 'table'
                     })
             
@@ -108,21 +115,61 @@ def apply_translations_to_pptx(input_path: str, output_path: str, translations_j
                             applied_count += 1
                             break
                     
-                    elif shape_info['type'] == 'table' and translation.get('isTable'):
-                        # テーブルの場合（タブと改行で区切られた文字列として比較）
-                        table_text = '\n'.join(['\t'.join(row) for row in shape_info['table_content']])
-                        if table_text == original_text:
-                            # 翻訳文をテーブル形式に変換
-                            shape = shape_info['shape']
-                            translated_rows = translated_text.split('\n')
-                            for row_idx, row in enumerate(shape.table.rows):
-                                if row_idx < len(translated_rows):
-                                    translated_cells = translated_rows[row_idx].split('\t')
-                                    for col_idx, cell in enumerate(row.cells):
-                                        if col_idx < len(translated_cells):
-                                            cell.text = translated_cells[col_idx]
-                                            applied_count += 1
-                            break
+                    elif shape_info['type'] == 'table':
+                        # テーブルセルの場合
+                        for cell_info in shape_info['table_cells']:
+                            if cell_info['original_text'] == original_text:
+                                cell = cell_info['cell']
+                                
+                                # 元のフォーマットを保存
+                                original_font_properties = []
+                                if cell.text_frame and cell.text_frame.paragraphs:
+                                    for paragraph in cell.text_frame.paragraphs:
+                                        para_props = []
+                                        for run in paragraph.runs:
+                                            # フォント色の安全な取得
+                                            font_color = None
+                                            try:
+                                                if run.font.color and hasattr(run.font.color, 'rgb'):
+                                                    font_color = run.font.color.rgb
+                                            except:
+                                                font_color = None
+                                            
+                                            para_props.append({
+                                                'font_name': run.font.name,
+                                                'font_size': run.font.size,
+                                                'font_bold': run.font.bold,
+                                                'font_italic': run.font.italic,
+                                                'font_color': font_color
+                                            })
+                                        if para_props:  # 少なくとも1つのrunがある場合のみ保存
+                                            original_font_properties.append(para_props[0])  # 段落の最初のrunのプロパティを保存
+                                
+                                # テキストを置換
+                                cell.text = translated_text
+                                
+                                # フォーマットを復元
+                                if original_font_properties and cell.text_frame and cell.text_frame.paragraphs:
+                                    for i, paragraph in enumerate(cell.text_frame.paragraphs):
+                                        if i < len(original_font_properties) and paragraph.runs:
+                                            props = original_font_properties[i]
+                                            for run in paragraph.runs:
+                                                if props['font_name']:
+                                                    run.font.name = props['font_name']
+                                                if props['font_size']:
+                                                    run.font.size = props['font_size']
+                                                if props['font_bold'] is not None:
+                                                    run.font.bold = props['font_bold']
+                                                if props['font_italic'] is not None:
+                                                    run.font.italic = props['font_italic']
+                                                if props['font_color']:
+                                                    try:
+                                                        run.font.color.rgb = props['font_color']
+                                                    except:
+                                                        pass  # フォント色の設定に失敗した場合はスキップ
+                                
+                                applied_count += 1
+                                break
         
         # ファイルを保存
         prs.save(output_path)

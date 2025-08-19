@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
     const formattedTranslations = {
       slides: translations.slides.map((slide: any) => ({
         slide_number: slide.slide_number,
-        translations: slide.texts.map((text: any, index: number) => ({
+        translations: slide.translations.map((text: any, index: number) => ({
           original: text.original,
           translated: text.translated || text.original,
           shape_index: index,
