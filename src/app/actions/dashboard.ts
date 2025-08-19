@@ -41,14 +41,11 @@ export async function getFiles() {
   return { files: data || [], error: null };
 }
 
-// 翻訳実行アクション
-export async function translateFileAction(
-  prevState: TranslateState | null,
-  formData: FormData
-): Promise<TranslateState> {
+// 翻訳実行アクション（改善版：直接引数を受け取る）
+export async function translateFileAction(fileId: string): Promise<TranslateState> {
+  'use server';
+  
   try {
-    const fileId = formData.get('fileId') as string;
-    
     if (!fileId) {
       return { error: 'ファイルIDが指定されていません' };
     }
@@ -101,14 +98,11 @@ export async function translateFileAction(
   }
 }
 
-// ファイル削除アクション
-export async function deleteFileAction(
-  prevState: DashboardState | null,
-  formData: FormData
-): Promise<DashboardState> {
+// ファイル削除アクション（改善版：直接引数を受け取る）
+export async function deleteFileAction(fileId: string): Promise<DashboardState> {
+  'use server';
+  
   try {
-    const fileId = formData.get('fileId') as string;
-    
     if (!fileId) {
       return { error: 'ファイルIDが指定されていません' };
     }

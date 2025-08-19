@@ -43,6 +43,10 @@ export default defineConfig({
     video: 'retain-on-failure',
     actionTimeout: 30000,
     navigationTimeout: 30000,
+    // E2Eテスト実行中であることを示すマーカーを追加
+    extraHTTPHeaders: {
+      'X-E2E-Test': 'true',
+    },
   },
   
   timeout: 90000, // タイムアウトを延長（プロセス分離対応）

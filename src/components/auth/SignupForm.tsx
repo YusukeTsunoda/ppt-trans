@@ -56,10 +56,10 @@ export default function SignupForm() {
       )}
 
       {/* エラーメッセージ */}
-      {state?.error && (
+      {state && !state.success && (
         <div className="rounded-md bg-red-50 dark:bg-red-900/20 p-4">
           <p className="text-sm text-red-800 dark:text-red-400">
-            {state.error}
+            {state.message}
           </p>
         </div>
       )}

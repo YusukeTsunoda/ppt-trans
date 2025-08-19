@@ -1,8 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useActionState } from 'react';
-import { useFormStatus } from 'react-dom';
 import { translateFileAction, deleteFileAction } from '@/app/actions/dashboard';
 import { logoutAction } from '@/app/actions/auth';
 import Link from 'next/link';
@@ -30,26 +28,10 @@ interface DashboardViewProps {
   initialFiles: FileRecord[];
 }
 
-function TranslateButton({ fileId }: { fileId: string }) {
-  const { pending } = useFormStatus();
-  
-  return (
-    <>
-      <input type="hidden" name="fileId" value={fileId} />
-      <button
-        type="submit"
-        disabled={pending}
-        className="text-sm bg-emerald-500 text-white px-4 py-2 rounded-lg hover:bg-emerald-600 disabled:opacity-50 transition-all duration-200"
-      >
-        {pending ? '翻訳中...' : '🌐 翻訳'}
-      </button>
-    </>
-  );
-}
-
 
 function FileCard({ file, onDelete }: { file: FileRecord; onDelete: (fileId: string) => void }) {
-  const [translateState, translateAction] = useActionState(translateFileAction, null);
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [translateError, setTranslateError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
   const formatFileSize = (bytes: number) => {
@@ -148,9 +130,9 @@ function FileCard({ file, onDelete }: { file: FileRecord; onDelete: (fileId: str
             {file.translation_result.error}
           </div>
         )}
-        {translateState?.error && (
+        {translateError && (
           <div className="text-xs text-red-600 mt-1">
-            {translateState.error}
+            {translateError}
           </div>
         )}
       </td>
@@ -179,9 +161,24 @@ function FileCard({ file, onDelete }: { file: FileRecord; onDelete: (fileId: str
           
           {/* 翻訳ボタン */}
           {file.status === 'uploaded' && (
-            <form action={translateAction}>
-              <TranslateButton fileId={file.id} />
-            </form>
+            <button
+              onClick={async () => {
+                setIsTranslating(true);
+                setTranslateError(null);
+                try {
+                  const result = await translateFileAction(file.id);
+                  if (!result.success) {
+                    setTranslateError(result.error || '翻訳に失敗しました');
+                  }
+                } finally {
+                  setIsTranslating(false);
+                }
+              }}
+              disabled={isTranslating}
+              className="text-sm bg-emerald-500 text-white px-4 py-2 rounded-lg hover:bg-emerald-600 disabled:opacity-50 transition-all duration-200"
+            >
+              {isTranslating ? '翻訳中...' : '🌐 翻訳'}
+            </button>
           )}
           
           {/* 処理中表示 */}
@@ -231,10 +228,8 @@ export default function DashboardView({ userEmail, initialFiles }: DashboardView
 
   const handleDeleteFile = async (fileId: string) => {
     try {
-      // FormDataにfileIdを追加
-      const formData = new FormData();
-      formData.append('fileId', fileId);
-      const deleteResult = await deleteFileAction(null, formData);
+      // 直接fileIdを渡すようにシンプル化
+      const deleteResult = await deleteFileAction(fileId);
       
       if (deleteResult.success) {
         // ローカルの状態を更新（楽観的UI更新）

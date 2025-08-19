@@ -7,16 +7,17 @@ import { useActionState } from 'react';
 import { loginAction, loginActionWithoutRedirect } from '@/app/actions/auth';
 import type { AuthState } from '@/app/actions/auth';
 
-function SubmitButton() {
+function SubmitButton({ isLoading }: { isLoading?: boolean }) {
   const { pending } = useFormStatus();
+  const showLoading = pending || isLoading;
   
   return (
     <button
       type="submit"
-      disabled={pending}
+      disabled={showLoading}
       className="btn-primary w-full flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
     >
-      {pending ? (
+      {showLoading ? (
         <>
           <svg className="loading-spinner mr-2" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
@@ -51,21 +52,16 @@ export default function LoginForm() {
     }
   }, [state, router]);
 
-  // E2E環境かどうかの検出（シンプル版）
-  const isE2EMode = typeof window !== 'undefined' && (
-    (globalThis as any).__PLAYWRIGHT__ ||
-    navigator.userAgent.includes('HeadlessChrome')
-  );
-
-  const enhancedAction = async (formData: FormData) => {
+  const enhancedAction = async (formData: FormData): Promise<void> => {
     setClientError(null);
     
-    // E2Eモードまたはクライアント未準備の場合はServer Actionを使用
-    if (isE2EMode || !isClientReady) {
-      return formAction(formData);
+    // クライアント未準備の場合はServer Actionを使用（Progressive Enhancement）
+    if (!isClientReady) {
+      await formAction(formData);
+      return;
     }
 
-    // 本番環境でのClient-side enhancement
+    // Client-side enhancement（E2Eテストでも通常環境でも同じ処理）
     setIsLoading(true);
     try {
       const result = await loginActionWithoutRedirect(formData);
@@ -76,14 +72,15 @@ export default function LoginForm() {
         setClientError(result.message || 'ログインに失敗しました');
       }
     } catch (err) {
-      setClientError('ログインに失敗しました。もう一度お試しください。');
+      const errorMsg = 'ログインに失敗しました。もう一度お試しください。';
+      setClientError(errorMsg);
     } finally {
       setIsLoading(false);
     }
   };
   
-  // エラーメッセージの決定（stateとclientErrorのどちらかを表示）
-  const error = state && !state.success ? (state.error || state.message) : clientError;
+  // エラーメッセージの決定（統一版: messageフィールドを使用）
+  const error = state && !state.success ? state.message : clientError;
 
   return (
     <form action={enhancedAction} className="space-y-4">
@@ -121,7 +118,7 @@ export default function LoginForm() {
         />
       </div>
       
-      <SubmitButton />
+      <SubmitButton isLoading={isLoading} />
     </form>
   );
 }

@@ -12,11 +12,10 @@ export interface FilesState {
   message?: string;
 }
 
-// Server Action for deleting a file
-export async function deleteFileAction(
-  prevState: FilesState | null,
-  formData: FormData
-): Promise<FilesState> {
+// Server Action for deleting a file（改善版：直接引数を受け取る）
+export async function deleteFileAction(fileId: string): Promise<FilesState> {
+  'use server';
+  
   const supabase = await createClient();
   
   try {
@@ -26,8 +25,6 @@ export async function deleteFileAction(
     if (userError || !user) {
       return { error: 'Unauthorized' };
     }
-    
-    const fileId = formData.get('fileId') as string;
     
     if (!fileId) {
       return { error: 'File ID is required' };
@@ -105,11 +102,13 @@ export async function deleteFileAction(
   }
 }
 
-// Server Action for downloading a file
+// Server Action for downloading a file（改善版：直接引数を受け取る）
 export async function downloadFileAction(
-  prevState: FilesState | null,
-  formData: FormData
+  fileId: string,
+  fileType: 'original' | 'translated'
 ): Promise<FilesState> {
+  'use server';
+  
   const supabase = await createClient();
   
   try {
@@ -118,9 +117,6 @@ export async function downloadFileAction(
     if (userError || !user) {
       return { error: 'Unauthorized' };
     }
-    
-    const fileId = formData.get('fileId') as string;
-    const fileType = formData.get('fileType') as 'original' | 'translated';
     
     if (!fileId || !fileType) {
       return { error: 'Invalid parameters' };
