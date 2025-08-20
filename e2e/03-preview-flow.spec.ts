@@ -9,12 +9,10 @@ test.describe('プレビューフロー統合テスト', () => {
   const testFilePath = join(__dirname, 'fixtures', 'test-presentation.pptx');
   
   test.beforeEach(async ({ page, baseURL }) => {
-    // ログイン
-    await page.goto(`${baseURL}/login`);
-    await page.fill('input[name="email"]', TEST_USER.email);
-    await page.fill('input[name="password"]', TEST_USER.password);
-    await page.click('button[type="submit"]');
-    await page.waitForURL('**/dashboard', { timeout: 10000 });
+    // authenticated-testsプロジェクトは既に認証済み
+    // 直接ダッシュボードへ遷移
+    await page.goto(`${baseURL}/dashboard`);
+    await page.waitForLoadState('networkidle');
   });
   
   test.describe('プレビュー表示', () => {

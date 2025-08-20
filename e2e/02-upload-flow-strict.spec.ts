@@ -32,18 +32,12 @@ test.describe('アップロードフロー統合テスト（厳格版）', () =>
   });
 
   test.beforeEach(async ({ page, baseURL, context }) => {
-    // 認証状態の確立
-    await page.goto(`${baseURL}/login`);
-    await page.fill('input[type="email"]', TEST_CONFIG.auth.email);
-    await page.fill('input[type="password"]', TEST_CONFIG.auth.password);
-    await page.click('button[type="submit"]');
+    // authenticated-testsプロジェクトは既に認証済み
+    // 直接ダッシュボードへ遷移
+    await page.goto(`${baseURL}/dashboard`);
+    await page.waitForLoadState('networkidle');
     
-    // ダッシュボードへの遷移を確認
-    await page.waitForURL('**/dashboard', {
-      timeout: TEST_CONFIG.timeouts.navigation
-    });
-    
-    // セッションCookieの確認
+    // セッションCookieの確認（認証済みの確認）
     const cookies = await context.cookies();
     const authCookie = cookies.find(c => c.name.includes('auth') || c.name.includes('sb-'));
     expect(authCookie).toBeDefined();

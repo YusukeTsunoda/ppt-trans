@@ -32,14 +32,10 @@ test.describe('改善版: アップロードフロー統合テスト', () => {
   });
 
   test.beforeEach(async ({ page, baseURL }) => {
-    // ログイン処理を共通化
-    await page.goto(`${baseURL}/login`);
-    await fillForm(page, {
-      email: TEST_USER.email,
-      password: TEST_USER.password
-    });
-    await clickWhenEnabled(page, 'ログイン');
-    await assertNavigationTo(page, /\/dashboard/, 15000);
+    // authenticated-testsプロジェクトは既に認証済み
+    // 直接ダッシュボードへ遷移
+    await page.goto(`${baseURL}/dashboard`);
+    await page.waitForLoadState('networkidle');
   });
 
   test.afterEach(async ({ page }) => {
@@ -219,14 +215,10 @@ test.describe('改善版: アップロードフロー統合テスト', () => {
  */
 test.describe('アクセシビリティ', () => {
   test.beforeEach(async ({ page, baseURL }) => {
-    // 各テストの前にログイン処理を実行
-    await page.goto(`${baseURL}/login`);
-    await fillForm(page, {
-      email: TEST_USER.email,
-      password: TEST_USER.password
-    });
-    await clickWhenEnabled(page, 'ログイン');
-    await assertNavigationTo(page, /\/dashboard/, 15000);
+    // authenticated-testsプロジェクトは既に認証済み
+    // 直接ダッシュボードへ遷移
+    await page.goto(`${baseURL}/dashboard`);
+    await page.waitForLoadState('networkidle');
   });
 
   test('キーボードナビゲーション - 自然なDOM順序', async ({ page, baseURL }) => {

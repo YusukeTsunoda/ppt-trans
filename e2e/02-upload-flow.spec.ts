@@ -19,12 +19,10 @@ test.describe('アップロードフロー統合テスト', () => {
   });
 
   test.beforeEach(async ({ page, baseURL }) => {
-    // ログイン
-    await page.goto(`${baseURL}/login`);
-    await page.fill('input[type="email"]', TEST_USER.email);
-    await page.fill('input[type="password"]', TEST_USER.password);
-    await page.click('button[type="submit"]');
-    await page.waitForURL('**/dashboard', { timeout: 15000 });
+    // authenticated-testsプロジェクトは既に認証済みなので、直接ダッシュボードへ
+    // ログイン処理は不要（二重ログインを防ぐ）
+    await page.goto(`${baseURL}/dashboard`);
+    await page.waitForLoadState('networkidle');
   });
 
   test.describe('正常系：ファイルアップロード', () => {
