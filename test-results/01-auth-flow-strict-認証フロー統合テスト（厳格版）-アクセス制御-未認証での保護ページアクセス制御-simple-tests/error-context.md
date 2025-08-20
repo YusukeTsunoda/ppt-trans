@@ -1,12 +1,13 @@
 # Page snapshot
 
 ```yaml
+- alert
 - heading "PowerPoint Translator" [level=1]
 - paragraph: アカウントにログイン
 - text: メールアドレス
-- textbox "your@email.com": test@example.com
+- textbox "your@email.com"
 - text: パスワード
-- textbox "••••••••": testpassword123
+- textbox "••••••••"
 - button "ログイン"
 - text: アカウントをお持ちでない場合は
 - link "新規登録":
