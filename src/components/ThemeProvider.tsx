@@ -22,12 +22,5 @@ export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
     );
   }
 
-  // next-themesのデバッグUIを無効化するためのプロパティを追加
-  const themeProps = {
-    ...props,
-    enableColorScheme: false,
-    disableTransitionOnChange: true
-  };
-
-  return <NextThemesProvider {...themeProps}>{children}</NextThemesProvider>;
+  return <NextThemesProvider {...props}>{children}</NextThemesProvider>;
 }

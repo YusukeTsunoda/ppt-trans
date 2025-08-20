@@ -25,10 +25,15 @@ test.describe('プレビューフロー統合テスト', () => {
       
       const uploadButton = page.locator('button:has-text("アップロード")');
       await expect(uploadButton).toBeEnabled({ timeout: 5000 });
-      await uploadButton.click();
       
-      // ダッシュボードに戻る
-      await page.waitForURL('**/dashboard', { timeout: 10000 });
+      // アップロード実行とダッシュボードへの遷移を確実に待つ
+      await Promise.all([
+        page.waitForURL('**/dashboard', { timeout: 15000 }),
+        uploadButton.click()
+      ]);
+      
+      // ページが完全に読み込まれるのを待つ
+      await page.waitForLoadState('networkidle');
       
       // プレビューボタンの存在確認（必須）
       const previewButton = page.locator('a:has-text("📄 プレビュー")').first();

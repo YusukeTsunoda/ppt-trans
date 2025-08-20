@@ -34,13 +34,13 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             id={inputId}
             className={cn(
-              'w-full border rounded-lg px-3 py-2 transition-all duration-200',
+              'w-full border rounded-xl px-4 py-3 transition-all duration-200',
               'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
               'bg-white dark:bg-slate-800',
-              'border-slate-300 dark:border-slate-600',
+              'border-slate-200 dark:border-slate-600',
               'text-slate-900 dark:text-white',
               'placeholder-slate-400 dark:placeholder-slate-500',
-              icon && 'pl-10',
+              icon && 'pl-11',
               error && 'border-red-500 focus:ring-red-500 focus:border-red-500',
               className
             )}

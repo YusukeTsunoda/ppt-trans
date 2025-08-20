@@ -6,9 +6,11 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { signupAction } from '@/app/actions/auth';
 import Link from 'next/link';
+import { useTranslation } from '@/hooks/useTranslation';
 
 function SubmitButton() {
   const { pending } = useFormStatus();
+  const { t } = useTranslation();
   
   return (
     <button
@@ -22,10 +24,10 @@ function SubmitButton() {
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
           </svg>
-          登録中...
+          {t('registering')}
         </>
       ) : (
-        '新規登録'
+        t('signUp')
       )}
     </button>
   );
@@ -34,6 +36,7 @@ function SubmitButton() {
 export default function SignupForm() {
   const [state, formAction] = useActionState(signupAction, null);
   const router = useRouter();
+  const { t } = useTranslation();
   
   useEffect(() => {
     if (state?.success && state?.message?.includes('確認メール')) {
@@ -68,7 +71,7 @@ export default function SignupForm() {
         {/* メールアドレス */}
         <div>
           <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            メールアドレス
+            {t('email')}
           </label>
           <input
             id="email"
@@ -85,7 +88,7 @@ export default function SignupForm() {
         {/* パスワード */}
         <div>
           <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            パスワード
+            {t('password')}
           </label>
           <input
             id="password"
@@ -99,14 +102,14 @@ export default function SignupForm() {
             placeholder="••••••••"
           />
           <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-            6文字以上で入力してください
+            {t('passwordMinLength')}
           </p>
         </div>
 
         {/* パスワード確認 */}
         <div>
           <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            パスワード（確認）
+            {t('confirmPassword')}
           </label>
           <input
             id="confirmPassword"
@@ -130,11 +133,11 @@ export default function SignupForm() {
       {/* ログインリンク */}
       <div className="text-center">
         <span className="text-sm text-gray-600 dark:text-gray-400">
-          既にアカウントをお持ちの方は
+          {t('alreadyHaveAccount')}
         </span>
         {' '}
         <Link href="/login" className="text-sm font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400">
-          こちらからログイン
+          {t('loginHere')}
         </Link>
       </div>
     </form>

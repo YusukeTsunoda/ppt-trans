@@ -7,9 +7,12 @@ import Link from 'next/link';
 import { updateProfileAction } from '@/app/actions/profile';
 import type { Profile } from '@/lib/data/profile';
 import { User, Settings, Bell, Shield, Palette, Globe, ChevronRight, Camera, Mail, Phone, MapPin, Calendar } from 'lucide-react';
+import { useTranslation } from '@/hooks/useTranslation';
+import { LanguageToggle } from '@/components/LanguageToggle';
 
 function SubmitButton() {
   const { pending } = useFormStatus();
+  const { t } = useTranslation();
   
   return (
     <button
@@ -17,7 +20,7 @@ function SubmitButton() {
       disabled={pending}
       className="btn-primary"
     >
-      {pending ? '保存中...' : '変更を保存'}
+      {pending ? t('savingChanges') : t('saveChanges')}
     </button>
   );
 }
@@ -41,30 +44,34 @@ export default function ProfileClient({ userId, userEmail, initialProfile }: Pro
     pushNotifications: false,
     twoFactorEnabled: false,
   });
+  const { t } = useTranslation();
   
   const tabs = [
-    { id: 'profile' as TabType, label: 'プロフィール', icon: User },
-    { id: 'settings' as TabType, label: '一般設定', icon: Settings },
-    { id: 'notifications' as TabType, label: '通知設定', icon: Bell },
-    { id: 'security' as TabType, label: 'セキュリティ', icon: Shield },
+    { id: 'profile' as TabType, label: t('profile'), icon: User },
+    { id: 'settings' as TabType, label: t('generalSettings'), icon: Settings },
+    { id: 'notifications' as TabType, label: t('notifications'), icon: Bell },
+    { id: 'security' as TabType, label: t('security'), icon: Shield },
   ];
   
   return (
-    <div className="min-h-screen gradient-bg animate-fadeIn">
+    <div className="min-h-screen gradient-bg dark:bg-slate-900 animate-fadeIn">
       {/* ヘッダー */}
-      <div className="header-gradient text-white shadow-lg">
+      <div className="header-gradient dark:bg-slate-800 text-white shadow-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-3xl font-bold">アカウント設定</h1>
-              <p className="text-blue-100 mt-1">プロフィールと各種設定を管理</p>
+              <h1 className="text-3xl font-bold">{t('accountSettings')}</h1>
+              <p className="text-blue-100 dark:text-blue-200 mt-1">{t('manageProfile')}</p>
             </div>
-            <Link 
-              href="/dashboard" 
-              className="btn-secondary bg-white/20 hover:bg-white/30 text-white backdrop-blur"
-            >
-              ← ダッシュボードに戻る
-            </Link>
+            <div className="flex items-center gap-2">
+              <LanguageToggle />
+              <Link 
+                href="/dashboard" 
+                className="btn-secondary bg-white/20 hover:bg-white/30 text-white backdrop-blur"
+              >
+                ← {t('backToDashboard')}
+              </Link>
+            </div>
           </div>
         </div>
       </div>
@@ -73,7 +80,7 @@ export default function ProfileClient({ userId, userEmail, initialProfile }: Pro
         <div className="flex flex-col lg:flex-row gap-6">
           {/* サイドバー */}
           <div className="lg:w-64">
-            <div className="card">
+            <div className="card dark:bg-slate-800">
               <nav className="space-y-1">
                 {tabs.map((tab) => {
                   const Icon = tab.icon;
@@ -83,8 +90,8 @@ export default function ProfileClient({ userId, userEmail, initialProfile }: Pro
                       onClick={() => setActiveTab(tab.id)}
                       className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
                         activeTab === tab.id 
-                          ? 'bg-blue-50 text-blue-600 font-medium' 
-                          : 'text-slate-600 hover:bg-slate-50'
+                          ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-medium' 
+                          : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
                       }`}
                     >
                       <Icon className="w-5 h-5" />
@@ -103,21 +110,21 @@ export default function ProfileClient({ userId, userEmail, initialProfile }: Pro
           <div className="flex-1">
             {/* 成功・エラーメッセージ */}
             {state?.success && (
-              <div className="mb-6 p-4 bg-emerald-50 border border-emerald-200 rounded-lg animate-scaleIn">
-                <p className="text-emerald-700">{state.message}</p>
+              <div className="mb-6 p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg animate-scaleIn">
+                <p className="text-emerald-700 dark:text-emerald-400">{state.message}</p>
               </div>
             )}
             
             {state?.error && (
-              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg animate-scaleIn">
-                <p className="text-red-700">{state.error}</p>
+              <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg animate-scaleIn">
+                <p className="text-red-700 dark:text-red-400">{state.error}</p>
               </div>
             )}
 
             {/* プロフィールタブ */}
             {activeTab === 'profile' && (
-              <div className="card animate-fadeIn">
-                <h2 className="text-xl font-semibold text-slate-900 mb-6">プロフィール情報</h2>
+              <div className="card dark:bg-slate-800 animate-fadeIn">
+                <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-6">{t('profileInfo')}</h2>
                 
                 {/* アバター */}
                 <div className="mb-8">
@@ -126,14 +133,14 @@ export default function ProfileClient({ userId, userEmail, initialProfile }: Pro
                       <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-3xl font-bold">
                         {userEmail.charAt(0).toUpperCase()}
                       </div>
-                      <button className="absolute bottom-0 right-0 bg-white rounded-full p-2 shadow-lg hover:shadow-xl transition-shadow">
-                        <Camera className="w-4 h-4 text-slate-600" />
+                      <button className="absolute bottom-0 right-0 bg-white dark:bg-slate-700 rounded-full p-2 shadow-lg hover:shadow-xl transition-shadow">
+                        <Camera className="w-4 h-4 text-slate-600 dark:text-slate-300" />
                       </button>
                     </div>
                     <div>
-                      <h3 className="text-lg font-medium text-slate-900">{initialProfile?.display_name || userEmail.split('@')[0]}</h3>
-                      <p className="text-sm text-slate-500">{userEmail}</p>
-                      <p className="text-xs text-slate-400 mt-1">ユーザーID: {userId.slice(0, 8)}...</p>
+                      <h3 className="text-lg font-medium text-slate-900 dark:text-white">{initialProfile?.display_name || userEmail.split('@')[0]}</h3>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">{userEmail}</p>
+                      <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">{t('userId')}: {userId.slice(0, 8)}...</p>
                     </div>
                   </div>
                 </div>
@@ -141,30 +148,30 @@ export default function ProfileClient({ userId, userEmail, initialProfile }: Pro
                 <form action={formAction} className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <label htmlFor="displayName" className="block text-sm font-medium text-slate-700 mb-2">
+                      <label htmlFor="displayName" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                         <User className="w-4 h-4 inline mr-1" />
-                        表示名
+                        {t('displayName')}
                       </label>
                       <input
                         type="text"
                         id="displayName"
                         name="displayName"
                         defaultValue={initialProfile?.display_name || ''}
-                        className="input"
-                        placeholder="表示名を入力"
+                        className="input dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                        placeholder={t('displayName')}
                       />
                     </div>
                     
                     <div>
                       <label htmlFor="phone" className="block text-sm font-medium text-slate-700 mb-2">
                         <Phone className="w-4 h-4 inline mr-1" />
-                        電話番号
+                        {t('phoneNumber')}
                       </label>
                       <input
                         type="tel"
                         id="phone"
                         name="phone"
-                        className="input"
+                        className="input dark:bg-slate-700 dark:border-slate-600 dark:text-white"
                         placeholder="090-1234-5678"
                       />
                     </div>
@@ -172,34 +179,34 @@ export default function ProfileClient({ userId, userEmail, initialProfile }: Pro
                     <div>
                       <label htmlFor="location" className="block text-sm font-medium text-slate-700 mb-2">
                         <MapPin className="w-4 h-4 inline mr-1" />
-                        所在地
+                        {t('location')}
                       </label>
                       <input
                         type="text"
                         id="location"
                         name="location"
-                        className="input"
-                        placeholder="東京都"
+                        className="input dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                        placeholder={t('location')}
                       />
                     </div>
                     
                     <div>
                       <label htmlFor="birthday" className="block text-sm font-medium text-slate-700 mb-2">
                         <Calendar className="w-4 h-4 inline mr-1" />
-                        生年月日
+                        {t('birthday')}
                       </label>
                       <input
                         type="date"
                         id="birthday"
                         name="birthday"
-                        className="input"
+                        className="input dark:bg-slate-700 dark:border-slate-600 dark:text-white"
                       />
                     </div>
                   </div>
                   
                   <div>
                     <label htmlFor="bio" className="block text-sm font-medium text-slate-700 mb-2">
-                      自己紹介
+                      {t('bio')}
                     </label>
                     <textarea
                       id="bio"
@@ -207,7 +214,7 @@ export default function ProfileClient({ userId, userEmail, initialProfile }: Pro
                       rows={4}
                       defaultValue={initialProfile?.bio || ''}
                       className="input resize-none"
-                      placeholder="自己紹介を入力してください"
+                      placeholder={t('bio')}
                     />
                   </div>
                   
@@ -220,15 +227,15 @@ export default function ProfileClient({ userId, userEmail, initialProfile }: Pro
 
             {/* 一般設定タブ */}
             {activeTab === 'settings' && (
-              <div className="card animate-fadeIn">
-                <h2 className="text-xl font-semibold text-slate-900 mb-6">一般設定</h2>
+              <div className="card dark:bg-slate-800 animate-fadeIn">
+                <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-6">{t('generalSettings')}</h2>
                 
                 <div className="space-y-6">
                   {/* 言語設定 */}
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-2">
                       <Globe className="w-4 h-4 inline mr-1" />
-                      表示言語
+                      {t('language')}
                     </label>
                     <select 
                       className="input"
@@ -246,7 +253,7 @@ export default function ProfileClient({ userId, userEmail, initialProfile }: Pro
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-2">
                       <Palette className="w-4 h-4 inline mr-1" />
-                      テーマ
+                      {t('theme')}
                     </label>
                     <div className="flex gap-4">
                       <label className="flex items-center">
@@ -258,7 +265,7 @@ export default function ProfileClient({ userId, userEmail, initialProfile }: Pro
                           onChange={(e) => setSettings({...settings, theme: e.target.value})}
                           className="mr-2"
                         />
-                        <span>ライトモード</span>
+                        <span>{t('lightMode') || 'ライトモード'}</span>
                       </label>
                       <label className="flex items-center">
                         <input
@@ -269,7 +276,7 @@ export default function ProfileClient({ userId, userEmail, initialProfile }: Pro
                           onChange={(e) => setSettings({...settings, theme: e.target.value})}
                           className="mr-2"
                         />
-                        <span>ダークモード</span>
+                        <span>{t('darkMode') || 'ダークモード'}</span>
                       </label>
                       <label className="flex items-center">
                         <input
@@ -280,7 +287,7 @@ export default function ProfileClient({ userId, userEmail, initialProfile }: Pro
                           onChange={(e) => setSettings({...settings, theme: e.target.value})}
                           className="mr-2"
                         />
-                        <span>自動</span>
+                        <span>{t('autoMode') || '自動'}</span>
                       </label>
                     </div>
                   </div>
@@ -289,7 +296,7 @@ export default function ProfileClient({ userId, userEmail, initialProfile }: Pro
                   <div>
                     <label className="flex items-center justify-between">
                       <span className="text-sm font-medium text-slate-700">
-                        アップロード時に自動翻訳
+                        {t('autoTranslateOnUpload') || 'アップロード時に自動翻訳'}
                       </span>
                       <button
                         type="button"
@@ -304,13 +311,13 @@ export default function ProfileClient({ userId, userEmail, initialProfile }: Pro
                       </button>
                     </label>
                     <p className="text-xs text-slate-500 mt-1">
-                      ファイルアップロード後、自動的に翻訳処理を開始します
+                      {t('autoTranslateDescription') || 'ファイルアップロード後、自動的に翻訳処理を開始します'}
                     </p>
                   </div>
                   
                   <div className="pt-4">
                     <button className="btn-primary">
-                      設定を保存
+                      {t('saveSettings') || '設定を保存'}
                     </button>
                   </div>
                 </div>
@@ -320,7 +327,7 @@ export default function ProfileClient({ userId, userEmail, initialProfile }: Pro
             {/* 通知設定タブ */}
             {activeTab === 'notifications' && (
               <div className="card animate-fadeIn">
-                <h2 className="text-xl font-semibold text-slate-900 mb-6">通知設定</h2>
+                <h2 className="text-xl font-semibold text-slate-900 mb-6">{t('notifications')}</h2>
                 
                 <div className="space-y-6">
                   {/* メール通知 */}
@@ -329,10 +336,10 @@ export default function ProfileClient({ userId, userEmail, initialProfile }: Pro
                       <div>
                         <span className="text-sm font-medium text-slate-700 flex items-center gap-2">
                           <Mail className="w-4 h-4" />
-                          メール通知
+                          {t('emailNotifications') || 'メール通知'}
                         </span>
                         <p className="text-xs text-slate-500 mt-1">
-                          重要なお知らせをメールで受け取る
+                          {t('emailNotificationsDescription') || '重要なお知らせをメールで受け取る'}
                         </p>
                       </div>
                       <button
@@ -355,10 +362,10 @@ export default function ProfileClient({ userId, userEmail, initialProfile }: Pro
                       <div>
                         <span className="text-sm font-medium text-slate-700 flex items-center gap-2">
                           <Bell className="w-4 h-4" />
-                          プッシュ通知
+                          {t('pushNotifications') || 'プッシュ通知'}
                         </span>
                         <p className="text-xs text-slate-500 mt-1">
-                          ブラウザでリアルタイム通知を受け取る
+                          {t('pushNotificationsDescription') || 'ブラウザでリアルタイム通知を受け取る'}
                         </p>
                       </div>
                       <button

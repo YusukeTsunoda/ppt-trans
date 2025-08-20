@@ -23,18 +23,18 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
     ...props 
   }, ref) => {
     const variants = {
-      default: 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm',
-      bordered: 'bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-600',
-      elevated: 'bg-white dark:bg-slate-800 shadow-lg'
+      default: 'bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 shadow-soft',
+      bordered: 'bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-600',
+      elevated: 'bg-white dark:bg-slate-800 shadow-lg hover:shadow-xl'
     };
     
     return (
       <div
         ref={ref}
         className={cn(
-          'rounded-xl p-6 transition-all duration-200',
+          'rounded-2xl p-8 transition-all duration-200',
           variants[variant],
-          interactive && 'hover:shadow-md cursor-pointer hover:scale-[1.01]',
+          interactive && 'hover:shadow-lg cursor-pointer hover:-translate-y-1 transform',
           'animate-fadeIn',
           className
         )}

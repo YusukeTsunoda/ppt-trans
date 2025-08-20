@@ -21,20 +21,20 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     children,
     ...props 
   }, ref) => {
-    const baseStyles = 'inline-flex items-center justify-center font-medium transition-all duration-200 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed';
+    const baseStyles = 'inline-flex items-center justify-center font-semibold transition-all duration-200 rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed transform';
     
     const variants = {
-      primary: 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm hover:shadow-md',
-      secondary: 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200',
-      accent: 'bg-emerald-500 text-white hover:bg-emerald-600 shadow-sm hover:shadow-md',
-      danger: 'bg-red-600 text-white hover:bg-red-700',
-      ghost: 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+      primary: 'bg-gradient-to-r from-blue-600 to-sky-600 text-white hover:from-blue-700 hover:to-sky-700 shadow-lg hover:shadow-xl hover:-translate-y-0.5',
+      secondary: 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 border-2 border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500',
+      accent: 'bg-sky-500 text-white hover:bg-sky-600 shadow-md hover:shadow-lg hover:-translate-y-0.5',
+      danger: 'bg-red-600 text-white hover:bg-red-700 hover:-translate-y-0.5',
+      ghost: 'text-slate-600 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-700 dark:hover:text-blue-400'
     };
     
     const sizes = {
-      sm: 'px-3 py-1.5 text-sm gap-1.5',
-      md: 'px-4 py-2 text-base gap-2',
-      lg: 'px-6 py-3 text-lg gap-2.5'
+      sm: 'px-4 py-2 text-sm gap-1.5',
+      md: 'px-6 py-3 text-base gap-2',
+      lg: 'px-8 py-4 text-lg gap-2.5'
     };
     
     return (

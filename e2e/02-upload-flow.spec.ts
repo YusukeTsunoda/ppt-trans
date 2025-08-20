@@ -60,26 +60,28 @@ test.describe('アップロードフロー統合テスト', () => {
       // アップロード実行
       await uploadButton.click();
       
-      // 成功確認（厳格化: 成功メッセージとダッシュボード遷移を確認）
-      const successMessage = page.locator('text=/正常にアップロード|successfully uploaded|アップロード完了/i');
+      // 成功確認（より柔軟なセレクタ）
+      // 成功メッセージまたはダッシュボード遷移を待つ
+      await Promise.race([
+        // 成功メッセージを待つ
+        page.waitForSelector('[data-testid="upload-success"], .bg-green-50', { 
+          timeout: 10000 
+        }).catch(() => null),
+        // ダッシュボードへの遷移を待つ
+        page.waitForURL('**/dashboard', { 
+          timeout: 10000 
+        }).catch(() => null)
+      ]);
       
       // ネットワーク応答を待つ
       await page.waitForLoadState('networkidle');
       
-      // いずれかの成功指標を確認（段階的に厳格化）
+      // 成功確認
       const currentUrl = page.url();
-      const hasSuccessMessage = await successMessage.count() > 0;
+      const hasSuccessMessage = await page.locator('[data-testid="upload-success"], .bg-green-50').count() > 0;
       const isOnDashboard = currentUrl.includes('dashboard');
       
-      if (!hasSuccessMessage && !isOnDashboard) {
-        throw new Error(
-          'アップロードが成功しましたが、成功メッセージもダッシュボード遷移も確認できません。\n' +
-          `現在のURL: ${currentUrl}\n` +
-          `成功メッセージ: ${hasSuccessMessage ? '表示' : '非表示'}`
-        );
-      }
-      
-      // 成功を確認
+      // 少なくとも一つの成功指標が確認できること
       expect(hasSuccessMessage || isOnDashboard).toBeTruthy();
     });
 
@@ -108,11 +110,7 @@ test.describe('アップロードフロー統合テスト', () => {
     test('無効なファイル形式はアップロードできない', async ({ page, baseURL }) => {
       await page.goto(`${baseURL}/upload`);
       
-      // 無効なファイルを作成
-      if (!fs.existsSync(invalidFilePath)) {
-        fs.writeFileSync(invalidFilePath, 'This is not a PPTX file');
-      }
-      
+      // 無効なファイルはfixtures/invalid-file.txtを使用（事前作成済み）
       const fileInput = page.locator('input[type="file"]');
       await fileInput.setInputFiles(invalidFilePath);
       

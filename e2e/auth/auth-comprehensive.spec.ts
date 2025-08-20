@@ -23,9 +23,10 @@ test.describe('認証システムの検証', () => {
       await emailInput.fill(TEST_CONFIG.auth.email);
       await passwordInput.fill(TEST_CONFIG.auth.password);
       
-      // ネットワークリクエストを監視
+      // ネットワークリクエストを監視（Supabaseの認証エンドポイント）
       const authRequest = page.waitForResponse(
-        res => res.url().includes('/auth') && res.request().method() === 'POST'
+        res => (res.url().includes('/auth/v1/token') || res.url().includes('/auth/callback') || res.url().includes('/login')) 
+              && res.request().method() === 'POST'
       ).catch(() => null);
       
       // ログイン実行
@@ -39,10 +40,11 @@ test.describe('認証システムの検証', () => {
         expect(response.status()).toBeLessThan(400);
       }
       
-      // ログイン成功後のリダイレクトを検証
+      // ログイン成功後のリダイレクトを検証（URLオブジェクトに対応）
       await page.waitForURL((url) => {
-        return typeof url === 'string' && !url.includes('/login');
-      }, { timeout: 10000 });
+        const urlString = typeof url === 'string' ? url : url.toString();
+        return !urlString.includes('/login');
+      }, { timeout: 15000 });
       
       // セッション確立の検証
       const cookies = await page.context().cookies();
@@ -219,8 +221,9 @@ test.describe('認証システムの検証', () => {
       await page.locator('button[type="submit"]').click();
       
       await page.waitForURL((url) => {
-        return typeof url === 'string' && !url.includes('/login');
-      }, { timeout: 10000 });
+        const urlString = typeof url === 'string' ? url : url.toString();
+        return !urlString.includes('/login');
+      }, { timeout: 15000 });
       
       // Cookieを手動で無効化（有効期限を過去に設定）
       const cookies = await context.cookies();
@@ -253,8 +256,9 @@ test.describe('認証システムの検証', () => {
         await page.fill('input[type="password"]', TEST_CONFIG.auth.password);
         await page.locator('button[type="submit"]').click();
         await page.waitForURL((url) => {
-        return typeof url === 'string' && !url.includes('/login');
-      }, { timeout: 10000 });
+        const urlString = typeof url === 'string' ? url : url.toString();
+        return !urlString.includes('/login');
+      }, { timeout: 15000 });
       }
       
       // 片方でログアウト

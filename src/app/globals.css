@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&family=Source+Sans+3:wght@400;500;600&family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -7,12 +7,11 @@
 /* カスタムフォント設定 */
 @layer base {
   body {
-    font-family: 'Source Sans 3', 'Noto Sans JP', system-ui, -apple-system, sans-serif;
+    font-family: 'Inter', 'Noto Sans JP', system-ui, -apple-system, sans-serif;
   }
   
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Poppins', 'Inter', sans-serif;
-    font-weight: 600;
+    font-family: 'Inter', sans-serif;
   }
   
   code, pre {
@@ -24,17 +23,17 @@
 @layer components {
   /* ボタン - プライマリ */
   .btn-primary {
-    @apply bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 rounded-lg transition-all duration-200 font-medium shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply bg-gradient-to-r from-blue-600 to-sky-600 text-white hover:from-blue-700 hover:to-sky-700 px-8 py-4 rounded-2xl transition-all duration-200 font-semibold shadow-lg hover:shadow-xl hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   /* ボタン - セカンダリ */
   .btn-secondary {
-    @apply bg-slate-100 text-slate-700 hover:bg-slate-200 px-4 py-2 rounded-lg transition-all duration-200 font-medium border border-slate-200;
+    @apply bg-white text-slate-700 hover:bg-slate-50 px-8 py-4 rounded-2xl transition-all duration-200 font-semibold border-2 border-slate-200 hover:border-slate-300;
   }
   
   /* ボタン - アクセント */
   .btn-accent {
-    @apply bg-emerald-500 text-white hover:bg-emerald-600 px-4 py-2 rounded-lg transition-all duration-200 font-medium shadow-sm hover:shadow-md;
+    @apply bg-sky-500 text-white hover:bg-sky-600 px-8 py-4 rounded-2xl transition-all duration-200 font-semibold shadow-md hover:shadow-lg hover:-translate-y-0.5;
   }
   
   /* ボタン - 危険 */
@@ -44,7 +43,7 @@
 
   /* カード */
   .card {
-    @apply bg-white rounded-xl shadow-sm border border-slate-200 p-6 transition-all duration-200 hover:shadow-md;
+    @apply bg-white rounded-2xl shadow-soft border border-slate-100 p-8 transition-all duration-200 hover:shadow-lg hover:-translate-y-1;
   }
   
   .card-dark {
@@ -53,7 +52,7 @@
 
   /* 入力フィールド */
   .input {
-    @apply border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white;
+    @apply border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white;
   }
   
   .input-dark {
@@ -181,7 +180,7 @@
 @layer base {
   :root {
     /* プライマリカラー */
-    --primary: 217 91% 60%; /* #2563eb */
+    --primary: 217 91% 60%; /* #2563EB */
     --primary-foreground: 0 0% 100%;
     
     /* セカンダリカラー */
@@ -189,7 +188,7 @@
     --secondary-foreground: 0 0% 100%;
     
     /* アクセントカラー */
-    --accent: 158 64% 52%; /* #10b981 */
+    --accent: 199 89% 48%; /* #0EA5E9 */
     --accent-foreground: 0 0% 100%;
     
     /* 背景色 */
@@ -229,7 +228,7 @@
     --secondary: 215 14% 52%;
     --secondary-foreground: 0 0% 100%;
     
-    --accent: 158 64% 52%;
+    --accent: 199 89% 48%;
     --accent-foreground: 0 0% 100%;
     
     --background: 222 47% 11%;
@@ -299,12 +298,12 @@
 
   /* カード */
   .card {
-    @apply bg-white rounded-xl shadow-sm border border-slate-200 p-6 transition-all duration-200 hover:shadow-md;
+    @apply bg-white rounded-2xl shadow-soft border border-slate-100 p-8 transition-all duration-200 hover:shadow-lg hover:-translate-y-1;
   }
 
   /* 入力フィールド */
   .input-field {
-    @apply border border-slate-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white;
+    @apply border border-slate-200 rounded-xl px-5 py-3.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white;
   }
 
   /* ラベル */
@@ -329,12 +328,31 @@
 
   /* グラデーション背景 */
   .gradient-bg {
-    @apply bg-gradient-to-br from-blue-50 via-white to-slate-50;
+    @apply bg-gradient-to-br from-blue-50 via-white to-sky-50;
   }
 
   /* ヘッダーグラデーション */
   .header-gradient {
-    @apply bg-gradient-to-r from-blue-600 to-blue-700;
+    @apply bg-gradient-to-r from-blue-600 to-sky-600;
+  }
+  
+  /* アイコンコンテナ */
+  .icon-container {
+    @apply w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center;
+  }
+  
+  /* タグ/ピル */
+  .tag-blue {
+    @apply bg-blue-100 text-blue-700 px-4 py-2 rounded-full text-sm font-medium;
+  }
+  
+  /* セクション背景 */
+  .section-bg-primary {
+    @apply bg-white;
+  }
+  
+  .section-bg-secondary {
+    @apply bg-background-secondary;
   }
 }
 

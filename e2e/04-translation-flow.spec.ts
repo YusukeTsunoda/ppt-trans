@@ -70,8 +70,8 @@ test.describe('翻訳機能テスト', () => {
 
   test.describe('単一スライド翻訳', () => {
     test('現在のスライドのみを翻訳できる', async ({ page }) => {
-      // 言語選択（英語）
-      const languageSelect = page.getByLabel('翻訳先言語');
+      // 言語選択（英語）- より柔軟なセレクタ
+      const languageSelect = page.locator('select[name="language"], select#language, select[aria-label*="言語"]').first();
       await languageSelect.selectOption('en');
       
       // 現在のスライドを翻訳ボタンをクリック
@@ -113,7 +113,7 @@ test.describe('翻訳機能テスト', () => {
     });
 
     test('翻訳進捗が正しく表示される', async ({ page }) => {
-      const languageSelect = page.getByLabel('翻訳先言語');
+      const languageSelect = page.locator('select[name="language"], select#language, select[aria-label*="言語"]').first();
       await languageSelect.selectOption('en');
       
       const translateCurrentButton = page.locator('button:has-text("現在のスライドを翻訳")');
@@ -142,7 +142,7 @@ test.describe('翻訳機能テスト', () => {
   test.describe('全スライド一括翻訳', () => {
     test('すべてのスライドを一括翻訳できる', async ({ page }) => {
       // 言語選択（英語）
-      const languageSelect = page.getByLabel('翻訳先言語');
+      const languageSelect = page.locator('select[name="language"], select#language, select[aria-label*="言語"]').first();
       await languageSelect.selectOption('en');
       
       // すべて翻訳ボタンをクリック
