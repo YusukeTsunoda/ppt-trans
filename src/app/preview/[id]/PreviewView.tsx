@@ -612,6 +612,8 @@ export default function PreviewView({ file }: PreviewViewProps) {
                 onChange={(e) => setTargetLanguage(e.target.value)}
                 className="input text-sm px-3 py-1.5"
                 disabled={isTranslating}
+                aria-label="翻訳先言語"
+                data-testid="language-select"
               >
                 <option value="ja">日本語</option>
                 <option value="en">英語</option>
@@ -674,7 +676,7 @@ export default function PreviewView({ file }: PreviewViewProps) {
               <span className="text-sm font-medium text-gray-700">{translationMessage}</span>
               <span className="text-sm font-medium text-blue-600">{translationProgress}%</span>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-2.5">
+            <div className="w-full bg-gray-200 rounded-full h-2.5" role="progressbar" aria-valuenow={translationProgress} aria-valuemin={0} aria-valuemax={100}>
               <div 
                 className="bg-blue-600 h-2.5 rounded-full transition-all duration-300 ease-out"
                 style={{ width: `${translationProgress}%` }}
@@ -725,6 +727,8 @@ export default function PreviewView({ file }: PreviewViewProps) {
                     }}
                     disabled={currentSlideIndex === 0}
                     className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
+                    aria-label="前のスライド"
+                    data-testid="prev-slide"
                   >
                     前へ
                   </button>
@@ -736,6 +740,8 @@ export default function PreviewView({ file }: PreviewViewProps) {
                     }}
                     disabled={currentSlideIndex === slides.length - 1}
                     className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
+                    aria-label="次のスライド"
+                    data-testid="next-slide"
                   >
                     次へ
                   </button>
@@ -757,6 +763,8 @@ export default function PreviewView({ file }: PreviewViewProps) {
                         ? 'border-blue-500 bg-blue-50' 
                         : 'border-gray-200 hover:border-gray-300'
                     }`}
+                    data-testid="slide-thumbnail"
+                    aria-label={`スライド ${slide.pageNumber}`}
                   >
                     <div className="text-xs font-medium text-gray-600 mb-1">
                       スライド {slide.pageNumber}

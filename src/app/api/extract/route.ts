@@ -66,8 +66,12 @@ export async function POST(request: NextRequest) {
     // Pythonスクリプトを実行してテキストを抽出
     const pythonScriptPath = path.join(process.cwd(), 'src/lib/pptx/extract_text.py');
     
+    // 仮想環境のPythonを使用（仮想環境が存在する場合）
+    const venvPython = path.join(process.cwd(), 'venv', 'bin', 'python');
+    const pythonExecutable = await fs.access(venvPython).then(() => venvPython).catch(() => 'python3');
+    
     return new Promise((resolve) => {
-      const pythonProcess = spawn('python3', [pythonScriptPath, tempFilePath]);
+      const pythonProcess = spawn(pythonExecutable, [pythonScriptPath, tempFilePath]);
       
       let outputData = '';
       let errorData = '';

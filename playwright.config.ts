@@ -1,10 +1,14 @@
 import { defineConfig, devices } from '@playwright/test';
 import path from 'path';
+import dotenv from 'dotenv';
 
 /**
  * Playwright E2E Test Configuration
  * 関心の分離に基づいた設定
  */
+
+// .env.testファイルを読み込む
+dotenv.config({ path: '.env.test' });
 
 // ポート番号を環境変数から取得（デフォルト: 3000）
 const PORT = process.env.TEST_PORT || '3001';
@@ -89,14 +93,19 @@ export default defineConfig({
         /auth\/auth-flow\.spec\.ts/,
         /auth\/auth-comprehensive\.spec\.ts/,  // 包括的認証テストも除外
         /simple-test\.spec\.ts/,  // 基本テストも除外
-        /01-auth-flow\.spec\.ts/  // 認証フローテストも除外（認証済み状態で実行すべきでない）
+        /01-auth-flow\.spec\.ts/,  // 認証フローテストも除外（認証済み状態で実行すべきでない）
+        /01-auth-flow-strict\.spec\.ts/  // 厳格版認証テストも除外
       ],
     },
     
     // シンプルテスト（認証不要）
     {
       name: 'simple-tests',
-      testMatch: [/simple-test\.spec\.ts/, /01-auth-flow\.spec\.ts/],
+      testMatch: [
+        /simple-test\.spec\.ts/, 
+        /01-auth-flow\.spec\.ts/,
+        /01-auth-flow-strict\.spec\.ts/  // 認証テストも認証なしで実行
+      ],
       use: {
         ...devices['Desktop Chrome'],
         // 認証状態を使用しない

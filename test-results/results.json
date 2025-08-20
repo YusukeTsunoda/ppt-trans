@@ -1,0 +1,307 @@
+{
+  "config": {
+    "configFile": "/Users/yusuketsunoda/Documents/cursor/ppttrans/ppt-trans/playwright.config.ts",
+    "rootDir": "/Users/yusuketsunoda/Documents/cursor/ppttrans/ppt-trans/e2e",
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "reporter": [
+      [
+        "html",
+        null
+      ],
+      [
+        "list",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": "test-results/results.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "quiet": false,
+    "projects": [
+      {
+        "outputDir": "/Users/yusuketsunoda/Documents/cursor/ppttrans/ppt-trans/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "setup",
+        "name": "setup",
+        "testDir": "/Users/yusuketsunoda/Documents/cursor/ppttrans/ppt-trans/e2e",
+        "testIgnore": [
+          "**/src/**/*.test.ts",
+          "**/src/**/*.test.tsx",
+          "**/jest.config.js",
+          "**/jest.setup.js",
+          "**/__tests__/**/*",
+          "**/node_modules/**/*"
+        ],
+        "testMatch": [
+          "/.*setup-auth-refactored\\.ts/"
+        ],
+        "timeout": 90000
+      },
+      {
+        "outputDir": "/Users/yusuketsunoda/Documents/cursor/ppttrans/ppt-trans/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "auth-tests",
+        "name": "auth-tests",
+        "testDir": "/Users/yusuketsunoda/Documents/cursor/ppttrans/ppt-trans/e2e",
+        "testIgnore": [
+          "**/src/**/*.test.ts",
+          "**/src/**/*.test.tsx",
+          "**/jest.config.js",
+          "**/jest.setup.js",
+          "**/__tests__/**/*",
+          "**/node_modules/**/*"
+        ],
+        "testMatch": [
+          "/auth\\/auth-flow\\.spec\\.ts/"
+        ],
+        "timeout": 90000
+      },
+      {
+        "outputDir": "/Users/yusuketsunoda/Documents/cursor/ppttrans/ppt-trans/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "authenticated-tests",
+        "name": "authenticated-tests",
+        "testDir": "/Users/yusuketsunoda/Documents/cursor/ppttrans/ppt-trans/e2e",
+        "testIgnore": [
+          "/auth\\/setup-auth\\.ts/",
+          "/auth\\/auth-flow\\.spec\\.ts/",
+          "/auth\\/auth-comprehensive\\.spec\\.ts/",
+          "/simple-test\\.spec\\.ts/",
+          "/01-auth-flow\\.spec\\.ts/",
+          "/01-auth-flow-strict\\.spec\\.ts/"
+        ],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 90000
+      },
+      {
+        "outputDir": "/Users/yusuketsunoda/Documents/cursor/ppttrans/ppt-trans/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "simple-tests",
+        "name": "simple-tests",
+        "testDir": "/Users/yusuketsunoda/Documents/cursor/ppttrans/ppt-trans/e2e",
+        "testIgnore": [
+          "**/src/**/*.test.ts",
+          "**/src/**/*.test.tsx",
+          "**/jest.config.js",
+          "**/jest.setup.js",
+          "**/__tests__/**/*",
+          "**/node_modules/**/*"
+        ],
+        "testMatch": [
+          "/simple-test\\.spec\\.ts/",
+          "/01-auth-flow\\.spec\\.ts/",
+          "/01-auth-flow-strict\\.spec\\.ts/"
+        ],
+        "timeout": 90000
+      },
+      {
+        "outputDir": "/Users/yusuketsunoda/Documents/cursor/ppttrans/ppt-trans/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "comprehensive-auth-tests",
+        "name": "comprehensive-auth-tests",
+        "testDir": "/Users/yusuketsunoda/Documents/cursor/ppttrans/ppt-trans/e2e",
+        "testIgnore": [
+          "**/src/**/*.test.ts",
+          "**/src/**/*.test.tsx",
+          "**/jest.config.js",
+          "**/jest.setup.js",
+          "**/__tests__/**/*",
+          "**/node_modules/**/*"
+        ],
+        "testMatch": [
+          "/auth-comprehensive\\.spec\\.ts/"
+        ],
+        "timeout": 90000
+      }
+    ],
+    "shard": null,
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.54.2",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "auth/setup-auth-refactored.ts",
+      "file": "auth/setup-auth-refactored.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "authenticate",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 90000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "setup",
+              "projectName": "setup",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 19420,
+                  "error": {
+                    "message": "Error: 認証セットアップに失敗しました。\n以下を確認してください:\n1. テストユーザーが存在するか\n2. パスワードが正しいか (Test123!@#)\n3. Supabaseが起動しているか\n4. ネットワーク接続が正常か",
+                    "stack": "Error: 認証セットアップに失敗しました。\n以下を確認してください:\n1. テストユーザーが存在するか\n2. パスワードが正しいか (Test123!@#)\n3. Supabaseが起動しているか\n4. ネットワーク接続が正常か\n    at /Users/yusuketsunoda/Documents/cursor/ppttrans/ppt-trans/e2e/auth/setup-auth-refactored.ts:125:11",
+                    "location": {
+                      "file": "/Users/yusuketsunoda/Documents/cursor/ppttrans/ppt-trans/e2e/auth/setup-auth-refactored.ts",
+                      "column": 11,
+                      "line": 125
+                    },
+                    "snippet": "  123 |     \n  124 |     // エラー詳細を含めて失敗\n> 125 |     throw new Error(\n      |           ^\n  126 |       '認証セットアップに失敗しました。\\n' +\n  127 |       '以下を確認してください:\\n' +\n  128 |       '1. テストユーザーが存在するか\\n' +"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "/Users/yusuketsunoda/Documents/cursor/ppttrans/ppt-trans/e2e/auth/setup-auth-refactored.ts",
+                        "column": 11,
+                        "line": 125
+                      },
+                      "message": "Error: 認証セットアップに失敗しました。\n以下を確認してください:\n1. テストユーザーが存在するか\n2. パスワードが正しいか (Test123!@#)\n3. Supabaseが起動しているか\n4. ネットワーク接続が正常か\n\n  123 |     \n  124 |     // エラー詳細を含めて失敗\n> 125 |     throw new Error(\n      |           ^\n  126 |       '認証セットアップに失敗しました。\\n' +\n  127 |       '以下を確認してください:\\n' +\n  128 |       '1. テストユーザーが存在するか\\n' +\n    at /Users/yusuketsunoda/Documents/cursor/ppttrans/ppt-trans/e2e/auth/setup-auth-refactored.ts:125:11"
+                    }
+                  ],
+                  "stdout": [
+                    {
+                      "text": "🚀 認証セットアップを開始...\n"
+                    },
+                    {
+                      "text": "📍 Base URL: http://localhost:3000\n"
+                    },
+                    {
+                      "text": "🔧 環境変数: {\n  TEST_USER_EMAIL: \u001b[32m'test@example.com'\u001b[39m,\n  TEST_USER_PASSWORD: \u001b[32m'設定済み'\u001b[39m,\n  USE_MSW_MOCKS: \u001b[32m'true'\u001b[39m\n}\n"
+                    },
+                    {
+                      "text": "🔐 認証試行 1/3...\n"
+                    },
+                    {
+                      "text": "📧 Email: test@example.com\n"
+                    },
+                    {
+                      "text": "🔑 Password: ***************\n"
+                    },
+                    {
+                      "text": "⏳ 1000ms 待機後にリトライ...\n"
+                    },
+                    {
+                      "text": "🔐 認証試行 2/3...\n"
+                    },
+                    {
+                      "text": "📧 Email: test@example.com\n"
+                    },
+                    {
+                      "text": "🔑 Password: ***************\n"
+                    },
+                    {
+                      "text": "⏳ 1000ms 待機後にリトライ...\n"
+                    },
+                    {
+                      "text": "🔐 認証試行 3/3...\n"
+                    },
+                    {
+                      "text": "📧 Email: test@example.com\n"
+                    },
+                    {
+                      "text": "🔑 Password: ***************\n"
+                    },
+                    {
+                      "text": "📸 スクリーンショット保存: test-results/auth-setup-failure-final.png\n"
+                    }
+                  ],
+                  "stderr": [
+                    {
+                      "text": "❌ すべての認証試行が失敗しました\n"
+                    }
+                  ],
+                  "retry": 0,
+                  "startTime": "2025-08-20T12:25:43.511Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "/Users/yusuketsunoda/Documents/cursor/ppttrans/ppt-trans/test-results/auth-setup-auth-refactored.ts-authenticate-setup/test-failed-1.png"
+                    },
+                    {
+                      "name": "video",
+                      "contentType": "video/webm",
+                      "path": "/Users/yusuketsunoda/Documents/cursor/ppttrans/ppt-trans/test-results/auth-setup-auth-refactored.ts-authenticate-setup/video.webm"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "/Users/yusuketsunoda/Documents/cursor/ppttrans/ppt-trans/test-results/auth-setup-auth-refactored.ts-authenticate-setup/error-context.md"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "/Users/yusuketsunoda/Documents/cursor/ppttrans/ppt-trans/e2e/auth/setup-auth-refactored.ts",
+                    "column": 11,
+                    "line": 125
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "e268232ea7b770b9966b-91a6f222108f5d27db33",
+          "file": "auth/setup-auth-refactored.ts",
+          "line": 81,
+          "column": 6
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2025-08-20T12:25:43.242Z",
+    "duration": 19905.009000000002,
+    "expected": 0,
+    "skipped": 0,
+    "unexpected": 1,
+    "flaky": 0
+  }
+}
