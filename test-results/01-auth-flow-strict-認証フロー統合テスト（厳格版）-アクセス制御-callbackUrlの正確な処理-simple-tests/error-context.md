@@ -1,0 +1,574 @@
+# Page snapshot
+
+```yaml
+- alert
+- heading "PowerPoint Translator" [level=1]
+- paragraph: ようこそ、test@example.comさん
+- link "T プロフィール":
+  - /url: /profile
+- link "新規アップロード":
+  - /url: /upload
+- button "ログアウト"
+- heading "アップロードしたファイル" [level=2]
+- button "更新":
+  - img
+- table:
+  - rowgroup:
+    - row "ファイル名 サイズ ステータス アップロード日時 アクション":
+      - cell "ファイル名"
+      - cell "サイズ"
+      - cell "ステータス"
+      - cell "アップロード日時"
+      - cell "アクション"
+  - rowgroup:
+    - row "test-presentation.pptx 30.7 KB アップロード済み 2025/08/20 21:12 元ファイル 📄 プレビュー 🌐 翻訳 削除":
+      - cell "test-presentation.pptx"
+      - cell "30.7 KB"
+      - cell "アップロード済み"
+      - cell "2025/08/20 21:12"
+      - cell "元ファイル 📄 プレビュー 🌐 翻訳 削除":
+        - button "元ファイル"
+        - link "📄 プレビュー":
+          - /url: /preview/8bde32f1-0f32-4671-86a9-af07e0753423
+        - button "🌐 翻訳"
+        - button "削除"
+    - row "test-presentation.pptx 30.7 KB アップロード済み 2025/08/20 21:11 元ファイル 📄 プレビュー 🌐 翻訳 削除":
+      - cell "test-presentation.pptx"
+      - cell "30.7 KB"
+      - cell "アップロード済み"
+      - cell "2025/08/20 21:11"
+      - cell "元ファイル 📄 プレビュー 🌐 翻訳 削除":
+        - button "元ファイル"
+        - link "📄 プレビュー":
+          - /url: /preview/86bc006d-c768-428f-a25a-49e06d295d51
+        - button "🌐 翻訳"
+        - button "削除"
+    - row "test-presentation.pptx 30.7 KB アップロード済み 2025/08/20 21:10 元ファイル 📄 プレビュー 🌐 翻訳 削除":
+      - cell "test-presentation.pptx"
+      - cell "30.7 KB"
+      - cell "アップロード済み"
+      - cell "2025/08/20 21:10"
+      - cell "元ファイル 📄 プレビュー 🌐 翻訳 削除":
+        - button "元ファイル"
+        - link "📄 プレビュー":
+          - /url: /preview/d2e17bd2-97c0-437e-b268-d5270060bb67
+        - button "🌐 翻訳"
+        - button "削除"
+    - row "test-presentation.pptx 30.7 KB アップロード済み 2025/08/20 21:04 元ファイル 📄 プレビュー 🌐 翻訳 削除":
+      - cell "test-presentation.pptx"
+      - cell "30.7 KB"
+      - cell "アップロード済み"
+      - cell "2025/08/20 21:04"
+      - cell "元ファイル 📄 プレビュー 🌐 翻訳 削除":
+        - button "元ファイル"
+        - link "📄 プレビュー":
+          - /url: /preview/4d2fa215-5dbe-496b-99d1-c8146aff9244
+        - button "🌐 翻訳"
+        - button "削除"
+    - row "test-presentation.pptx 30.7 KB アップロード済み 2025/08/20 20:52 元ファイル 📄 プレビュー 🌐 翻訳 削除":
+      - cell "test-presentation.pptx"
+      - cell "30.7 KB"
+      - cell "アップロード済み"
+      - cell "2025/08/20 20:52"
+      - cell "元ファイル 📄 プレビュー 🌐 翻訳 削除":
+        - button "元ファイル"
+        - link "📄 プレビュー":
+          - /url: /preview/80e076aa-62d0-4c90-8d6b-ac20741d8b9d
+        - button "🌐 翻訳"
+        - button "削除"
+    - row "test-presentation.pptx 30.7 KB アップロード済み 2025/08/20 20:50 元ファイル 📄 プレビュー 🌐 翻訳 削除":
+      - cell "test-presentation.pptx"
+      - cell "30.7 KB"
+      - cell "アップロード済み"
+      - cell "2025/08/20 20:50"
+      - cell "元ファイル 📄 プレビュー 🌐 翻訳 削除":
+        - button "元ファイル"
+        - link "📄 プレビュー":
+          - /url: /preview/c5b3ec2d-44ef-4e40-8709-55be0c2fa6f2
+        - button "🌐 翻訳"
+        - button "削除"
+    - row "test-presentation.pptx 30.7 KB アップロード済み 2025/08/20 20:46 元ファイル 📄 プレビュー 🌐 翻訳 削除":
+      - cell "test-presentation.pptx"
+      - cell "30.7 KB"
+      - cell "アップロード済み"
+      - cell "2025/08/20 20:46"
+      - cell "元ファイル 📄 プレビュー 🌐 翻訳 削除":
+        - button "元ファイル"
+        - link "📄 プレビュー":
+          - /url: /preview/d25f30c0-0ec6-4ff6-8427-45c89914d62e
+        - button "🌐 翻訳"
+        - button "削除"
+    - row "test-presentation.pptx 30.7 KB アップロード済み 2025/08/20 20:43 元ファイル 📄 プレビュー 🌐 翻訳 削除":
+      - cell "test-presentation.pptx"
+      - cell "30.7 KB"
+      - cell "アップロード済み"
+      - cell "2025/08/20 20:43"
+      - cell "元ファイル 📄 プレビュー 🌐 翻訳 削除":
+        - button "元ファイル"
+        - link "📄 プレビュー":
+          - /url: /preview/34dbc685-c60a-4507-a707-69f0a8db4bef
+        - button "🌐 翻訳"
+        - button "削除"
+    - row "test-presentation.pptx 30.7 KB アップロード済み 2025/08/20 20:42 元ファイル 📄 プレビュー 🌐 翻訳 削除":
+      - cell "test-presentation.pptx"
+      - cell "30.7 KB"
+      - cell "アップロード済み"
+      - cell "2025/08/20 20:42"
+      - cell "元ファイル 📄 プレビュー 🌐 翻訳 削除":
+        - button "元ファイル"
+        - link "📄 プレビュー":
+          - /url: /preview/2cb557cb-9191-4afa-a6a2-b920112a7007
+        - button "🌐 翻訳"
+        - button "削除"
+    - row "test-presentation.pptx 30.7 KB アップロード済み 2025/08/20 20:42 元ファイル 📄 プレビュー 🌐 翻訳 削除":
+      - cell "test-presentation.pptx"
+      - cell "30.7 KB"
+      - cell "アップロード済み"
+      - cell "2025/08/20 20:42"
+      - cell "元ファイル 📄 プレビュー 🌐 翻訳 削除":
+        - button "元ファイル"
+        - link "📄 プレビュー":
+          - /url: /preview/d007cd2c-e839-4fc8-9ceb-b59c35901ad2
+        - button "🌐 翻訳"
+        - button "削除"
+    - row "test-presentation.pptx 30.7 KB アップロード済み 2025/08/20 20:41 元ファイル 📄 プレビュー 🌐 翻訳 削除":
+      - cell "test-presentation.pptx"
+      - cell "30.7 KB"
+      - cell "アップロード済み"
+      - cell "2025/08/20 20:41"
+      - cell "元ファイル 📄 プレビュー 🌐 翻訳 削除":
+        - button "元ファイル"
+        - link "📄 プレビュー":
+          - /url: /preview/1465c55a-1591-4dd1-94f8-7c625390f8c9
+        - button "🌐 翻訳"
+        - button "削除"
+    - row "test-presentation.pptx 30.7 KB アップロード済み 2025/08/20 20:40 元ファイル 📄 プレビュー 🌐 翻訳 削除":
+      - cell "test-presentation.pptx"
+      - cell "30.7 KB"
+      - cell "アップロード済み"
+      - cell "2025/08/20 20:40"
+      - cell "元ファイル 📄 プレビュー 🌐 翻訳 削除":
+        - button "元ファイル"
+        - link "📄 プレビュー":
+          - /url: /preview/c3918db6-9694-4f1f-baee-b81673d1b805
+        - button "🌐 翻訳"
+        - button "削除"
+    - row "test-presentation.pptx 30.7 KB アップロード済み 2025/08/19 23:35 元ファイル 📄 プレビュー 🌐 翻訳 削除":
+      - cell "test-presentation.pptx"
+      - cell "30.7 KB"
+      - cell "アップロード済み"
+      - cell "2025/08/19 23:35"
+      - cell "元ファイル 📄 プレビュー 🌐 翻訳 削除":
+        - button "元ファイル"
+        - link "📄 プレビュー":
+          - /url: /preview/5d96e59a-e785-4c0a-9eb5-bc0f9b6f9b8a
+        - button "🌐 翻訳"
+        - button "削除"
+    - row "test-presentation.pptx 30.7 KB アップロード済み 2025/08/19 23:15 元ファイル 📄 プレビュー 🌐 翻訳 削除":
+      - cell "test-presentation.pptx"
+      - cell "30.7 KB"
+      - cell "アップロード済み"
+      - cell "2025/08/19 23:15"
+      - cell "元ファイル 📄 プレビュー 🌐 翻訳 削除":
+        - button "元ファイル"
+        - link "📄 プレビュー":
+          - /url: /preview/5325a548-259c-4178-970d-98f0ff1cfc37
+        - button "🌐 翻訳"
+        - button "削除"
+    - row "test-presentation.pptx 30.7 KB アップロード済み 2025/08/19 23:14 元ファイル 📄 プレビュー 🌐 翻訳 削除":
+      - cell "test-presentation.pptx"
+      - cell "30.7 KB"
+      - cell "アップロード済み"
+      - cell "2025/08/19 23:14"
+      - cell "元ファイル 📄 プレビュー 🌐 翻訳 削除":
+        - button "元ファイル"
+        - link "📄 プレビュー":
+          - /url: /preview/36599d8f-4705-4456-bbf9-8d60e7e484c6
+        - button "🌐 翻訳"
+        - button "削除"
+    - row "test-presentation.pptx 30.7 KB アップロード済み 2025/08/19 23:14 元ファイル 📄 プレビュー 🌐 翻訳 削除":
+      - cell "test-presentation.pptx"
+      - cell "30.7 KB"
+      - cell "アップロード済み"
+      - cell "2025/08/19 23:14"
+      - cell "元ファイル 📄 プレビュー 🌐 翻訳 削除":
+        - button "元ファイル"
+        - link "📄 プレビュー":
+          - /url: /preview/de373f48-141f-4d44-9b0e-cc78a4bf38d0
+        - button "🌐 翻訳"
+        - button "削除"
+    - row "test-presentation.pptx 30.7 KB アップロード済み 2025/08/19 23:13 元ファイル 📄 プレビュー 🌐 翻訳 削除":
+      - cell "test-presentation.pptx"
+      - cell "30.7 KB"
+      - cell "アップロード済み"
+      - cell "2025/08/19 23:13"
+      - cell "元ファイル 📄 プレビュー 🌐 翻訳 削除":
+        - button "元ファイル"
+        - link "📄 プレビュー":
+          - /url: /preview/6ba817ab-3e69-47c5-90e1-8139472905ac
+        - button "🌐 翻訳"
+        - button "削除"
+    - row "test-presentation.pptx 30.7 KB アップロード済み 2025/08/19 23:12 元ファイル 📄 プレビュー 🌐 翻訳 削除":
+      - cell "test-presentation.pptx"
+      - cell "30.7 KB"
+      - cell "アップロード済み"
+      - cell "2025/08/19 23:12"
+      - cell "元ファイル 📄 プレビュー 🌐 翻訳 削除":
+        - button "元ファイル"
+        - link "📄 プレビュー":
+          - /url: /preview/e005326a-fb0b-4130-ae99-988e0fc04abb
+        - button "🌐 翻訳"
+        - button "削除"
+    - row "test-presentation.pptx 30.7 KB アップロード済み 2025/08/19 23:12 元ファイル 📄 プレビュー 🌐 翻訳 削除":
+      - cell "test-presentation.pptx"
+      - cell "30.7 KB"
+      - cell "アップロード済み"
+      - cell "2025/08/19 23:12"
+      - cell "元ファイル 📄 プレビュー 🌐 翻訳 削除":
+        - button "元ファイル"
+        - link "📄 プレビュー":
+          - /url: /preview/bd3fde30-88ce-4713-a34f-3cef420fb720
+        - button "🌐 翻訳"
+        - button "削除"
+    - row "test-presentation.pptx 30.7 KB アップロード済み 2025/08/19 23:11 元ファイル 📄 プレビュー 🌐 翻訳 削除":
+      - cell "test-presentation.pptx"
+      - cell "30.7 KB"
+      - cell "アップロード済み"
+      - cell "2025/08/19 23:11"
+      - cell "元ファイル 📄 プレビュー 🌐 翻訳 削除":
+        - button "元ファイル"
+        - link "📄 プレビュー":
+          - /url: /preview/09f47f3b-aa79-43fc-82ea-1aa98a1ef6c5
+        - button "🌐 翻訳"
+        - button "削除"
+    - row "test-presentation.pptx 30.7 KB アップロード済み 2025/08/19 23:11 元ファイル 📄 プレビュー 🌐 翻訳 削除":
+      - cell "test-presentation.pptx"
+      - cell "30.7 KB"
+      - cell "アップロード済み"
+      - cell "2025/08/19 23:11"
+      - cell "元ファイル 📄 プレビュー 🌐 翻訳 削除":
+        - button "元ファイル"
+        - link "📄 プレビュー":
+          - /url: /preview/7cc4c221-78b6-482e-ac5b-b4df3e975fbf
+        - button "🌐 翻訳"
+        - button "削除"
+    - row "test-presentation.pptx 30.7 KB アップロード済み 2025/08/19 23:10 元ファイル 📄 プレビュー 🌐 翻訳 削除":
+      - cell "test-presentation.pptx"
+      - cell "30.7 KB"
+      - cell "アップロード済み"
+      - cell "2025/08/19 23:10"
+      - cell "元ファイル 📄 プレビュー 🌐 翻訳 削除":
+        - button "元ファイル"
+        - link "📄 プレビュー":
+          - /url: /preview/2ddd0388-cc76-4fa9-a1d4-52366863fb28
+        - button "🌐 翻訳"
+        - button "削除"
+    - row "test-presentation.pptx 30.7 KB アップロード済み 2025/08/19 23:10 元ファイル 📄 プレビュー 🌐 翻訳 削除":
+      - cell "test-presentation.pptx"
+      - cell "30.7 KB"
+      - cell "アップロード済み"
+      - cell "2025/08/19 23:10"
+      - cell "元ファイル 📄 プレビュー 🌐 翻訳 削除":
+        - button "元ファイル"
+        - link "📄 プレビュー":
+          - /url: /preview/8015fe56-550d-4795-ae97-36916b441d3a
+        - button "🌐 翻訳"
+        - button "削除"
+    - row "test-presentation.pptx 30.7 KB アップロード済み 2025/08/19 23:09 元ファイル 📄 プレビュー 🌐 翻訳 削除":
+      - cell "test-presentation.pptx"
+      - cell "30.7 KB"
+      - cell "アップロード済み"
+      - cell "2025/08/19 23:09"
+      - cell "元ファイル 📄 プレビュー 🌐 翻訳 削除":
+        - button "元ファイル"
+        - link "📄 プレビュー":
+          - /url: /preview/95438897-26d4-42e3-a1aa-6d2b4cb9dccd
+        - button "🌐 翻訳"
+        - button "削除"
+    - row "test-presentation.pptx 30.7 KB アップロード済み 2025/08/19 23:09 元ファイル 📄 プレビュー 🌐 翻訳 削除":
+      - cell "test-presentation.pptx"
+      - cell "30.7 KB"
+      - cell "アップロード済み"
+      - cell "2025/08/19 23:09"
+      - cell "元ファイル 📄 プレビュー 🌐 翻訳 削除":
+        - button "元ファイル"
+        - link "📄 プレビュー":
+          - /url: /preview/015c8b2c-ef6a-433d-ac35-9294e7474d76
+        - button "🌐 翻訳"
+        - button "削除"
+    - row "test-presentation.pptx 30.7 KB アップロード済み 2025/08/19 23:08 元ファイル 📄 プレビュー 🌐 翻訳 削除":
+      - cell "test-presentation.pptx"
+      - cell "30.7 KB"
+      - cell "アップロード済み"
+      - cell "2025/08/19 23:08"
+      - cell "元ファイル 📄 プレビュー 🌐 翻訳 削除":
+        - button "元ファイル"
+        - link "📄 プレビュー":
+          - /url: /preview/9e4a6954-1281-4156-826a-b865b1bcaf83
+        - button "🌐 翻訳"
+        - button "削除"
+    - row "test-presentation.pptx 30.7 KB アップロード済み 2025/08/19 23:07 元ファイル 📄 プレビュー 🌐 翻訳 削除":
+      - cell "test-presentation.pptx"
+      - cell "30.7 KB"
+      - cell "アップロード済み"
+      - cell "2025/08/19 23:07"
+      - cell "元ファイル 📄 プレビュー 🌐 翻訳 削除":
+        - button "元ファイル"
+        - link "📄 プレビュー":
+          - /url: /preview/15c29cec-88f4-440c-ba46-1898f693027a
+        - button "🌐 翻訳"
+        - button "削除"
+    - row "test-presentation.pptx 30.7 KB アップロード済み 2025/08/19 23:06 元ファイル 📄 プレビュー 🌐 翻訳 削除":
+      - cell "test-presentation.pptx"
+      - cell "30.7 KB"
+      - cell "アップロード済み"
+      - cell "2025/08/19 23:06"
+      - cell "元ファイル 📄 プレビュー 🌐 翻訳 削除":
+        - button "元ファイル"
+        - link "📄 プレビュー":
+          - /url: /preview/41fafde6-dd2b-4cad-a006-617bf870e5ba
+        - button "🌐 翻訳"
+        - button "削除"
+    - row "test-presentation.pptx 30.7 KB アップロード済み 2025/08/19 23:06 元ファイル 📄 プレビュー 🌐 翻訳 削除":
+      - cell "test-presentation.pptx"
+      - cell "30.7 KB"
+      - cell "アップロード済み"
+      - cell "2025/08/19 23:06"
+      - cell "元ファイル 📄 プレビュー 🌐 翻訳 削除":
+        - button "元ファイル"
+        - link "📄 プレビュー":
+          - /url: /preview/92a343c2-73bb-4d5e-801e-b9eafc0a7b72
+        - button "🌐 翻訳"
+        - button "削除"
+    - row "test-presentation.pptx 30.7 KB アップロード済み 2025/08/18 23:01 元ファイル 📄 プレビュー 🌐 翻訳 削除":
+      - cell "test-presentation.pptx"
+      - cell "30.7 KB"
+      - cell "アップロード済み"
+      - cell "2025/08/18 23:01"
+      - cell "元ファイル 📄 プレビュー 🌐 翻訳 削除":
+        - button "元ファイル"
+        - link "📄 プレビュー":
+          - /url: /preview/7df5cab9-38ae-4cc2-9078-6e9443671399
+        - button "🌐 翻訳"
+        - button "削除"
+    - row "test-presentation.pptx 30.7 KB アップロード済み 2025/08/18 23:01 元ファイル 📄 プレビュー 🌐 翻訳 削除":
+      - cell "test-presentation.pptx"
+      - cell "30.7 KB"
+      - cell "アップロード済み"
+      - cell "2025/08/18 23:01"
+      - cell "元ファイル 📄 プレビュー 🌐 翻訳 削除":
+        - button "元ファイル"
+        - link "📄 プレビュー":
+          - /url: /preview/0b8b24ad-77d0-48cf-a325-f81b5204bfed
+        - button "🌐 翻訳"
+        - button "削除"
+    - row "test-presentation.pptx 30.7 KB アップロード済み 2025/08/18 23:01 元ファイル 📄 プレビュー 🌐 翻訳 削除":
+      - cell "test-presentation.pptx"
+      - cell "30.7 KB"
+      - cell "アップロード済み"
+      - cell "2025/08/18 23:01"
+      - cell "元ファイル 📄 プレビュー 🌐 翻訳 削除":
+        - button "元ファイル"
+        - link "📄 プレビュー":
+          - /url: /preview/c7753873-9e73-4b53-b214-16198d6c2543
+        - button "🌐 翻訳"
+        - button "削除"
+    - row "test-presentation.pptx 30.7 KB アップロード済み 2025/08/18 22:56 元ファイル 📄 プレビュー 🌐 翻訳 削除":
+      - cell "test-presentation.pptx"
+      - cell "30.7 KB"
+      - cell "アップロード済み"
+      - cell "2025/08/18 22:56"
+      - cell "元ファイル 📄 プレビュー 🌐 翻訳 削除":
+        - button "元ファイル"
+        - link "📄 プレビュー":
+          - /url: /preview/3af50a06-64b7-412c-ae88-1e34f47445aa
+        - button "🌐 翻訳"
+        - button "削除"
+    - row "test-presentation.pptx 30.7 KB アップロード済み 2025/08/18 22:56 元ファイル 📄 プレビュー 🌐 翻訳 削除":
+      - cell "test-presentation.pptx"
+      - cell "30.7 KB"
+      - cell "アップロード済み"
+      - cell "2025/08/18 22:56"
+      - cell "元ファイル 📄 プレビュー 🌐 翻訳 削除":
+        - button "元ファイル"
+        - link "📄 プレビュー":
+          - /url: /preview/3f614484-59e9-43be-ba28-4a60c7b88742
+        - button "🌐 翻訳"
+        - button "削除"
+    - row "test-presentation.pptx 30.7 KB アップロード済み 2025/08/18 22:56 元ファイル 📄 プレビュー 🌐 翻訳 削除":
+      - cell "test-presentation.pptx"
+      - cell "30.7 KB"
+      - cell "アップロード済み"
+      - cell "2025/08/18 22:56"
+      - cell "元ファイル 📄 プレビュー 🌐 翻訳 削除":
+        - button "元ファイル"
+        - link "📄 プレビュー":
+          - /url: /preview/cf488946-3e30-46ed-81fd-0169086861ba
+        - button "🌐 翻訳"
+        - button "削除"
+    - row "test-presentation.pptx 30.7 KB アップロード済み 2025/08/18 22:54 元ファイル 📄 プレビュー 🌐 翻訳 削除":
+      - cell "test-presentation.pptx"
+      - cell "30.7 KB"
+      - cell "アップロード済み"
+      - cell "2025/08/18 22:54"
+      - cell "元ファイル 📄 プレビュー 🌐 翻訳 削除":
+        - button "元ファイル"
+        - link "📄 プレビュー":
+          - /url: /preview/d0bbdb9c-d4d1-453b-9b46-f86e264bd072
+        - button "🌐 翻訳"
+        - button "削除"
+    - row "test-presentation.pptx 30.7 KB アップロード済み 2025/08/18 22:54 元ファイル 📄 プレビュー 🌐 翻訳 削除":
+      - cell "test-presentation.pptx"
+      - cell "30.7 KB"
+      - cell "アップロード済み"
+      - cell "2025/08/18 22:54"
+      - cell "元ファイル 📄 プレビュー 🌐 翻訳 削除":
+        - button "元ファイル"
+        - link "📄 プレビュー":
+          - /url: /preview/333ea5d8-c633-4f2e-a6c3-f2e390cf558f
+        - button "🌐 翻訳"
+        - button "削除"
+    - row "test-presentation.pptx 30.7 KB アップロード済み 2025/08/18 22:53 元ファイル 📄 プレビュー 🌐 翻訳 削除":
+      - cell "test-presentation.pptx"
+      - cell "30.7 KB"
+      - cell "アップロード済み"
+      - cell "2025/08/18 22:53"
+      - cell "元ファイル 📄 プレビュー 🌐 翻訳 削除":
+        - button "元ファイル"
+        - link "📄 プレビュー":
+          - /url: /preview/9c527f84-ff23-4e10-bef0-5e447fb49d20
+        - button "🌐 翻訳"
+        - button "削除"
+    - row "01tryppt22.pptx 356.3 KB アップロード済み 2025/08/18 22:26 元ファイル 📄 プレビュー 🌐 翻訳 削除":
+      - cell "01tryppt22.pptx"
+      - cell "356.3 KB"
+      - cell "アップロード済み"
+      - cell "2025/08/18 22:26"
+      - cell "元ファイル 📄 プレビュー 🌐 翻訳 削除":
+        - button "元ファイル"
+        - link "📄 プレビュー":
+          - /url: /preview/742fb9aa-965d-4c7a-a165-28b2fbf98349
+        - button "🌐 翻訳"
+        - button "削除"
+    - row "test-presentation.pptx 30.7 KB アップロード済み 2025/08/18 21:29 元ファイル 📄 プレビュー 🌐 翻訳 削除":
+      - cell "test-presentation.pptx"
+      - cell "30.7 KB"
+      - cell "アップロード済み"
+      - cell "2025/08/18 21:29"
+      - cell "元ファイル 📄 プレビュー 🌐 翻訳 削除":
+        - button "元ファイル"
+        - link "📄 プレビュー":
+          - /url: /preview/9aa1fb8d-3920-4763-9f53-778fa3ed06f9
+        - button "🌐 翻訳"
+        - button "削除"
+    - row "01tryppt22.pptx 356.3 KB アップロード済み 2025/08/18 21:23 元ファイル 📄 プレビュー 🌐 翻訳 削除":
+      - cell "01tryppt22.pptx"
+      - cell "356.3 KB"
+      - cell "アップロード済み"
+      - cell "2025/08/18 21:23"
+      - cell "元ファイル 📄 プレビュー 🌐 翻訳 削除":
+        - button "元ファイル"
+        - link "📄 プレビュー":
+          - /url: /preview/95fc1e05-71e1-4334-87f2-3b014ed2b548
+        - button "🌐 翻訳"
+        - button "削除"
+    - row "01tryppt22.pptx 356.3 KB アップロード済み 2025/08/18 21:06 元ファイル 📄 プレビュー 🌐 翻訳 削除":
+      - cell "01tryppt22.pptx"
+      - cell "356.3 KB"
+      - cell "アップロード済み"
+      - cell "2025/08/18 21:06"
+      - cell "元ファイル 📄 プレビュー 🌐 翻訳 削除":
+        - button "元ファイル"
+        - link "📄 プレビュー":
+          - /url: /preview/5182f1ac-4a4a-4e3b-9424-7a8fa532e175
+        - button "🌐 翻訳"
+        - button "削除"
+    - row "test-presentation.pptx 30.7 KB アップロード済み 2025/08/18 21:01 元ファイル 📄 プレビュー 🌐 翻訳 削除":
+      - cell "test-presentation.pptx"
+      - cell "30.7 KB"
+      - cell "アップロード済み"
+      - cell "2025/08/18 21:01"
+      - cell "元ファイル 📄 プレビュー 🌐 翻訳 削除":
+        - button "元ファイル"
+        - link "📄 プレビュー":
+          - /url: /preview/3ab97a60-73a6-4a65-9816-04b0cfcc167a
+        - button "🌐 翻訳"
+        - button "削除"
+    - row "test-presentation.pptx 30.7 KB アップロード済み 2025/08/18 20:42 元ファイル 📄 プレビュー 🌐 翻訳 削除":
+      - cell "test-presentation.pptx"
+      - cell "30.7 KB"
+      - cell "アップロード済み"
+      - cell "2025/08/18 20:42"
+      - cell "元ファイル 📄 プレビュー 🌐 翻訳 削除":
+        - button "元ファイル"
+        - link "📄 プレビュー":
+          - /url: /preview/0e161142-0add-4f09-95d1-75dad93a066c
+        - button "🌐 翻訳"
+        - button "削除"
+    - row "test-presentation.pptx 30.7 KB アップロード済み 2025/08/18 20:42 元ファイル 📄 プレビュー 🌐 翻訳 削除":
+      - cell "test-presentation.pptx"
+      - cell "30.7 KB"
+      - cell "アップロード済み"
+      - cell "2025/08/18 20:42"
+      - cell "元ファイル 📄 プレビュー 🌐 翻訳 削除":
+        - button "元ファイル"
+        - link "📄 プレビュー":
+          - /url: /preview/6663bb3a-e24f-4e67-b22f-657a55e5c5f7
+        - button "🌐 翻訳"
+        - button "削除"
+    - row "test-presentation.pptx 30.7 KB アップロード済み 2025/08/18 20:29 元ファイル 📄 プレビュー 🌐 翻訳 削除":
+      - cell "test-presentation.pptx"
+      - cell "30.7 KB"
+      - cell "アップロード済み"
+      - cell "2025/08/18 20:29"
+      - cell "元ファイル 📄 プレビュー 🌐 翻訳 削除":
+        - button "元ファイル"
+        - link "📄 プレビュー":
+          - /url: /preview/38e040b6-6d3b-4029-80b1-741206d77bc8
+        - button "🌐 翻訳"
+        - button "削除"
+    - row "test-presentation.pptx 30.7 KB アップロード済み 2025/08/18 06:06 元ファイル 📄 プレビュー 🌐 翻訳 削除":
+      - cell "test-presentation.pptx"
+      - cell "30.7 KB"
+      - cell "アップロード済み"
+      - cell "2025/08/18 06:06"
+      - cell "元ファイル 📄 プレビュー 🌐 翻訳 削除":
+        - button "元ファイル"
+        - link "📄 プレビュー":
+          - /url: /preview/5147dae9-f27f-4d90-8b14-786afe99367c
+        - button "🌐 翻訳"
+        - button "削除"
+    - row "test-presentation.pptx 30.7 KB アップロード済み 2025/08/18 06:06 元ファイル 📄 プレビュー 🌐 翻訳 削除":
+      - cell "test-presentation.pptx"
+      - cell "30.7 KB"
+      - cell "アップロード済み"
+      - cell "2025/08/18 06:06"
+      - cell "元ファイル 📄 プレビュー 🌐 翻訳 削除":
+        - button "元ファイル"
+        - link "📄 プレビュー":
+          - /url: /preview/d08210a6-fcc2-49f6-9673-de7c2492c6f6
+        - button "🌐 翻訳"
+        - button "削除"
+    - row "test-presentation.pptx 30.7 KB アップロード済み 2025/08/17 22:30 元ファイル 📄 プレビュー 🌐 翻訳 削除":
+      - cell "test-presentation.pptx"
+      - cell "30.7 KB"
+      - cell "アップロード済み"
+      - cell "2025/08/17 22:30"
+      - cell "元ファイル 📄 プレビュー 🌐 翻訳 削除":
+        - button "元ファイル"
+        - link "📄 プレビュー":
+          - /url: /preview/eae2cb44-1b58-47ee-9998-36eb681c1fe6
+        - button "🌐 翻訳"
+        - button "削除"
+    - row "test-presentation.pptx 30.7 KB アップロード済み 2025/08/17 22:30 元ファイル 📄 プレビュー 🌐 翻訳 削除":
+      - cell "test-presentation.pptx"
+      - cell "30.7 KB"
+      - cell "アップロード済み"
+      - cell "2025/08/17 22:30"
+      - cell "元ファイル 📄 プレビュー 🌐 翻訳 削除":
+        - button "元ファイル"
+        - link "📄 プレビュー":
+          - /url: /preview/a144dca5-6b31-401b-ac0f-19b7fcc14d01
+        - button "🌐 翻訳"
+        - button "削除"
+```

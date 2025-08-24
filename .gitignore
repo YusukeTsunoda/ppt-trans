@@ -75,3 +75,41 @@ uv.lock
 .DS_Store
 Thumbs.db
 EOF < /dev/nulle2e/fixtures/large-presentation.pptx
+
+# uploads directory
+uploads/
+/uploads
+
+# python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv
+ENV/
+env.bak/
+venv.bak/
+
+# uv
+.venv/
+uv.lock
+
+# temporary files
+/tmp/
+*.tmp
+*.temp
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+EOF < /dev/null

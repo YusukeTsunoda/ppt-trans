@@ -1,10 +1,5 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { ThemeProvider } from "@/components/ThemeProvider";
-import { ErrorBoundary } from "@/components/ErrorBoundary";
-import AuthProvider from "@/components/AuthProvider";
-import { ToastProvider } from "@/components/Toast";
-import { LanguageProvider } from "@/contexts/LanguageContext";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -38,23 +33,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <ErrorBoundary>
-          <AuthProvider>
-            <LanguageProvider>
-              <ThemeProvider
-                attribute="class"
-                defaultTheme="system"
-                enableSystem={true}
-                disableTransitionOnChange
-                storageKey="pptx-translator-theme"
-              >
-                <ToastProvider>
-                  {children}
-                </ToastProvider>
-              </ThemeProvider>
-            </LanguageProvider>
-          </AuthProvider>
-        </ErrorBoundary>
+        {children}
       </body>
     </html>
   );
