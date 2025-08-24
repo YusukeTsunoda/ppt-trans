@@ -154,17 +154,50 @@ export default function UploadFormOptimized() {
           </div>
         )}
         
+        {/* 処理中の表示 */}
+        {isPending && (
+          <div className="p-3 bg-blue-50 border border-blue-200 rounded-md" role="status" aria-live="polite">
+            <div className="flex items-center">
+              <svg className="animate-spin h-5 w-5 mr-3 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <span className="text-blue-700 text-sm">
+                アップロード処理中... 大きなファイルの場合、時間がかかることがあります。
+              </span>
+            </div>
+          </div>
+        )}
+        
         {/* サーバーエラー表示 */}
         {state?.error && (
           <div 
-            className="p-3 bg-red-50 border border-red-200 rounded-md" 
+            className={`p-3 border rounded-md ${
+              state.error.includes('タイムアウト') 
+                ? 'bg-orange-50 border-orange-200' 
+                : 'bg-red-50 border-red-200'
+            }`}
             data-testid="upload-error"
             role="alert"
             aria-live="assertive"
           >
-            <p className="text-red-700 text-sm">
+            <p className={`text-sm ${
+              state.error.includes('タイムアウト') 
+                ? 'text-orange-700' 
+                : 'text-red-700'
+            }`}>
               <span className="font-medium">エラー:</span> {state.error}
             </p>
+            {state.error.includes('タイムアウト') && (
+              <div className="mt-2 text-sm text-orange-600">
+                <p className="font-medium">解決方法:</p>
+                <ul className="list-disc list-inside mt-1 space-y-1">
+                  <li>ネットワーク接続を確認してください</li>
+                  <li>ファイルサイズを小さくして再試行してください</li>
+                  <li>問題が続く場合は、しばらく待ってから再度お試しください</li>
+                </ul>
+              </div>
+            )}
           </div>
         )}
         

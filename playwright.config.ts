@@ -14,8 +14,8 @@ dotenv.config({ path: '.env.test' });
 const PORT = process.env.TEST_PORT || '3001';
 const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
 
-// 認証状態ファイルのパス
-const authFile = path.join(__dirname, 'auth.json');
+// 認証状態ファイルのパス（固定名を使用）
+const authFile = path.join(__dirname, 'playwright-auth.json');
 
 export default defineConfig({
   testDir: './e2e',
@@ -23,6 +23,7 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: 1,
+  maxFailures: process.env.CI ? 0 : 1, // 最初の失敗で停止（ローカルのみ）
   // globalSetupを一時的に無効化 - テストの独立性を確保するため
   // globalSetup: './e2e/fixtures/global-setup.ts',
   // Jest関連ファイルの明示的除外（クロスコンタミネーション防止）
@@ -59,69 +60,107 @@ export default defineConfig({
   },
 
   projects: [
-    // Setup: 認証状態を準備
+    // 1. Setup: 認証状態を準備
     {
       name: 'setup',
-      testMatch: /.*setup-auth-refactored\.ts/,
+      testMatch: /setup-auth-refactored\.ts/,
       use: {
         ...devices['Desktop Chrome'],
       },
     },
     
-    // 認証フローのテスト（認証状態を使用しない）
+    // 2. スモークテスト（最優先）
     {
-      name: 'auth-tests',
-      testMatch: /auth\/auth-flow\.spec\.ts/,
-      use: {
-        ...devices['Desktop Chrome'],
-        // 認証状態を使用しない
-        storageState: { cookies: [], origins: [] },
-      },
-    },
-    
-    // 認証済み機能のテスト（認証状態を使用）
-    {
-      name: 'authenticated-tests',
+      name: 'smoke',
       dependencies: ['setup'],
+      testMatch: /smoke\/.*.spec\.ts/,
       use: {
         ...devices['Desktop Chrome'],
-        // 保存された認証状態を使用
         storageState: authFile,
       },
-      testIgnore: [
-        /auth\/setup-auth\.ts/,
-        /auth\/auth-flow\.spec\.ts/,
-        /auth\/auth-comprehensive\.spec\.ts/,  // 包括的認証テストも除外
-        /simple-test\.spec\.ts/,  // 基本テストも除外
-        /01-auth-flow\.spec\.ts/,  // 認証フローテストも除外（認証済み状態で実行すべきでない）
-        /01-auth-flow-strict\.spec\.ts/  // 厳格版認証テストも除外
-      ],
+      timeout: 30000,
     },
     
-    // シンプルテスト（認証不要）
+    // 3. コア機能テスト（auth.spec.tsを除外）
     {
-      name: 'simple-tests',
-      testMatch: [
-        /simple-test\.spec\.ts/, 
-        /01-auth-flow\.spec\.ts/,
-        /01-auth-flow-strict\.spec\.ts/  // 認証テストも認証なしで実行
-      ],
+      name: 'core',
+      dependencies: ['setup'],
+      testMatch: /core\/(?!auth).*\.spec\.ts/,
       use: {
         ...devices['Desktop Chrome'],
-        // 認証状態を使用しない
-        storageState: { cookies: [], origins: [] },
+        storageState: authFile,
+      },
+      timeout: 60000,
+    },
+    
+    // 4. 追加機能テスト
+    {
+      name: 'features',
+      dependencies: ['setup'],
+      testMatch: /features\/.*.spec\.ts/,
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: authFile,
+      },
+      timeout: 60000,
+    },
+    
+    // 5. 認証テスト（認証状態なし）
+    {
+      name: 'auth-tests',
+      testMatch: /core\/auth\.spec\.ts/,
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: undefined,
       },
     },
     
-    // 包括的認証テスト（認証状態なし）
+    // 6. ブラウザ互換性テスト - Firefox
     {
-      name: 'comprehensive-auth-tests',
-      testMatch: /auth-comprehensive\.spec\.ts/,
+      name: 'firefox',
+      dependencies: ['setup'],
+      testMatch: /smoke\/critical-path\.spec\.ts/,  // 重要なテストのみ
       use: {
-        ...devices['Desktop Chrome'],
-        // 認証状態を使用しない（各テストが独立）
-        storageState: { cookies: [], origins: [] },
+        ...devices['Desktop Firefox'],
+        storageState: authFile,
       },
+      timeout: 60000,
+    },
+    
+    // 7. ブラウザ互換性テスト - Safari/WebKit
+    {
+      name: 'webkit',
+      dependencies: ['setup'],
+      testMatch: /smoke\/critical-path\.spec\.ts/,  // 重要なテストのみ
+      use: {
+        ...devices['Desktop Safari'],
+        storageState: authFile,
+      },
+      timeout: 60000,
+    },
+    
+    // 8. モバイルビューポート - iPhone
+    {
+      name: 'mobile-ios',
+      dependencies: ['setup'],
+      testMatch: /smoke\/critical-path\.spec\.ts/,  // 重要なテストのみ
+      use: {
+        ...devices['iPhone 13'],
+        storageState: authFile,
+      },
+      timeout: 60000,
+    },
+    
+    // 9. モバイルビューポート - Android
+    {
+      name: 'mobile-android',
+      dependencies: ['setup'],
+      testMatch: /smoke\/critical-path\.spec\.ts/,  // 重要なテストのみ
+      use: {
+        ...devices['Pixel 5'],
+        storageState: authFile,
+      },
+      timeout: 60000,
     },
   ],
 

@@ -1,4 +1,4 @@
-// import { Prisma } from '@prisma/client';
+// Supabaseを使用しているため、Prismaは不要
 import logger from '@/lib/logger';
 import type { JsonValue, JsonObject } from '@/types/common';
 

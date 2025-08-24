@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 import logger from '@/lib/logger';
+import { useTranslation } from '@/hooks/useTranslation';
+import { LanguageToggle } from '@/components/LanguageToggle';
 
 interface ExtractedData {
   success: boolean;
@@ -87,14 +89,19 @@ interface PreviewViewProps {
 
 export default function PreviewView({ file }: PreviewViewProps) {
   const router = useRouter();
+  const { t } = useTranslation();
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractedData, setExtractedData] = useState<ExtractedData | null>(null);
   const [slides, setSlides] = useState<SlideData[]>([]);
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [isTranslating, setIsTranslating] = useState(false);
-  const [translationProgress, setTranslationProgress] = useState(0);
+  // 実際の進捗と表示用の進捗を分離
+  const [realProgress, setRealProgress] = useState(0);           // 実際の翻訳進捗
+  const [displayProgress, setDisplayProgress] = useState(0);      // 表示用の進捗（補間される）
   const [translationMessage, setTranslationMessage] = useState('');
+  const [estimatedTimeRemaining, setEstimatedTimeRemaining] = useState<number | null>(null);
+  const [translationStartTime, setTranslationStartTime] = useState<number | null>(null);
   const [targetLanguage, setTargetLanguage] = useState('ja');
   const [selectedTextId, setSelectedTextId] = useState<string | null>(null);
   const [editingTextId, setEditingTextId] = useState<string | null>(null);
@@ -127,7 +134,7 @@ export default function PreviewView({ file }: PreviewViewProps) {
       const result = await response.json();
       
       if (!result.success) {
-        throw new Error(result.error || 'テキスト抽出に失敗しました');
+        throw new Error(result.error || t('extractionFailed') || 'テキスト抽出に失敗しました');
       }
       
       setExtractedData(result.data);
@@ -195,7 +202,7 @@ export default function PreviewView({ file }: PreviewViewProps) {
         
     } catch (err) {
       logger.error('Extraction error:', err);
-      setError(err instanceof Error ? err.message : 'テキスト抽出中にエラーが発生しました');
+      setError(err instanceof Error ? err.message : t('extractionError') || 'テキスト抽出中にエラーが発生しました');
     } finally {
       setIsExtracting(false);
     }
@@ -282,11 +289,50 @@ export default function PreviewView({ file }: PreviewViewProps) {
     }
   }, [file]);
   
+  // プログレスバーのスムーズな補間アニメーション
+  useEffect(() => {
+    if (!isTranslating || realProgress === 0) {
+      setDisplayProgress(0);
+      return;
+    }
+
+    const animationInterval = setInterval(() => {
+      setDisplayProgress(prevDisplay => {
+        // 目標値との差分を計算
+        const diff = realProgress - prevDisplay;
+        
+        // 差分が小さい場合は目標値に設定
+        if (Math.abs(diff) < 0.5) {
+          return realProgress;
+        }
+        
+        // イージング関数による補間（加速度を考慮）
+        const step = diff * 0.15; // 15%ずつ目標に近づく
+        return prevDisplay + step;
+      });
+    }, 50); // 50msごとに更新（20fps）
+
+    return () => clearInterval(animationInterval);
+  }, [isTranslating, realProgress]);
+
+  // 残り時間の推定計算
+  useEffect(() => {
+    if (isTranslating && translationStartTime && realProgress > 0) {
+      const elapsedTime = Date.now() - translationStartTime;
+      const estimatedTotalTime = (elapsedTime / realProgress) * 100;
+      const remaining = Math.max(0, estimatedTotalTime - elapsedTime);
+      setEstimatedTimeRemaining(Math.round(remaining / 1000)); // 秒単位
+    }
+  }, [isTranslating, translationStartTime, realProgress]);
+  
   // 翻訳処理
   const handleTranslate = async (allSlides: boolean = false) => {
     setIsTranslating(true);
-    setTranslationProgress(1); // 0ではなく1から開始してバーを表示
-    setTranslationMessage('翻訳を準備中...');
+    setRealProgress(0);
+    setDisplayProgress(0);
+    setTranslationStartTime(Date.now());
+    setEstimatedTimeRemaining(null);
+    setTranslationMessage(t('preparingTranslation') || '翻訳を準備中...');
     setError(null);
     
     try {
@@ -320,11 +366,17 @@ export default function PreviewView({ file }: PreviewViewProps) {
         const currentBatchEnd = Math.min(translatedCount + batch.length, totalTexts);
         
         // 現在処理中のバッチの情報を表示
-        setTranslationMessage(`翻訳中... (${currentBatchStart}-${currentBatchEnd}/${totalTexts})`);
+        const progressBeforeTranslation = Math.round((translatedCount / totalTexts) * 100);
+        // 最小進捗を5%に設定（0%だと何も起きていないように見える）
+        const displayableProgress = Math.max(5, progressBeforeTranslation);
+        setRealProgress(displayableProgress);
         
-        // 現在処理中の進捗率を表示（処理開始時点）
-        const progressBeforeTranslation = Math.max(1, Math.round((translatedCount / totalTexts) * 100));
-        setTranslationProgress(progressBeforeTranslation);
+        // メッセージに残り時間を追加
+        const messageBase = `${t('translating') || '翻訳中'}... (${currentBatchStart}-${currentBatchEnd}/${totalTexts})`;
+        const messageWithTime = estimatedTimeRemaining 
+          ? `${messageBase} - 残り約${estimatedTimeRemaining}秒`
+          : messageBase;
+        setTranslationMessage(messageWithTime);
         
         const response = await fetch('/api/translate', {
           method: 'POST',
@@ -340,7 +392,7 @@ export default function PreviewView({ file }: PreviewViewProps) {
         const result = await response.json();
         
         if (!result.success) {
-          throw new Error(result.error || '翻訳に失敗しました');
+          throw new Error(result.error || t('translationFailed') || '翻訳に失敗しました');
         }
         
         allTranslations.push(...result.translations);
@@ -348,7 +400,14 @@ export default function PreviewView({ file }: PreviewViewProps) {
         
         // 翻訳完了後の進捗率を更新
         const progressAfterTranslation = Math.round((translatedCount / totalTexts) * 100);
-        setTranslationProgress(progressAfterTranslation);
+        setRealProgress(progressAfterTranslation);
+        
+        // 処理速度の計算とフィードバック
+        if (translationStartTime) {
+          const elapsedSeconds = (Date.now() - translationStartTime) / 1000;
+          const textsPerSecond = translatedCount / elapsedSeconds;
+          logger.debug(`Translation speed: ${textsPerSecond.toFixed(2)} texts/second`);
+        }
         
         // APIレート制限を考慮して、バッチ間に短いウェイトを入れる（最後のバッチ以外）
         if (batchIndex < batches.length - 1) {
@@ -367,19 +426,29 @@ export default function PreviewView({ file }: PreviewViewProps) {
       });
       
       setSlides(updatedSlides);
-      setTranslationMessage('翻訳が完了しました');
       
-      // 完了メッセージを数秒後にクリア
+      // 完了時は即座に100%にジャンプ
+      setRealProgress(100);
+      setDisplayProgress(100);
+      setTranslationMessage(t('translationCompleted') || '翻訳が完了しました');
+      
+      // 完了アニメーション後にリセット
       setTimeout(() => {
         setTranslationMessage('');
-        setTranslationProgress(0);
+        setRealProgress(0);
+        setDisplayProgress(0);
+        setTranslationStartTime(null);
+        setEstimatedTimeRemaining(null);
       }, 3000);
       
     } catch (err) {
       logger.error('Translation error:', err);
-      setError(err instanceof Error ? err.message : '翻訳中にエラーが発生しました');
-      setTranslationProgress(0);
+      setError(err instanceof Error ? err.message : t('translationError') || '翻詳中にエラーが発生しました');
+      setRealProgress(0);
+      setDisplayProgress(0);
       setTranslationMessage('');
+      setTranslationStartTime(null);
+      setEstimatedTimeRemaining(null);
     } finally {
       setIsTranslating(false);
     }
@@ -553,7 +622,7 @@ export default function PreviewView({ file }: PreviewViewProps) {
       const result = await response.json();
       
       if (!result.success) {
-        throw new Error(result.error || '翻訳済みファイルの生成に失敗しました');
+        throw new Error(result.error || t('generateTranslatedFileFailed') || '翻訳済みファイルの生成に失敗しました');
       }
       
       // ダウンロードリンクを作成してクリック
@@ -583,56 +652,57 @@ export default function PreviewView({ file }: PreviewViewProps) {
       }
     } catch (err) {
       logger.error('Download error:', err);
-      setError(err instanceof Error ? err.message : 'ダウンロード中にエラーが発生しました');
+      setError(err instanceof Error ? err.message : t('downloadError') || 'ダウンロード中にエラーが発生しました');
     } finally {
       setIsDownloading(false);
     }
   };
   
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
       <div className="max-w-7xl mx-auto px-4 py-6">
         {/* ヘッダー */}
-        <div className="card animate-fadeIn mb-6">
+        <div className="card dark:bg-slate-800 animate-fadeIn mb-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div className="flex items-center gap-3">
               <Link
                 href="/dashboard"
-                className="text-slate-600 hover:text-slate-900 transition-colors duration-200 text-sm"
+                className="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 transition-colors duration-200 text-sm"
               >
-                ← ダッシュボードに戻る
+                ← {t('backToDashboard')}
               </Link>
-              <h1 className="text-lg sm:text-xl font-bold text-slate-900">
+              <h1 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
                 {file.original_name}
               </h1>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
+              <LanguageToggle />
               <select
                 value={targetLanguage}
                 onChange={(e) => setTargetLanguage(e.target.value)}
-                className="input text-sm px-3 py-1.5"
+                className="input dark:bg-slate-700 dark:border-slate-600 dark:text-white text-sm px-3 py-1.5"
                 disabled={isTranslating}
-                aria-label="翻訳先言語"
+                aria-label={t('targetLanguage') || '翻訳先言語'}
                 data-testid="language-select"
               >
                 <option value="ja">日本語</option>
-                <option value="en">英語</option>
-                <option value="zh">中国語</option>
-                <option value="ko">韓国語</option>
+                <option value="en">English</option>
+                <option value="zh">中文</option>
+                <option value="ko">한국어</option>
               </select>
               <button
                 onClick={() => handleTranslate(false)}
                 disabled={isTranslating || !currentSlide}
                 className="px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-all duration-200 text-sm font-medium"
               >
-                {isTranslating ? '翻訳中...' : '現在のスライドを翻訳'}
+                {isTranslating ? t('translating') : t('translateCurrentSlide') || '現在のスライドを翻訳'}
               </button>
               <button
                 onClick={() => handleTranslate(true)}
                 disabled={isTranslating || slides.length === 0}
                 className="px-3 py-1.5 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 disabled:opacity-50 transition-all duration-200 text-sm font-medium"
               >
-                すべて翻訳
+                {t('translateAll') || 'すべて翻訳'}
               </button>
               
               {/* ダウンロードボタン */}
@@ -641,19 +711,19 @@ export default function PreviewView({ file }: PreviewViewProps) {
                   onClick={downloadTranslatedPPTX}
                   disabled={isDownloading || slides.length === 0 || !slides.some(s => s.texts.some(t => t.translated))}
                   className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg disabled:opacity-50 transition-all duration-200 text-sm font-medium flex items-center gap-1.5"
-                  title="翻訳済みのPowerPointファイルをダウンロード"
+                  title={t('downloadTranslatedPowerPoint') || '翻訳済みのPowerPointファイルをダウンロード'}
                 >
                   {isDownloading ? (
                     <>
                       <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
-                      <span>生成中...</span>
+                      <span>{t('generating') || '生成中'}...</span>
                     </>
                   ) : (
                     <>
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>
-                      <span>翻訳済みをダウンロード</span>
+                      <span>{t('downloadTranslated') || '翻訳済みをダウンロード'}</span>
                     </>
                   )}
                 </button>
@@ -670,26 +740,85 @@ export default function PreviewView({ file }: PreviewViewProps) {
         )}
         
         {/* 翻訳進捗バー */}
-        {isTranslating && translationProgress > 0 && (
-          <div className="bg-white rounded-lg shadow-sm p-4 mb-6 animate-fadeIn">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-gray-700">{translationMessage}</span>
-              <span className="text-sm font-medium text-blue-600">{translationProgress}%</span>
+        {isTranslating && (
+          <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-4 mb-6 animate-fadeIn">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {translationMessage}
+                  </span>
+                  {/* パルスアニメーションインジケーター */}
+                  <div className="flex gap-1">
+                    <span className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-pulse"></span>
+                    <span className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></span>
+                    <span className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></span>
+                  </div>
+                </div>
+                {/* 残り時間表示 */}
+                {estimatedTimeRemaining !== null && estimatedTimeRemaining > 0 && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    予想残り時間: 約{estimatedTimeRemaining}秒
+                  </p>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                {/* 実際の進捗（デバッグ用、本番では非表示可） */}
+                {process.env.NODE_ENV === 'development' && (
+                  <span className="text-xs text-gray-400" title="実際の進捗">
+                    ({Math.round(realProgress)}%)
+                  </span>
+                )}
+                {/* 表示用の進捗 */}
+                <span className="text-sm font-bold text-blue-600 dark:text-blue-400">
+                  {Math.round(displayProgress)}%
+                </span>
+              </div>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-2.5" role="progressbar" aria-valuenow={translationProgress} aria-valuemin={0} aria-valuemax={100}>
-              <div 
-                className="bg-blue-600 h-2.5 rounded-full transition-all duration-300 ease-out"
-                style={{ width: `${translationProgress}%` }}
-              />
+            
+            {/* プログレスバー */}
+            <div className="relative">
+              {/* 背景バー */}
+              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
+                {/* 実際のプログレスバー（デバッグ用、半透明） */}
+                {process.env.NODE_ENV === 'development' && (
+                  <div 
+                    className="absolute top-0 left-0 h-full bg-blue-200 dark:bg-blue-900 rounded-full transition-all duration-500 opacity-50"
+                    style={{ width: `${realProgress}%` }}
+                  />
+                )}
+                {/* 表示用のプログレスバー（上に重ねる） */}
+                <div 
+                  className="relative h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full shadow-sm"
+                  style={{ 
+                    width: `${displayProgress}%`,
+                    transition: 'none' // JavaScriptで制御するため
+                  }}
+                >
+                  {/* プログレスバーの先端にグロー効果 */}
+                  {displayProgress > 0 && displayProgress < 100 && (
+                    <div className="absolute right-0 top-0 h-full w-2 bg-white opacity-50 animate-pulse" />
+                  )}
+                </div>
+              </div>
+              
+              {/* 完了時のチェックマーク */}
+              {displayProgress >= 100 && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <svg className="w-5 h-5 text-white animate-scaleIn" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                </div>
+              )}
             </div>
           </div>
         )}
         
         {/* ローディング */}
         {isExtracting && (
-          <div className="card p-8 text-center animate-scaleIn">
+          <div className="card dark:bg-slate-800 p-8 text-center animate-scaleIn">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-slate-600">PowerPointファイルからテキストを抽出中...</p>
+            <p className="text-slate-600 dark:text-slate-300">{t('extractingText') || 'PowerPointファイルからテキストを抽出中'}...</p>
           </div>
         )}
         
@@ -704,19 +833,17 @@ export default function PreviewView({ file }: PreviewViewProps) {
                 </svg>
                 <div className="flex-1">
                   <p className="text-sm text-blue-800">
-                    <strong>お知らせ：</strong> 現在、スライドのプレビュー画像は準備中です。
-                    今後のアップデートで実際のスライド画像が表示されるようになります。
-                    現在はテキスト内容の確認と翻訳機能をご利用いただけます。
+                    <strong>{t('notice') || 'お知らせ'}：</strong> {t('previewNotice') || '現在、スライドのプレビュー画像は準備中です。今後のアップデートで実際のスライド画像が表示されるようになります。現在はテキスト内容の確認と翻訳機能をご利用いただけます。'}
                   </p>
                 </div>
               </div>
             </div>
             
             {/* スライドナビゲーション */}
-            <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
+            <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-4 mb-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-semibold">
-                  スライド {currentSlide?.pageNumber} / {slides.length}
+                  {t('slide')} {currentSlide?.pageNumber} / {slides.length}
                 </h2>
                 <div className="flex gap-2">
                   <button
@@ -727,10 +854,10 @@ export default function PreviewView({ file }: PreviewViewProps) {
                     }}
                     disabled={currentSlideIndex === 0}
                     className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
-                    aria-label="前のスライド"
+                    aria-label={t('previousSlide')}
                     data-testid="prev-slide"
                   >
-                    前へ
+                    {t('previous') || '前へ'}
                   </button>
                   <button
                     onClick={() => {
@@ -740,10 +867,10 @@ export default function PreviewView({ file }: PreviewViewProps) {
                     }}
                     disabled={currentSlideIndex === slides.length - 1}
                     className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
-                    aria-label="次のスライド"
+                    aria-label={t('nextSlide')}
                     data-testid="next-slide"
                   >
-                    次へ
+                    {t('next') || '次へ'}
                   </button>
                 </div>
               </div>
@@ -764,16 +891,16 @@ export default function PreviewView({ file }: PreviewViewProps) {
                         : 'border-gray-200 hover:border-gray-300'
                     }`}
                     data-testid="slide-thumbnail"
-                    aria-label={`スライド ${slide.pageNumber}`}
+                    aria-label={`${t('slide')} ${slide.pageNumber}`}
                   >
                     <div className="text-xs font-medium text-gray-600 mb-1">
-                      スライド {slide.pageNumber}
+                      {t('slide')} {slide.pageNumber}
                     </div>
                     <div className="text-xs text-gray-500">
-                      {slide.texts.length} テキスト
+                      {slide.texts.length} {t('texts') || 'テキスト'}
                     </div>
                     {slide.texts.some(t => t.translated) && (
-                      <div className="text-xs text-green-600 mt-1">✓ 翻訳済み</div>
+                      <div className="text-xs text-green-600 mt-1">✓ {t('translated') || '翻訳済み'}</div>
                     )}
                   </button>
                 ))}
@@ -781,30 +908,30 @@ export default function PreviewView({ file }: PreviewViewProps) {
             </div>
             
             {/* スライドプレビュー（プレースホルダー） */}
-            <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+            <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6 mb-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold">スライドプレビュー</h3>
+                <h3 className="text-lg font-semibold">{t('slidePreview') || 'スライドプレビュー'}</h3>
                 
                 {/* ズームコントロール */}
                 <div className="flex items-center gap-2">
                   <button
                     onClick={handleZoomOut}
-                    className="p-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-                    title="ズームアウト"
+                    className="p-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors"
+                    title={t('zoomOut') || 'ズームアウト'}
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7" />
                     </svg>
                   </button>
                   
-                  <span className="px-3 py-1 bg-gray-100 rounded-lg text-sm font-medium min-w-[80px] text-center">
+                  <span className="px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm font-medium min-w-[80px] text-center text-gray-900 dark:text-gray-100">
                     {Math.round(zoomLevel * 100)}%
                   </span>
                   
                   <button
                     onClick={handleZoomIn}
-                    className="p-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-                    title="ズームイン"
+                    className="p-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors"
+                    title={t('zoomIn') || 'ズームイン'}
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
@@ -813,8 +940,8 @@ export default function PreviewView({ file }: PreviewViewProps) {
                   
                   <button
                     onClick={handleZoomReset}
-                    className="p-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-                    title="リセット"
+                    className="p-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors"
+                    title={t('reset') || 'リセット'}
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -822,13 +949,13 @@ export default function PreviewView({ file }: PreviewViewProps) {
                   </button>
                   
                   <div className="ml-2 text-xs text-gray-500">
-                    Ctrl + スクロール or ドラッグで移動
+                    {t('zoomHint') || 'Ctrl + スクロール or ドラッグで移動'}
                   </div>
                 </div>
               </div>
               
               <div 
-                className="relative bg-gray-100 rounded-lg overflow-hidden select-none" 
+                className="relative bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden select-none" 
                 style={{ 
                   aspectRatio: '16/9',
                   cursor: isDragging ? 'grabbing' : 'grab'
@@ -851,7 +978,7 @@ export default function PreviewView({ file }: PreviewViewProps) {
                     <>
                       <img 
                         src={currentSlide.imageUrl} 
-                        alt={`スライド ${currentSlide.pageNumber}`}
+                        alt={`${t('slide')} ${currentSlide.pageNumber}`}
                         className="max-w-full max-h-full"
                         draggable={false}
                       />
@@ -861,10 +988,10 @@ export default function PreviewView({ file }: PreviewViewProps) {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                           </svg>
                           <p className="text-sm text-gray-600">
-                            スライドプレビューは準備中です
+                            {t('slidePreviewPreparing') || 'スライドプレビューは準備中です'}
                           </p>
                           <p className="text-xs text-gray-500 mt-1">
-                            次回アップデートで追加予定
+                            {t('comingSoon') || '次回アップデートで追加予定'}
                           </p>
                         </div>
                       </div>
@@ -898,10 +1025,10 @@ export default function PreviewView({ file }: PreviewViewProps) {
             </div>
             
             {/* テキスト内容 */}
-            <div className="bg-white rounded-lg shadow-sm" data-testid="preview-container">
+            <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm" data-testid="preview-container">
               <div className="px-6 py-4 border-b border-gray-200">
                 <h3 className="text-lg font-semibold">
-                  テキスト内容 ({currentSlide?.texts.length || 0} 項目)
+                  {t('textContent') || 'テキスト内容'} ({currentSlide?.texts.length || 0} {t('items') || '項目'})
                 </h3>
               </div>
               
@@ -927,15 +1054,15 @@ export default function PreviewView({ file }: PreviewViewProps) {
                           onClick={() => setSelectedTextId(selectedTextId === text.id ? null : text.id)}
                         >
                           <div className="text-sm font-medium text-gray-600 mb-1 flex items-center gap-2">
-                            原文 
+                            {t('original') || '原文'} 
                             {text.type === 'TABLE_CELL' && text.tableInfo && (
                               <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
-                                表[{text.tableInfo.row + 1},{text.tableInfo.col + 1}]
+                                {t('table') || '表'}[{text.tableInfo.row + 1},{text.tableInfo.col + 1}]
                               </span>
                             )}
                             {selectedTextId === text.id && (
                               <span className="text-xs bg-yellow-400 text-yellow-900 px-2 py-1 rounded-full">
-                                ハイライト中
+                                {t('highlighting') || 'ハイライト中'}
                               </span>
                             )}
                           </div>
@@ -945,13 +1072,13 @@ export default function PreviewView({ file }: PreviewViewProps) {
                         </div>
                         <div>
                           <div className="text-sm font-medium text-gray-600 mb-1 flex items-center justify-between">
-                            <span>翻訳</span>
+                            <span>{t('translation') || '翻訳'}</span>
                             {editingTextId !== text.id && text.translated && (
                               <button
                                 onClick={() => startEditingTranslation(text.id, text.translated || '')}
                                 className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
                               >
-                                編集
+                                {t('edit') || '編集'}
                               </button>
                             )}
                           </div>
@@ -969,13 +1096,13 @@ export default function PreviewView({ file }: PreviewViewProps) {
                                   onClick={() => saveEditedTranslation(text.id)}
                                   className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition-colors"
                                 >
-                                  保存
+                                  {t('save') || '保存'}
                                 </button>
                                 <button
                                   onClick={cancelEditing}
                                   className="px-3 py-1 bg-gray-400 text-white text-sm rounded hover:bg-gray-500 transition-colors"
                                 >
-                                  キャンセル
+                                  {t('cancel') || 'キャンセル'}
                                 </button>
                               </div>
                             </div>
@@ -986,10 +1113,10 @@ export default function PreviewView({ file }: PreviewViewProps) {
                               }`} 
                               data-testid={text.translated ? "translated-text" : "untranslated-text"}
                               onDoubleClick={() => text.translated && startEditingTranslation(text.id, text.translated)}
-                              title={text.translated ? "ダブルクリックで編集" : ""}
+                              title={text.translated ? t('doubleClickToEdit') || 'ダブルクリックで編集' : ''}
                               style={{ cursor: text.translated ? 'text' : 'default' }}
                             >
-                              {text.translated || '未翻訳'}
+                              {text.translated || t('notTranslated') || '未翻訳'}
                             </div>
                           )}
                         </div>
@@ -999,8 +1126,8 @@ export default function PreviewView({ file }: PreviewViewProps) {
                 </div>
               ) : (
                 <div className="p-6">
-                  <p className="text-gray-500 text-center py-8">
-                    このスライドにはテキストが含まれていません
+                  <p className="text-gray-500 dark:text-gray-400 text-center py-8">
+                    {t('noTextInSlide') || 'このスライドにはテキストが含まれていません'}
                   </p>
                 </div>
               )}
@@ -1010,13 +1137,13 @@ export default function PreviewView({ file }: PreviewViewProps) {
         
         {/* データがない場合 */}
         {!isExtracting && slides.length === 0 && (
-          <div className="bg-white rounded-lg shadow-sm p-8 text-center">
-            <p className="text-gray-600 mb-4">テキストデータがありません</p>
+          <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-8 text-center">
+            <p className="text-gray-600 dark:text-gray-300 mb-4">{t('noTextData') || 'テキストデータがありません'}</p>
             <button
               onClick={extractText}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
             >
-              テキストを抽出
+              {t('extractText') || 'テキストを抽出'}
             </button>
           </div>
         )}

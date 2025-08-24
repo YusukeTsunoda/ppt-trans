@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useFormStatus } from 'react-dom';
 import { useActionState } from 'react';
 import { loginAction, loginActionWithoutRedirect } from '@/app/actions/auth';
@@ -39,6 +39,8 @@ export default function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [clientError, setClientError] = useState<string | null>(null);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
   const { t } = useTranslation();
   
   // useActionStateを使用してServer Actionのエラーを処理
@@ -51,9 +53,9 @@ export default function LoginForm() {
   // 成功時のリダイレクト処理
   useEffect(() => {
     if (state?.success) {
-      router.push('/dashboard');
+      router.push(callbackUrl);
     }
-  }, [state, router]);
+  }, [state, router, callbackUrl]);
 
   const enhancedAction = async (formData: FormData): Promise<void> => {
     setClientError(null);
@@ -70,7 +72,7 @@ export default function LoginForm() {
       const result = await loginActionWithoutRedirect(formData);
       
       if (result.success) {
-        router.push('/dashboard');
+        router.push(callbackUrl);
       } else {
         setClientError(result.message || 'ログインに失敗しました');
       }
@@ -87,6 +89,7 @@ export default function LoginForm() {
 
   return (
     <form action={enhancedAction} className="space-y-4">
+      <input type="hidden" name="callbackUrl" value={callbackUrl} />
       {error && (
         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded">
           {error}

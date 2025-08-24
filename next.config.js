@@ -139,26 +139,16 @@ const nextConfig = {
     // Critical dependency警告の抑制
     config.module.exprContextCritical = false;
     
-    // Prisma/OpenTelemetryの警告を完全に抑制
+    // OpenTelemetryの警告を抑制
     if (isServer) {
       config.externals.push({
         '@opentelemetry/instrumentation': 'commonjs @opentelemetry/instrumentation',
-        '@prisma/instrumentation': 'commonjs @prisma/instrumentation',
-      });
-      
-      // Prisma関連のモジュールを外部化
-      config.externals.push((context, request, callback) => {
-        if (request.includes('@prisma') || request.includes('.prisma')) {
-          return callback(null, 'commonjs ' + request);
-        }
-        callback();
       });
     }
 
     // 警告の無視設定
     config.ignoreWarnings = [
       { module: /@opentelemetry\/instrumentation/ },
-      { module: /@prisma\/instrumentation/ },
       { message: /Critical dependency/ },
     ];
 

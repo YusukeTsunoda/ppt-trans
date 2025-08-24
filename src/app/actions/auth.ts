@@ -18,6 +18,7 @@ export async function loginActionWithoutRedirect(
 ): Promise<AuthState> {
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
+  const callbackUrl = formData.get('callbackUrl') as string || '/dashboard';
 
   // バリデーション
   if (!email || !password) {
@@ -35,7 +36,7 @@ export async function loginActionWithoutRedirect(
     return createErrorResponse(error, 'メールアドレスまたはパスワードが正しくありません');
   }
 
-  revalidatePath('/dashboard');
+  revalidatePath(callbackUrl);
   return createSuccessResponse('ログインに成功しました');
 }
 
@@ -46,6 +47,7 @@ export async function loginAction(
 ): Promise<AuthState> {
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
+  const callbackUrl = formData.get('callbackUrl') as string || '/dashboard';
 
   // バリデーション
   if (!email || !password) {
@@ -63,7 +65,7 @@ export async function loginAction(
     return createErrorResponse(error, 'メールアドレスまたはパスワードが正しくありません');
   }
 
-  revalidatePath('/dashboard');
+  revalidatePath(callbackUrl);
   // 成功時は成功レスポンスを返す（リダイレクトはクライアント側で処理）
   return createSuccessResponse('ログインに成功しました');
 }

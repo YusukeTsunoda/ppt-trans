@@ -35,7 +35,7 @@ export function getTestCredentials() {
   
   return {
     email: process.env.TEST_USER_EMAIL || 'test@example.com',
-    password: process.env.TEST_USER_PASSWORD || 'Test123!@#'
+    password: process.env.TEST_USER_PASSWORD || 'Test123'
   };
 }
 

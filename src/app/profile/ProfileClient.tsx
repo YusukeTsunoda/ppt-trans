@@ -9,6 +9,9 @@ import type { Profile } from '@/lib/data/profile';
 import { User, Settings, Bell, Shield, Palette, Globe, ChevronRight, Camera, Mail, Phone, MapPin, Calendar } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
 import { LanguageToggle } from '@/components/LanguageToggle';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { useTheme } from 'next-themes';
+import type { Language } from '@/contexts/LanguageContext';
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -36,15 +39,18 @@ type TabType = 'profile' | 'settings' | 'notifications' | 'security';
 export default function ProfileClient({ userId, userEmail, initialProfile }: ProfileClientProps) {
   const [state, formAction] = useActionState(updateProfileAction, null);
   const [activeTab, setActiveTab] = useState<TabType>('profile');
+  const { t } = useTranslation();
+  const { language, setLanguage } = useLanguage();
+  const { theme, setTheme } = useTheme();
+  
   const [settings, setSettings] = useState({
-    language: 'ja',
-    theme: 'light',
+    language: language,
+    theme: theme || 'system',
     autoTranslate: false,
     emailNotifications: true,
     pushNotifications: false,
     twoFactorEnabled: false,
   });
-  const { t } = useTranslation();
   
   const tabs = [
     { id: 'profile' as TabType, label: t('profile'), icon: User },
@@ -90,8 +96,8 @@ export default function ProfileClient({ userId, userEmail, initialProfile }: Pro
                       onClick={() => setActiveTab(tab.id)}
                       className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
                         activeTab === tab.id 
-                          ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-medium' 
-                          : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
+                          ? 'bg-blue-50 dark:bg-blue-900/30 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-medium' 
+                          : 'text-slate-600 dark:text-slate-400 dark:text-slate-300 hover:bg-slate-50 dark:bg-slate-700 dark:hover:bg-slate-700'
                       }`}
                     >
                       <Icon className="w-5 h-5" />
@@ -134,13 +140,13 @@ export default function ProfileClient({ userId, userEmail, initialProfile }: Pro
                         {userEmail.charAt(0).toUpperCase()}
                       </div>
                       <button className="absolute bottom-0 right-0 bg-white dark:bg-slate-700 rounded-full p-2 shadow-lg hover:shadow-xl transition-shadow">
-                        <Camera className="w-4 h-4 text-slate-600 dark:text-slate-300" />
+                        <Camera className="w-4 h-4 text-slate-600 dark:text-slate-400 dark:text-slate-300" />
                       </button>
                     </div>
                     <div>
                       <h3 className="text-lg font-medium text-slate-900 dark:text-white">{initialProfile?.display_name || userEmail.split('@')[0]}</h3>
-                      <p className="text-sm text-slate-500 dark:text-slate-400">{userEmail}</p>
-                      <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">{t('userId')}: {userId.slice(0, 8)}...</p>
+                      <p className="text-sm text-slate-500 dark:text-slate-400 dark:text-slate-400">{userEmail}</p>
+                      <p className="text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400 mt-1">{t('userId')}: {userId.slice(0, 8)}...</p>
                     </div>
                   </div>
                 </div>
@@ -238,9 +244,13 @@ export default function ProfileClient({ userId, userEmail, initialProfile }: Pro
                       {t('language')}
                     </label>
                     <select 
-                      className="input"
-                      value={settings.language}
-                      onChange={(e) => setSettings({...settings, language: e.target.value})}
+                      className="input dark:bg-slate-700 dark:border-slate-600 dark:text-white"
+                      value={language}
+                      onChange={(e) => {
+                        const newLang = e.target.value as Language;
+                        setLanguage(newLang);
+                        setSettings({...settings, language: newLang});
+                      }}
                     >
                       <option value="ja">日本語</option>
                       <option value="en">English</option>
@@ -251,7 +261,7 @@ export default function ProfileClient({ userId, userEmail, initialProfile }: Pro
                   
                   {/* テーマ設定 */}
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                       <Palette className="w-4 h-4 inline mr-1" />
                       {t('theme')}
                     </label>
@@ -261,33 +271,42 @@ export default function ProfileClient({ userId, userEmail, initialProfile }: Pro
                           type="radio"
                           name="theme"
                           value="light"
-                          checked={settings.theme === 'light'}
-                          onChange={(e) => setSettings({...settings, theme: e.target.value})}
+                          checked={theme === 'light'}
+                          onChange={(e) => {
+                            setTheme('light');
+                            setSettings({...settings, theme: 'light'});
+                          }}
                           className="mr-2"
                         />
-                        <span>{t('lightMode') || 'ライトモード'}</span>
+                        <span className="text-slate-700 dark:text-slate-300">{t('lightMode') || 'ライトモード'}</span>
                       </label>
                       <label className="flex items-center">
                         <input
                           type="radio"
                           name="theme"
                           value="dark"
-                          checked={settings.theme === 'dark'}
-                          onChange={(e) => setSettings({...settings, theme: e.target.value})}
+                          checked={theme === 'dark'}
+                          onChange={(e) => {
+                            setTheme('dark');
+                            setSettings({...settings, theme: 'dark'});
+                          }}
                           className="mr-2"
                         />
-                        <span>{t('darkMode') || 'ダークモード'}</span>
+                        <span className="text-slate-700 dark:text-slate-300">{t('darkMode') || 'ダークモード'}</span>
                       </label>
                       <label className="flex items-center">
                         <input
                           type="radio"
                           name="theme"
-                          value="auto"
-                          checked={settings.theme === 'auto'}
-                          onChange={(e) => setSettings({...settings, theme: e.target.value})}
+                          value="system"
+                          checked={theme === 'system'}
+                          onChange={(e) => {
+                            setTheme('system');
+                            setSettings({...settings, theme: 'system'});
+                          }}
                           className="mr-2"
                         />
-                        <span>{t('autoMode') || '自動'}</span>
+                        <span className="text-slate-700 dark:text-slate-300">{t('autoMode') || '自動'}</span>
                       </label>
                     </div>
                   </div>
@@ -295,7 +314,7 @@ export default function ProfileClient({ userId, userEmail, initialProfile }: Pro
                   {/* 自動翻訳設定 */}
                   <div>
                     <label className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-slate-700">
+                      <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
                         {t('autoTranslateOnUpload') || 'アップロード時に自動翻訳'}
                       </span>
                       <button
@@ -310,7 +329,7 @@ export default function ProfileClient({ userId, userEmail, initialProfile }: Pro
                         }`} />
                       </button>
                     </label>
-                    <p className="text-xs text-slate-500 mt-1">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                       {t('autoTranslateDescription') || 'ファイルアップロード後、自動的に翻訳処理を開始します'}
                     </p>
                   </div>
@@ -326,8 +345,8 @@ export default function ProfileClient({ userId, userEmail, initialProfile }: Pro
 
             {/* 通知設定タブ */}
             {activeTab === 'notifications' && (
-              <div className="card animate-fadeIn">
-                <h2 className="text-xl font-semibold text-slate-900 mb-6">{t('notifications')}</h2>
+              <div className="card dark:bg-slate-800 animate-fadeIn">
+                <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-6">{t('notifications')}</h2>
                 
                 <div className="space-y-6">
                   {/* メール通知 */}
@@ -338,7 +357,7 @@ export default function ProfileClient({ userId, userEmail, initialProfile }: Pro
                           <Mail className="w-4 h-4" />
                           {t('emailNotifications') || 'メール通知'}
                         </span>
-                        <p className="text-xs text-slate-500 mt-1">
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                           {t('emailNotificationsDescription') || '重要なお知らせをメールで受け取る'}
                         </p>
                       </div>
@@ -364,7 +383,7 @@ export default function ProfileClient({ userId, userEmail, initialProfile }: Pro
                           <Bell className="w-4 h-4" />
                           {t('pushNotifications') || 'プッシュ通知'}
                         </span>
-                        <p className="text-xs text-slate-500 mt-1">
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                           {t('pushNotificationsDescription') || 'ブラウザでリアルタイム通知を受け取る'}
                         </p>
                       </div>
@@ -396,9 +415,9 @@ export default function ProfileClient({ userId, userEmail, initialProfile }: Pro
                           <input
                             type="checkbox"
                             defaultChecked={item.checked}
-                            className="mr-3 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                            className="mr-3 rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500"
                           />
-                          <span className="text-sm text-slate-600">{item.label}</span>
+                          <span className="text-sm text-slate-600 dark:text-slate-400">{item.label}</span>
                         </label>
                       ))}
                     </div>
@@ -415,14 +434,14 @@ export default function ProfileClient({ userId, userEmail, initialProfile }: Pro
 
             {/* セキュリティタブ */}
             {activeTab === 'security' && (
-              <div className="card animate-fadeIn">
-                <h2 className="text-xl font-semibold text-slate-900 mb-6">セキュリティ設定</h2>
+              <div className="card dark:bg-slate-800 animate-fadeIn">
+                <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-6">セキュリティ設定</h2>
                 
                 <div className="space-y-6">
                   {/* パスワード変更 */}
                   <div className="border-b pb-6">
                     <h3 className="text-sm font-medium text-slate-700 mb-4">パスワード</h3>
-                    <p className="text-sm text-slate-600 mb-4">
+                    <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
                       定期的にパスワードを変更することをお勧めします
                     </p>
                     <button className="btn-secondary">
@@ -434,8 +453,8 @@ export default function ProfileClient({ userId, userEmail, initialProfile }: Pro
                   <div className="border-b pb-6">
                     <div className="flex items-center justify-between mb-4">
                       <div>
-                        <h3 className="text-sm font-medium text-slate-700">2段階認証</h3>
-                        <p className="text-sm text-slate-600 mt-1">
+                        <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300">2段階認証</h3>
+                        <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
                           アカウントのセキュリティを強化します
                         </p>
                       </div>
@@ -452,8 +471,8 @@ export default function ProfileClient({ userId, userEmail, initialProfile }: Pro
                       </button>
                     </div>
                     {settings.twoFactorEnabled && (
-                      <div className="bg-blue-50 p-4 rounded-lg">
-                        <p className="text-sm text-blue-800">
+                      <div className="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg">
+                        <p className="text-sm text-blue-800 dark:text-blue-300">
                           2段階認証が有効になっています。認証アプリを使用してログイン時に追加の確認を行います。
                         </p>
                       </div>
@@ -464,10 +483,10 @@ export default function ProfileClient({ userId, userEmail, initialProfile }: Pro
                   <div>
                     <h3 className="text-sm font-medium text-slate-700 mb-4">アクティブなセッション</h3>
                     <div className="space-y-3">
-                      <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                      <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-700 rounded-lg">
                         <div>
                           <p className="text-sm font-medium text-slate-900">現在のセッション</p>
-                          <p className="text-xs text-slate-500">Chrome • 東京, 日本</p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">Chrome • 東京, 日本</p>
                         </div>
                         <span className="text-xs text-emerald-600 bg-emerald-50 px-2 py-1 rounded">アクティブ</span>
                       </div>
@@ -480,10 +499,10 @@ export default function ProfileClient({ userId, userEmail, initialProfile }: Pro
                   {/* アカウント削除 */}
                   <div className="border-t pt-6">
                     <h3 className="text-sm font-medium text-red-600 mb-2">危険な操作</h3>
-                    <p className="text-sm text-slate-600 mb-4">
+                    <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
                       アカウントを削除すると、すべてのデータが失われます。この操作は取り消せません。
                     </p>
-                    <button className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+                    <button className="px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 transition-colors">
                       アカウントを削除
                     </button>
                   </div>

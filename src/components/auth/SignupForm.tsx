@@ -3,7 +3,7 @@
 import { useActionState } from 'react';
 import { useFormStatus } from 'react-dom';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { signupAction } from '@/app/actions/auth';
 import Link from 'next/link';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -37,6 +37,13 @@ export default function SignupForm() {
   const [state, formAction] = useActionState(signupAction, null);
   const router = useRouter();
   const { t } = useTranslation();
+  
+  // フォーム値を保持するstate
+  const [formValues, setFormValues] = useState({
+    email: '',
+    password: '',
+    confirmPassword: ''
+  });
   
   useEffect(() => {
     if (state?.success && state?.message?.includes('確認メール')) {
@@ -80,6 +87,8 @@ export default function SignupForm() {
             autoComplete="email"
             required
             disabled={state?.success}
+            value={formValues.email}
+            onChange={(e) => setFormValues(prev => ({...prev, email: e.target.value}))}
             className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm bg-white dark:bg-gray-800 disabled:opacity-50"
             placeholder="your@email.com"
           />
@@ -98,6 +107,8 @@ export default function SignupForm() {
             required
             disabled={state?.success}
             minLength={6}
+            value={formValues.password}
+            onChange={(e) => setFormValues(prev => ({...prev, password: e.target.value}))}
             className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm bg-white dark:bg-gray-800 disabled:opacity-50"
             placeholder="••••••••"
           />
@@ -119,6 +130,8 @@ export default function SignupForm() {
             required
             disabled={state?.success}
             minLength={6}
+            value={formValues.confirmPassword}
+            onChange={(e) => setFormValues(prev => ({...prev, confirmPassword: e.target.value}))}
             className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm bg-white dark:bg-gray-800 disabled:opacity-50"
             placeholder="••••••••"
           />

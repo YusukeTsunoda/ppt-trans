@@ -8,30 +8,101 @@ import { useRouter } from 'next/navigation';
 import { FILE_EXTENSIONS, FILE_SIZE_LIMITS } from '@/constants/mime-types';
 import { useTranslation } from '@/hooks/useTranslation';
 
-function SubmitButton({ disabled = false }: { disabled?: boolean }) {
+function SubmitButton({ disabled = false, fileSize = 0 }: { disabled?: boolean; fileSize?: number }) {
   const { pending } = useFormStatus();
   const { t } = useTranslation();
+  const [elapsedTime, setElapsedTime] = useState(0);
+  
+  // 経過時間の追跡
+  useEffect(() => {
+    if (pending) {
+      const startTime = Date.now();
+      const timer = setInterval(() => {
+        setElapsedTime(Math.floor((Date.now() - startTime) / 1000));
+      }, 1000);
+      return () => {
+        clearInterval(timer);
+        setElapsedTime(0);
+      };
+    } else {
+      setElapsedTime(0);
+    }
+  }, [pending]);
+  
+  // ファイルサイズに基づく動的なステータスメッセージ
+  const getUploadStatus = () => {
+    const fileSizeMB = fileSize / (1024 * 1024);
+    
+    if (elapsedTime < 2) {
+      return t('uploadStatusValidating') || 'ファイルを検証中...';
+    } else if (elapsedTime < 4) {
+      return t('uploadStatusConnecting') || 'サーバーに接続中...';
+    } else if (elapsedTime < 8) {
+      return t('uploadStatusUploading') || 'ファイルをアップロード中...';
+    } else if (elapsedTime < 15) {
+      return t('uploadStatusProcessing') || '処理中...もう少しお待ちください';
+    } else if (fileSizeMB > 50) {
+      return t('uploadStatusLargeFile') || '大きなファイルのため時間がかかっています...';
+    } else {
+      return t('uploadStatusAlmostDone') || 'まもなく完了します...';
+    }
+  };
   
   return (
-    <button
-      type="submit"
-      disabled={pending || disabled}
-      className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
-      data-testid="upload-button"
-      aria-label={pending ? t('uploading') : t('upload')}
-    >
-      {pending ? (
-        <>
-          <svg className="inline-block mr-2 animate-spin h-4 w-4" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
-          </svg>
-          {t('uploading')}
-        </>
-      ) : (
-        t('upload')
+    <>
+      {/* アップロード中のステータス表示 */}
+      {pending && (
+        <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg animate-fadeIn">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-3">
+              {/* アニメーションアイコン */}
+              <div className="relative">
+                <svg className="animate-spin h-5 w-5 text-blue-600 dark:text-blue-400" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+                </svg>
+              </div>
+              
+              {/* ステータステキスト */}
+              <div>
+                <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                  {getUploadStatus()}
+                </p>
+                {elapsedTime > 5 && (
+                  <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                    {t('uploadElapsedTime') || '経過時間'}: {elapsedTime}{t('seconds') || '秒'}
+                  </p>
+                )}
+              </div>
+            </div>
+            
+            {/* プルスアニメーション */}
+            <div className="flex gap-1">
+              <span className="w-2 h-2 bg-blue-600 dark:bg-blue-400 rounded-full animate-pulse"></span>
+              <span className="w-2 h-2 bg-blue-600 dark:bg-blue-400 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></span>
+              <span className="w-2 h-2 bg-blue-600 dark:bg-blue-400 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></span>
+            </div>
+          </div>
+          
+          {/* ファイルサイズが大きい場合の追加情報 */}
+          {fileSize > 50 * 1024 * 1024 && elapsedTime > 10 && (
+            <p className="text-xs text-blue-600 dark:text-blue-400 mt-2 pl-8">
+              {t('uploadLargeFileNote') || '大容量ファイルの処理には時間がかかる場合があります'}
+            </p>
+          )}
+        </div>
       )}
-    </button>
+      
+      <button
+        type="submit"
+        disabled={pending || disabled}
+        className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+        data-testid="upload-button"
+        aria-label={pending ? t('uploading') : t('upload')}
+      >
+        {pending ? t('uploadingButton') || 'アップロード中...' : t('upload')}
+      </button>
+    </>
   );
 }
 
@@ -134,7 +205,7 @@ export default function UploadForm() {
         </div>
       )}
       
-      <SubmitButton disabled={!!clientError || !fileName} />
+      <SubmitButton disabled={!!clientError || !fileName} fileSize={fileSize} />
     </form>
   );
 }
