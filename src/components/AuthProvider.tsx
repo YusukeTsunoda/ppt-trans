@@ -27,9 +27,10 @@ export default function AuthProvider({
   const supabase = createClient();
 
   useEffect(() => {
-    logger.debug('=== AuthProvider Initialization ===');
-    logger.debug('Supabase URL:', { url: process.env.NEXT_PUBLIC_SUPABASE_URL });
-    logger.debug('Supabase Key exists:', { hasKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY });
+    if (process.env.NODE_ENV === 'development') {
+      logger.debug('=== AuthProvider Initialization ===');
+      logger.debug('Supabase configuration loaded');
+    }
     
     // 初回のセッション確認
     const checkSession = async () => {

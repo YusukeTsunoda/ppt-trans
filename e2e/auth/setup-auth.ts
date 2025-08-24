@@ -47,9 +47,10 @@ setup('authenticate', async ({ page, context }) => {
     throw new Error('認証セットアップに失敗しました');
   }
   
-  // 認証状態を保存
-  await context.storageState({ path: 'auth.json' });
-  console.log('💾 認証状態を auth.json に保存しました');
+  // 認証状態を保存（環境変数で場所を指定可能）
+  const authFile = process.env.AUTH_STATE_FILE || '.auth/test-auth.json';
+  await context.storageState({ path: authFile });
+  console.log(`💾 認証状態を ${authFile} に保存しました`);
   
   // Supabaseのセッション情報も保存（必要に応じて）
   const localStorage = await page.evaluate(() => {

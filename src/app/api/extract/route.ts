@@ -75,6 +75,14 @@ export async function POST(request: NextRequest) {
       
       let outputData = '';
       let errorData = '';
+      let isTimedOut = false;
+      
+      // タイムアウト設定（30秒）
+      const timeout = setTimeout(() => {
+        isTimedOut = true;
+        pythonProcess.kill();
+        logger.error('Python script timed out');
+      }, 30000);
       
       pythonProcess.stdout.on('data', (data) => {
         outputData += data.toString();
@@ -85,6 +93,7 @@ export async function POST(request: NextRequest) {
       });
       
       pythonProcess.on('close', async (code) => {
+        clearTimeout(timeout);
         // 一時ファイルを削除（ファイルが存在する場合のみ）
         try {
           await fs.access(tempFilePath);
@@ -96,6 +105,20 @@ export async function POST(request: NextRequest) {
           }
         }
         
+        if (isTimedOut) {
+          resolve(
+            NextResponse.json(
+              { 
+                success: false, 
+                error: 'テキスト抽出がタイムアウトしました',
+                details: '処理に時間がかかりすぎています。ファイルサイズを確認してください。'
+              },
+              { status: 504 }
+            )
+          );
+          return;
+        }
+        
         if (code !== 0) {
           logger.error('Python script error:', errorData);
           resolve(
@@ -103,7 +126,7 @@ export async function POST(request: NextRequest) {
               { 
                 success: false, 
                 error: 'テキスト抽出に失敗しました',
-                details: errorData 
+                details: process.env.NODE_ENV === 'development' ? errorData : undefined
               },
               { status: 500 }
             )
@@ -127,10 +150,51 @@ export async function POST(request: NextRequest) {
             return;
           }
           
+          // データベースに抽出結果を保存
+          // ファイルのステータスを更新
+          const { error: updateError } = await supabase
+            .from('files')
+            .update({
+              status: 'processed',
+              slide_count: result.slides?.length || 0,
+              text_count: result.slides?.reduce((acc: number, slide: any) => 
+                acc + (slide.texts?.length || 0), 0) || 0,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', fileId);
+          
+          if (updateError) {
+            logger.error('Database update error:', updateError);
+          }
+          
+          // translationsテーブルに抽出したテキストを保存
+          if (result.slides && result.slides.length > 0) {
+            for (const slide of result.slides) {
+              if (slide.texts && slide.texts.length > 0) {
+                for (let i = 0; i < slide.texts.length; i++) {
+                  const text = slide.texts[i];
+                  await supabase
+                    .from('translations')
+                    .upsert({
+                      file_id: fileId,
+                      slide_number: slide.slide_number,
+                      element_index: i,
+                      original_text: text,
+                      status: 'pending',
+                      created_at: new Date().toISOString()
+                    }, {
+                      onConflict: 'file_id,slide_number,element_index'
+                    });
+                }
+              }
+            }
+          }
+          
           resolve(
             NextResponse.json({
               success: true,
-              data: result
+              extractedData: result,
+              message: 'テキスト抽出が完了しました'
             })
           );
         } catch (parseError) {

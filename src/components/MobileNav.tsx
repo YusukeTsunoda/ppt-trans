@@ -10,7 +10,7 @@ import { User } from '@supabase/supabase-js';
 export function MobileNav() {
   const [isOpen, setIsOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
-  const [userRole, setUserRole] = useState<string>('USER');
+  const [userRole, setUserRole] = useState<string>('user');
   const pathname = usePathname();
   const router = useRouter();
   const { theme, setTheme } = useTheme();
@@ -29,7 +29,7 @@ export function MobileNav() {
           .eq('id', user.id)
           .single();
 
-        setUserRole(profile?.role || 'USER');
+        setUserRole(profile?.role || 'user');
       }
     };
 
@@ -46,9 +46,9 @@ export function MobileNav() {
           .eq('id', session.user.id)
           .single();
 
-        setUserRole(profile?.role || 'USER');
+        setUserRole(profile?.role || 'user');
       } else {
-        setUserRole('USER');
+        setUserRole('user');
       }
     });
 
@@ -139,7 +139,7 @@ export function MobileNav() {
                     {user.email}
                   </p>
                   <p className="text-xs text-secondary-500 dark:text-secondary-400">
-                    {userRole === 'ADMIN' ? '管理者' : 'ユーザー'}
+                    {userRole === 'admin' ? '管理者' : 'ユーザー'}
                   </p>
                 </div>
               </div>
@@ -152,7 +152,7 @@ export function MobileNav() {
               {menuItems.map((item) => {
                 // 認証が必要なアイテムの表示制御
                 if (item.requireAuth && !user) return null;
-                if (item.requireAdmin && userRole !== 'ADMIN') return null;
+                if (item.requireAdmin && userRole !== 'admin') return null;
 
                 return (
                   <li key={item.href}>

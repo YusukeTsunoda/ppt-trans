@@ -145,22 +145,15 @@ export default function AdminDashboardClient({
                 総ユーザー数
               </div>
               <div className="mt-2 text-3xl font-semibold text-foreground">
-                {initialStats.overview?.totalUsers || 0}
+                {initialStats.totalUsers || initialStats.overview?.totalUsers || 0}
               </div>
-              {initialStats.overview?.userGrowthRate !== undefined && (
-                <div className={`text-sm mt-1 ${
-                  initialStats.overview.userGrowthRate > 0 ? 'text-accent-600' : 'text-red-600'
-                }`}>
-                  {initialStats.overview.userGrowthRate > 0 ? '+' : ''}{initialStats.overview.userGrowthRate}%
-                </div>
-              )}
             </div>
             <div className="bg-white dark:bg-secondary-800 rounded-lg shadow p-6">
               <div className="text-sm font-medium text-secondary-500 dark:text-secondary-400">
                 アクティブユーザー
               </div>
               <div className="mt-2 text-3xl font-semibold text-foreground">
-                {initialStats.overview?.activeUsers || 0}
+                {initialStats.activeUsers || initialStats.overview?.activeUsers || 0}
               </div>
             </div>
             <div className="bg-white dark:bg-secondary-800 rounded-lg shadow p-6">
@@ -168,22 +161,15 @@ export default function AdminDashboardClient({
                 総ファイル数
               </div>
               <div className="mt-2 text-3xl font-semibold text-foreground">
-                {initialStats.files?.totalFiles || 0}
+                {initialStats.totalFiles || initialStats.files?.totalFiles || 0}
               </div>
-              {initialStats.files?.fileGrowthRate !== undefined && (
-                <div className={`text-sm mt-1 ${
-                  initialStats.files.fileGrowthRate > 0 ? 'text-accent-600' : 'text-red-600'
-                }`}>
-                  {initialStats.files.fileGrowthRate > 0 ? '+' : ''}{initialStats.files.fileGrowthRate}%
-                </div>
-              )}
             </div>
             <div className="bg-white dark:bg-secondary-800 rounded-lg shadow p-6">
               <div className="text-sm font-medium text-secondary-500 dark:text-secondary-400">
                 総翻訳数
               </div>
               <div className="mt-2 text-3xl font-semibold text-foreground">
-                {initialStats.usage?.totalTranslations || 0}
+                {initialStats.totalTranslations || initialStats.usage?.totalTranslations || 0}
               </div>
             </div>
           </div>
@@ -226,7 +212,7 @@ export default function AdminDashboardClient({
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        user.role === 'ADMIN' 
+                        user.role === 'admin' 
                           ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'
                           : 'bg-secondary-100 text-secondary-800 dark:bg-secondary-700 dark:text-secondary-300'
                       }`}>
@@ -274,12 +260,12 @@ export default function AdminDashboardClient({
                         {activity.user?.name || activity.user?.email || 'Unknown User'}
                       </p>
                       <p className="text-sm text-secondary-500 dark:text-secondary-400">
-                        {getActionLabel(activity.action)} - {activity.targetType || 'N/A'}
+                        {getActionLabel(activity.action)} - {activity.description || activity.details?.description || ''}
                       </p>
                     </div>
                     <div className="text-sm text-secondary-500 dark:text-secondary-400">
-                      {activity.createdAt 
-                        ? formatDistanceToNow(new Date(activity.createdAt), { 
+                      {activity.created_at 
+                        ? formatDistanceToNow(new Date(activity.created_at), { 
                             addSuffix: true, 
                             locale: ja 
                           })

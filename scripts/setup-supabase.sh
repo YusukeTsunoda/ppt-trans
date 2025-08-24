@@ -5,10 +5,23 @@ echo "Supabase セットアップスクリプト"
 echo "==========================================="
 echo ""
 
+# スクリプトのディレクトリを取得
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+PROJECT_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
+
+# .envファイルを読み込む
+if [ -f "$PROJECT_ROOT/.env.local" ]; then
+    echo "📄 .env.localファイルを読み込み中..."
+    export $(grep -v '^#' "$PROJECT_ROOT/.env.local" | xargs)
+elif [ -f "$PROJECT_ROOT/.env" ]; then
+    echo "📄 .envファイルを読み込み中..."
+    export $(grep -v '^#' "$PROJECT_ROOT/.env" | xargs)
+fi
+
 # 環境変数の確認
 if [ -z "$NEXT_PUBLIC_SUPABASE_URL" ] || [ -z "$NEXT_PUBLIC_SUPABASE_ANON_KEY" ]; then
     echo "❌ エラー: 環境変数が設定されていません"
-    echo "   .envファイルに以下を設定してください:"
+    echo "   .envまたは.env.localファイルに以下を設定してください:"
     echo "   - NEXT_PUBLIC_SUPABASE_URL"
     echo "   - NEXT_PUBLIC_SUPABASE_ANON_KEY"
     exit 1

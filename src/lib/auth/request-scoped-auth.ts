@@ -119,7 +119,7 @@ export async function requireAdminRole() {
     throw new Error('Authentication required');
   }
   
-  if (user.role !== 'ADMIN') {
+  if (user.role !== 'admin') {
     throw new Error('Admin role required');
   }
   

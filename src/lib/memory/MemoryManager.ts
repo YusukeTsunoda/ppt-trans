@@ -29,6 +29,11 @@ class MemoryManager {
   private cache = new Map<string, CacheEntry<JsonValue>>();
   private maxCacheSize = 50 * 1024 * 1024; // 50MB
   private currentCacheSize = 0;
+  
+  // 統計追跡用
+  private cacheHits = 0;
+  private cacheMisses = 0;
+  private evictionCount = 0;
 
   private constructor() {
     // 定期的なメモリ監視（30秒間隔）
@@ -201,6 +206,7 @@ class MemoryManager {
     for (const [key, entry] of expiredEntries) {
       this.currentCacheSize -= entry.size;
       this.cache.delete(key);
+      this.evictionCount++;
     }
 
     // 必要に応じて古いエントリを追加削除
@@ -213,6 +219,7 @@ class MemoryManager {
         const [key, entry] = sortedEntries[i];
         this.currentCacheSize -= entry.size;
         this.cache.delete(key);
+        this.evictionCount++;
       }
     }
 
@@ -298,11 +305,11 @@ class MemoryManager {
       cache: {
         totalEntries: this.cache.size,
         memoryUsage: Math.round(this.currentCacheSize / 1024 / 1024 * 100) / 100,
-        hitRate: 0, // TODO: 実装が必要
-        missRate: 0, // TODO: 実装が必要
-        evictionCount: 0, // TODO: 実装が必要
-        oldestEntry: Math.min(...Array.from(this.cache.values()).map(e => e.lastAccessed)),
-        newestEntry: Math.max(...Array.from(this.cache.values()).map(e => e.lastAccessed)),
+        hitRate: this.cacheHits > 0 ? this.cacheHits / (this.cacheHits + this.cacheMisses) : 0,
+        missRate: this.cacheMisses > 0 ? this.cacheMisses / (this.cacheHits + this.cacheMisses) : 0,
+        evictionCount: this.evictionCount,
+        oldestEntry: this.cache.size > 0 ? Math.min(...Array.from(this.cache.values()).map(e => e.lastAccessed)) : 0,
+        newestEntry: this.cache.size > 0 ? Math.max(...Array.from(this.cache.values()).map(e => e.lastAccessed)) : 0,
       },
       thresholds: this.thresholds,
     };

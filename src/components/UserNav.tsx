@@ -9,7 +9,7 @@ import logger from '@/lib/logger';
 
 export function UserNav() {
   const [user, setUser] = useState<User | null>(null);
-  const [userRole, setUserRole] = useState<string>('USER');
+  const [userRole, setUserRole] = useState<string>('user');
   const [loading, setLoading] = useState(true);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const router = useRouter();
@@ -29,7 +29,7 @@ export function UserNav() {
             .eq('id', user.id)
             .single();
 
-          setUserRole(profile?.role || 'USER');
+          setUserRole(profile?.role || 'user');
         }
       } catch (error) {
         logger.error('Auth check error:', error);
@@ -53,7 +53,7 @@ export function UserNav() {
 
         setUserRole(profile?.role || 'USER');
       } else {
-        setUserRole('USER');
+        setUserRole('user');
       }
       setLoading(false);
     });
@@ -96,7 +96,7 @@ export function UserNav() {
     );
   }
 
-  const isAdmin = userRole === 'ADMIN' || userRole === 'SUPER_ADMIN';
+  const isAdmin = userRole === 'admin';
 
   return (
     <div className="relative">

@@ -64,7 +64,7 @@ export function DynamicAdminLoader({ type }: DynamicAdminLoaderProps) {
             .eq('id', user.id)
             .single();
 
-          setIsAdmin(profile?.role === 'ADMIN');
+          setIsAdmin(profile?.role === 'admin');
         }
       } catch (error) {
         logger.error('Auth check error:', error);

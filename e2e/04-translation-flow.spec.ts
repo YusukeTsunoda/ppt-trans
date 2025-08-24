@@ -10,8 +10,16 @@ test.describe('翻訳機能テスト', () => {
   let fileId: string;
 
   test.beforeEach(async ({ page, baseURL }) => {
-    // authenticated-testsプロジェクトは既に認証済みなので、直接ダッシュボードへ
+    // authenticated-testsプロジェクトは既に認証済み
+    // ダッシュボードにアクセスして認証状態を確認
     await page.goto(`${baseURL}/dashboard`);
+    
+    // ログインページにリダイレクトされていないことを確認
+    const url = page.url();
+    if (url.includes('/login')) {
+      throw new Error('認証が正しく設定されていません。ログインページにリダイレクトされました。');
+    }
+    
     await page.waitForLoadState('networkidle');
 
     // ファイルをアップロード
@@ -45,8 +53,8 @@ test.describe('翻訳機能テスト', () => {
     ]);
     
     // URLからファイルIDを取得
-    const url = page.url();
-    const match = url.match(/preview\/([^/]+)/);
+    const currentUrl = page.url();
+    const match = currentUrl.match(/preview\/([^/]+)/);
     fileId = match ? match[1] : '';
     
     // テキスト抽出の完了を待つ

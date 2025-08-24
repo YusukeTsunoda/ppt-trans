@@ -8,8 +8,8 @@
  */
 export const TEST_CONFIG = {
   // 基本設定
-  baseUrl: process.env.BASE_URL || 'http://localhost:3001',
-  testPort: process.env.TEST_PORT || '3001',
+  baseUrl: process.env.BASE_URL || 'http://localhost:3000',
+  testPort: process.env.TEST_PORT || '3000',
   
   // タイムアウト設定
   timeouts: {
@@ -25,7 +25,7 @@ export const TEST_CONFIG = {
   auth: {
     email: process.env.TEST_USER_EMAIL || 'test@example.com',
     password: process.env.TEST_USER_PASSWORD || 'testpassword123',
-    storageStateFile: 'auth.json',
+    storageStateFile: process.env.AUTH_STATE_FILE || '.auth/test-auth.json',
     maxRetries: 3,
     retryDelay: 1000
   },

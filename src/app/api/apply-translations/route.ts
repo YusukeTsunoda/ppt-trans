@@ -78,8 +78,8 @@ export async function POST(request: NextRequest) {
       }))
     };
     
-    // Pythonスクリプトを実行して翻訳を適用
-    const pythonScriptPath = path.join(process.cwd(), 'src/lib/pptx/apply_translations.py');
+    // Pythonスクリプトを実行して翻訳を適用（v2を使用）
+    const pythonScriptPath = path.join(process.cwd(), 'src/lib/pptx/apply_translations_v2.py');
     
     // 仮想環境のPythonを使用（仮想環境が存在する場合）
     const venvPython = path.join(process.cwd(), 'venv', 'bin', 'python');

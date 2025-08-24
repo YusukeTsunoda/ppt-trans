@@ -11,12 +11,9 @@ test.describe('スキップテストの解決', () => {
   
   test.describe('非同期処理の競合解決', () => {
     test('アップロード後のファイル一覧表示と操作（非同期処理対応版）', async ({ page, baseURL }) => {
-      // ログイン
-      await page.goto(`${baseURL}/login`);
-      await page.fill('input[type="email"]', TEST_CONFIG.auth.email);
-      await page.fill('input[type="password"]', TEST_CONFIG.auth.password);
-      await page.click('button[type="submit"]');
-      await page.waitForURL('**/dashboard');
+      // 既に認証済みなのでダッシュボードに直接アクセス
+      await page.goto(`${baseURL}/dashboard`);
+      await page.waitForLoadState('networkidle');
       
       // アップロード実行
       await page.goto(`${baseURL}/upload`);

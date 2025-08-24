@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback, memo } from 'react';
 import Link from 'next/link';
 import { deleteFileAction, downloadFileAction } from '@/app/actions/files';
 import { FileRecord } from '@/lib/data/files';
@@ -18,7 +18,7 @@ export default function FilesView({ initialFiles }: FilesViewProps) {
   const [downloadingFileId, setDownloadingFileId] = useState<string | null>(null);
   
   // ファイル削除時の処理
-  const handleDelete = async (fileId: string) => {
+  const handleDelete = useCallback(async (fileId: string) => {
     if (!confirm('このファイルを削除してもよろしいですか？')) {
       return;
     }
@@ -33,10 +33,10 @@ export default function FilesView({ initialFiles }: FilesViewProps) {
     } finally {
       setDeletingFileId(null);
     }
-  };
+  }, []);
   
   // ファイルダウンロード時の処理
-  const handleDownload = async (fileId: string, fileType: 'original' | 'translated') => {
+  const handleDownload = useCallback(async (fileId: string, fileType: 'original' | 'translated') => {
     setDownloadingFileId(fileId);
     try {
       const result = await downloadFileAction(fileId, fileType);
@@ -49,7 +49,7 @@ export default function FilesView({ initialFiles }: FilesViewProps) {
     } finally {
       setDownloadingFileId(null);
     }
-  };
+  }, []);
   
   // フォーマット関数
   const formatDate = (dateString: string) => {
