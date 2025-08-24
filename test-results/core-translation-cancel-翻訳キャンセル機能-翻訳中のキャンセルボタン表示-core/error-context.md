@@ -1,0 +1,48 @@
+# Page snapshot
+
+```yaml
+- alert
+- link "← ダッシュボードに戻る":
+  - /url: /dashboard
+- heading "test-presentation.pptx" [level=1]
+- button "Select language": 🇯🇵 日本語
+- combobox "翻訳先言語":
+  - option "日本語"
+  - option "English" [selected]
+  - option "中文"
+  - option "한국어"
+- button "現在のスライドを翻訳"
+- button "すべて翻訳"
+- button "翻訳済みをダウンロード":
+  - img
+  - text: 翻訳済みをダウンロード
+- img
+- paragraph:
+  - strong: お知らせ：
+  - text: 現在、スライドのプレビュー画像は準備中です。今後のアップデートで実際のスライド画像が表示されるようになります。現在はテキスト内容の確認と翻訳機能をご利用いただけます。
+- heading "スライド 1 / 3" [level=2]
+- button "前のスライド" [disabled]: 前へ
+- button "次のスライド": 次へ
+- button "スライド 1": スライド 1 2 テキスト ✓ translated
+- button "スライド 2": スライド 2 2 テキスト ✓ translated
+- button "スライド 3": スライド 3 2 テキスト ✓ translated
+- heading "スライドプレビュー" [level=3]
+- button "ズームアウト":
+  - img
+- text: 100%
+- button "ズームイン":
+  - img
+- button "リセット":
+  - img
+- text: Ctrl + スクロール or ドラッグで移動
+- img "スライド 1"
+- img
+- paragraph: スライドプレビューは準備中です
+- paragraph: 次回アップデートで追加予定
+- heading "テキスト内容 (2 項目)" [level=3]
+- text: 原文 Test Presentation 翻訳
+- button "編集"
+- text: Test Presentation 原文 This is a test slide for E2E testing 翻訳
+- button "編集"
+- text: This is a test slide for E2E testing
+```
