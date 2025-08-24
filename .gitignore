@@ -74,4 +74,4 @@ uv.lock
 # OS
 .DS_Store
 Thumbs.db
-EOF < /dev/null
+EOF < /dev/nulle2e/fixtures/large-presentation.pptx
