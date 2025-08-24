@@ -1,0 +1,141 @@
+
+> pptx-translator@0.1.0 test:e2e
+> NODE_OPTIONS='--max-old-space-size=4096' playwright test
+
+[dotenv@17.2.1] injecting env (19) from .env.test -- tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit
+[dotenv@17.2.1] injecting env (0) from .env.test -- tip: ⚙️  enable debug logging with { debug: true }
+(node:18316) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+
+Running 106 tests using 1 worker
+
+[dotenv@17.2.1] injecting env (0) from .env.test -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
+🚀 認証セットアップを開始...
+📍 Base URL: http://localhost:3000
+🔧 環境変数: {
+  TEST_USER_EMAIL: [32m'test@example.com'[39m,
+  TEST_USER_PASSWORD: [32m'設定済み'[39m,
+  USE_MSW_MOCKS: [32m'false'[39m
+}
+🔐 認証試行 1/3...
+📧 Email: test@example.com
+🔑 Password: *******
+✅ 認証成功！
+💾 認証状態を playwright-auth.json に保存しました
+🍪 Cookies数: 1
+💾 LocalStorage キー: []
+✅ 認証セットアップ完了！
+  ✓  1 [setup] › e2e/auth/setup-auth-refactored.ts:81:6 › authenticate (1.4s)
+[dotenv@17.2.1] injecting env (0) from .env.test -- tip: 📡 version env with Radar: https://dotenvx.com/radar
+  ✓  2 [auth-tests] › e2e/01-auth-flow-strict.spec.ts:17:9 › 認証フロー統合テスト（厳格版） › ユーザー登録 › パスワード不一致エラーの正確な検証 (1.9s)
+  ✓  3 [auth-tests] › e2e/01-auth-flow-strict.spec.ts:44:9 › 認証フロー統合テスト（厳格版） › ユーザー登録 › 必須フィールドのバリデーション (1.7s)
+  ✓  4 [auth-tests] › e2e/01-auth-flow-strict.spec.ts:58:9 › 認証フロー統合テスト（厳格版） › ログイン機能 › 正常なログインと完全な状態遷移の検証 (2.5s)
+  ✓  5 [auth-tests] › e2e/01-auth-flow-strict.spec.ts:111:9 › 認証フロー統合テスト（厳格版） › ログイン機能 › 誤った認証情報での正確なエラー表示 (2.7s)
+  ✓  6 [auth-tests] › e2e/01-auth-flow-strict.spec.ts:154:9 › 認証フロー統合テスト（厳格版） › ログイン機能 › 存在しないユーザーでのエラー処理 (1.8s)
+  ✓  7 [auth-tests] › e2e/01-auth-flow-strict.spec.ts:177:9 › 認証フロー統合テスト（厳格版） › ログアウト機能 › 完全なログアウトとセッション破棄の検証 (3.0s)
+  ✓  8 [auth-tests] › e2e/01-auth-flow-strict.spec.ts:212:9 › 認証フロー統合テスト（厳格版） › アクセス制御 › 未認証での保護ページアクセス制御 (2.1s)
+  ✓  9 [auth-tests] › e2e/01-auth-flow-strict.spec.ts:241:9 › 認証フロー統合テスト（厳格版） › アクセス制御 › callbackUrlの正確な処理 (1.9s)
+  ✓  10 [auth-tests] › e2e/01-auth-flow-strict.spec.ts:264:9 › 認証フロー統合テスト（厳格版） › セキュリティ検証 › XSS攻撃への耐性 (3.8s)
+  ✓  11 [auth-tests] › e2e/01-auth-flow-strict.spec.ts:287:9 › 認証フロー統合テスト（厳格版） › セキュリティ検証 › SQLインジェクション攻撃によるセキュリティ侵害防止の検証 (15.8s)
+  ✓  12 [auth-tests] › e2e/01-auth-flow-strict.spec.ts:377:9 › 認証フロー統合テスト（厳格版） › セキュリティ検証 › ブルートフォース攻撃への対策 (4.8s)
+(node:18361) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+  ✓  13 [auth-tests] › e2e/01-auth-flow.spec.ts:13:9 › 認証フロー統合テスト › ユーザー登録 › パスワードが一致しない場合はエラーが表示される (1.2s)
+  ✓  14 [auth-tests] › e2e/01-auth-flow.spec.ts:34:9 › 認証フロー統合テスト › ログイン・ログアウト › 正しい認証情報でログインしてログアウトできる (2.1s)
+  ✓  15 [auth-tests] › e2e/01-auth-flow.spec.ts:76:9 › 認証フロー統合テスト › ログイン・ログアウト › 誤った認証情報ではログインできない (1.7s)
+  ✓  16 [auth-tests] › e2e/01-auth-flow.spec.ts:135:9 › 認証フロー統合テスト › アクセス制御 › 未認証状態で保護されたページにアクセスするとログインページにリダイレクトされる (796ms)
+  ✓  17 [auth-tests] › e2e/01-auth-flow.spec.ts:155:9 › 認証フロー統合テスト › アクセス制御 › callbackUrlパラメータが保持される (1.4s)
+  ✓  18 [auth-tests] › e2e/auth/auth-comprehensive.spec.ts:14:9 › 認証システムの検証 › ログイン機能の正確性 › 正常系: 有効な認証情報でログイン成功 (1.3s)
+  ✓  19 [auth-tests] › e2e/auth/auth-comprehensive.spec.ts:62:9 › 認証システムの検証 › ログイン機能の正確性 › 異常系: 無効なパスワードでログイン失敗 (1.3s)
+  ✓  20 [auth-tests] › e2e/auth/auth-comprehensive.spec.ts:86:9 › 認証システムの検証 › ログイン機能の正確性 › 異常系: 存在しないユーザーでログイン失敗 (1.2s)
+  ✓  21 [auth-tests] › e2e/auth/auth-comprehensive.spec.ts:104:9 › 認証システムの検証 › ログイン機能の正確性 › 入力検証: 不正な形式のメールアドレス (2.2s)
+  ✓  22 [auth-tests] › e2e/auth/auth-comprehensive.spec.ts:126:9 › 認証システムの検証 › ログイン機能の正確性 › セキュリティ: SQLインジェクション耐性 (1.2s)
+  ✓  23 [auth-tests] › e2e/auth/auth-comprehensive.spec.ts:144:9 › 認証システムの検証 › ログイン機能の正確性 › セキュリティ: XSS攻撃耐性 (3.2s)
+  ✓  24 [auth-tests] › e2e/auth/auth-comprehensive.spec.ts:167:9 › 認証システムの検証 › ログイン機能の正確性 › UX: ローディング状態の表示 (1.2s)
+  ✓  25 [auth-tests] › e2e/auth/auth-comprehensive.spec.ts:191:9 › 認証システムの検証 › ログイン機能の正確性 › レート制限: 連続ログイン失敗の処理 (3.5s)
+  ✓  26 [auth-tests] › e2e/auth/auth-comprehensive.spec.ts:219:9 › 認証システムの検証 › セッション管理の検証 › セッションタイムアウトの処理 (1.2s)
+  ✓  27 [auth-tests] › e2e/auth/auth-comprehensive.spec.ts:247:9 › 認証システムの検証 › セッション管理の検証 › 並行セッションの処理 (2.5s)
+✅ ログイン成功：ページ遷移を確認
+  ✓  28 [auth-tests] › e2e/auth/auth-flow.spec.ts:12:7 › 認証フロー（関心の分離） › 正常なログインフロー (1.2s)
+  ✓  29 [auth-tests] › e2e/auth/auth-flow.spec.ts:62:7 › 認証フロー（関心の分離） › 無効な認証情報でのエラー表示 (1.2s)
+  ✓  30 [auth-tests] › e2e/auth/auth-flow.spec.ts:83:7 › 認証フロー（関心の分離） › パスワードフィールドのマスキング (555ms)
+  ✓  31 [auth-tests] › e2e/auth/auth-flow.spec.ts:94:7 › 認証フロー（関心の分離） › 必須フィールドのバリデーション (1.0s)
+  -  32 [auth-tests] › e2e/auth/auth-flow.spec.ts:115:8 › ログアウトフロー › ログアウト機能
+🔍 デバッグ開始: ログインフロー
+📍 初期URL: http://localhost:3000/login
+📍 送信前URL: http://localhost:3000/login
+➡️ Request: POST http://localhost:3000/login
+📍 0秒後: http://localhost:3000/dashboard
+✅ URL変更検出: http://localhost:3000/dashboard
+📍 最終URL: http://localhost:3000/dashboard
+🎯 URLが変更された: [33mtrue[39m
+📄 ページタイトル: PowerPoint 翻訳ツール
+📄 ページ内容（最初の200文字）: PPT Translator
+
+test@example.comさん、ようこそ
+
+🇯🇵 日本語
+T
+プロフィール
+新規アップロード
+ログアウト
+アップロードしたファイル
+ファイルがありません
+
+最初のPowerPointファイルをアップロードして翻訳を始めましょう
+
+最初のファイルをアップロード
+  ✓  33 [auth-tests] › e2e/debug-login.spec.ts:5:5 › ログイン後のURL遷移デバッグ (1.4s)
+  ✓  34 [auth-tests] › e2e/simple-test.spec.ts:10:7 › 基本動作確認 › ホームページが表示される (622ms)
+  ✓  35 [auth-tests] › e2e/simple-test.spec.ts:21:7 › 基本動作確認 › ログインページが表示される (588ms)
+  ✓  36 [auth-tests] › e2e/simple-test.spec.ts:35:7 › 基本動作確認 › ログイン機能の基本動作 (1.3s)
+  ✓  37 [auth-tests] › e2e/simple-test.spec.ts:78:7 › 基本動作確認 › アップロードページへのアクセス（認証後） (4.1s)
+[dotenv@17.2.1] injecting env (0) from .env.test -- tip: 📡 observe env with Radar: https://dotenvx.com/radar
+[dotenv@17.2.1] injecting env (0) from .env.test -- tip: ⚙️  enable debug logging with { debug: true }
+(node:20551) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+✅ ファイル "test-presentation.pptx" をクリーンアップしました
+✅ ファイル "test-presentation.pptx" をクリーンアップしました
+  ✘  38 [feature-tests] › e2e/02-upload-flow-strict.spec.ts:56:9 › アップロードフロー統合テスト（厳格版） › 正常系：ファイルアップロード › PPTXファイルの完全なアップロードフロー検証 (6.3s)
+[31mTesting stopped early after 1 maximum allowed failures.[39m
+
+
+  1) [feature-tests] › e2e/02-upload-flow-strict.spec.ts:56:9 › アップロードフロー統合テスト（厳格版） › 正常系：ファイルアップロード › PPTXファイルの完全なアップロードフロー検証 
+
+    Error: [31mTimed out 5000ms waiting for [39m[2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m()[22m
+
+    Locator: locator('h1:has-text("PowerPointファイルのアップロード")')
+    Expected: visible
+    Received: <element(s) not found>
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for locator('h1:has-text("PowerPointファイルのアップロード")')[22m
+
+
+      60 |       
+      61 |       // ページタイトルの確認
+    > 62 |       await expect(page.locator('h1:has-text("PowerPointファイルのアップロード")')).toBeVisible({
+         |                                                                          ^
+      63 |         timeout: TEST_CONFIG.timeouts.element
+      64 |       });
+      65 |       
+        at /Users/yusuketsunoda/Documents/cursor/ppttrans/ppt-trans/e2e/02-upload-flow-strict.spec.ts:62:74
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/02-upload-flow-strict-アップロ-ef894-ロード-PPTXファイルの完全なアップロードフロー検証-feature-tests/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/02-upload-flow-strict-アップロ-ef894-ロード-PPTXファイルの完全なアップロードフロー検証-feature-tests/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/02-upload-flow-strict-アップロ-ef894-ロード-PPTXファイルの完全なアップロードフロー検証-feature-tests/error-context.md
+
+  1 failed
+    [feature-tests] › e2e/02-upload-flow-strict.spec.ts:56:9 › アップロードフロー統合テスト（厳格版） › 正常系：ファイルアップロード › PPTXファイルの完全なアップロードフロー検証 
+  1 skipped
+  68 did not run
+  36 passed (1.5m)
+  1 error was not a part of any test, see above for details
+
+[36m  Serving HTML report at http://localhost:56056. Press Ctrl+C to quit.[39m
