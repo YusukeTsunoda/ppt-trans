@@ -8,6 +8,12 @@ process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://test.supabase.co';
 process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'test-anon-key';
 process.env.USE_REQUEST_SCOPED_AUTH = 'true';
 process.env.NODE_ENV = 'test';
+process.env.NEXT_PUBLIC_TEST_MODE = 'true';
+process.env.TEST_USER_EMAIL = 'test@example.com';
+process.env.TEST_USER_PASSWORD = 'password123';
+process.env.NEXTAUTH_URL = 'http://localhost:3000';
+process.env.NEXTAUTH_SECRET = 'test-secret-key';
+process.env.ANTHROPIC_API_KEY = 'test-api-key';
 
 // Mock Next.js modules
 jest.mock('next/headers', () => ({
@@ -48,6 +54,16 @@ jest.mock('react', () => ({
   ...jest.requireActual('react'),
   cache: (fn) => fn
 }));
+
+// Mock global fetch for API tests
+global.fetch = jest.fn((url, options) => {
+  return Promise.resolve({
+    status: 200,
+    ok: true,
+    json: async () => ({}),
+    headers: new Headers(),
+  });
+});
 
 // Global test utilities
 global.mockSupabaseClient = () => ({
