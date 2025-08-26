@@ -376,4 +376,4 @@ export function withErrorBoundary<P extends object>(
       </ErrorBoundary>
     );
   };
-}
+}export default ErrorBoundary;

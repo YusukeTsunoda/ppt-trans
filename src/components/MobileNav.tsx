@@ -227,4 +227,4 @@ export function MobileNav() {
       </div>
     </>
   );
-}
+}export default MobileNav;

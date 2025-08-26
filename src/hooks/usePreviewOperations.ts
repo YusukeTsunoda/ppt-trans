@@ -19,7 +19,7 @@ interface UsePreviewOperationsProps {
   targetLanguage: string;
   setIsExtracting: (value: boolean) => void;
   setExtractedData: (data: any) => void;
-  setSlides: (slides: SlideData[]) => void;
+  setSlides: (slides: SlideData[] | ((prev: SlideData[]) => SlideData[])) => void;
   setError: (error: string | null) => void;
   setIsTranslating: (value: boolean) => void;
   setTranslationProgress: (value: number) => void;
@@ -159,8 +159,8 @@ export function usePreviewOperations({
       if (allSlides) {
         setSlides(translatedSlides);
       } else {
-        setSlides(prevSlides => 
-          prevSlides.map((slide, index) => 
+        setSlides((prevSlides: SlideData[]) => 
+          prevSlides.map((slide: SlideData, index: number) => 
             index === currentSlideIndex ? translatedSlides[0] : slide
           )
         );

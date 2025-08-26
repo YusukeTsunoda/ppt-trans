@@ -5,6 +5,14 @@ import { useFormStatus } from 'react-dom';
 import { forgotPasswordAction } from '@/app/actions/auth';
 import Link from 'next/link';
 
+// Wrapper function for useActionState compatibility
+async function forgotPasswordWrapper(
+  prevState: { success: boolean; message: string } | null,
+  formData: FormData
+): Promise<{ success: boolean; message: string }> {
+  return forgotPasswordAction(formData);
+}
+
 function SubmitButton() {
   const { pending } = useFormStatus();
   
@@ -30,7 +38,7 @@ function SubmitButton() {
 }
 
 export default function ForgotPasswordForm() {
-  const [state, formAction] = useActionState(forgotPasswordAction, null);
+  const [state, formAction] = useActionState(forgotPasswordWrapper, null);
   
   if (state?.success) {
     return (

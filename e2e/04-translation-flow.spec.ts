@@ -1,4 +1,6 @@
-import { test, expect, TEST_USER } from './fixtures/test-base';
+import { test, expect } from '@playwright/test';
+import { Config } from './config';
+import { WaitUtils } from './utils/wait-utils';
 import { join } from 'path';
 
 /**
@@ -12,7 +14,7 @@ test.describe('翻訳機能テスト', () => {
   test.beforeEach(async ({ page, baseURL }) => {
     // authenticated-testsプロジェクトは既に認証済み
     // ダッシュボードにアクセスして認証状態を確認
-    await page.goto(`${baseURL}/dashboard`);
+    await Config.safeNavigate(page, `${baseURL}/dashboard`);
     
     // ログインページにリダイレクトされていないことを確認
     const url = page.url();
@@ -20,24 +22,10 @@ test.describe('翻訳機能テスト', () => {
       throw new Error('認証が正しく設定されていません。ログインページにリダイレクトされました。');
     }
     
-    await page.waitForLoadState('networkidle');
+    await WaitUtils.waitForAuthentication(page);
 
-    // ファイルをアップロード
-    await page.goto(`${baseURL}/upload`);
-    await page.waitForLoadState('networkidle');
-    
-    const fileInput = page.locator('input[type="file"]');
-    await fileInput.setInputFiles(testFilePath);
-    
-    // アップロードボタンが有効になるのを待つ
-    const uploadButton = page.locator('button:has-text("アップロード")');
-    await expect(uploadButton).toBeEnabled({ timeout: 10000 });
-    
-    // アップロード実行とダッシュボードへの遷移を待つ
-    await Promise.all([
-      page.waitForURL('**/dashboard', { timeout: 15000 }),
-      uploadButton.click()
-    ]);
+    // 新しいuploadFileメソッドを使用してファイルをアップロード
+    await Config.uploadFile(page, testFilePath);
     
     // ファイルが表示されるのを待つ
     await page.waitForSelector('.bg-white:has-text("test-presentation.pptx")', { timeout: 10000 });
@@ -46,11 +34,9 @@ test.describe('翻訳機能テスト', () => {
     const previewButton = page.locator('a:has-text("📄 プレビュー")').first();
     await expect(previewButton).toBeVisible({ timeout: 10000 });
     
-    // プレビューページへの遷移
-    await Promise.all([
-      page.waitForURL(/.*\/preview\/.*/, { timeout: 15000 }),
-      previewButton.click()
-    ]);
+    // プレビューページへの遷移（新しいヘルパーメソッドを使用）
+    await Config.clickAndNavigate(page, 'a:has-text("📄 プレビュー")', /.*\/preview\/.*/);
+    await WaitUtils.waitForAuthentication(page);
     
     // URLからファイルIDを取得
     const currentUrl = page.url();

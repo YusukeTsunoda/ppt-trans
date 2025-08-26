@@ -1,13 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { translateFileAction, deleteFileAction } from '@/app/actions/dashboard';
 import { logoutAction } from '@/app/actions/auth';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import logger from '@/lib/logger';
-import { User, LogOut, Upload, Settings } from 'lucide-react';
+import { User, LogOut, Upload, Settings, Plus } from 'lucide-react';
+import { UploadModal } from '@/components/upload/UploadModal';
 
 interface FileRecord {
   id: string;
@@ -29,7 +30,7 @@ interface DashboardViewProps {
 }
 
 
-function FileCard({ file, onDelete }: { file: FileRecord; onDelete: (fileId: string) => void }) {
+const FileCard = React.memo(function FileCard({ file, onDelete }: { file: FileRecord; onDelete: (fileId: string) => void }) {
   const [isTranslating, setIsTranslating] = useState(false);
   const [translateError, setTranslateError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -213,11 +214,12 @@ function FileCard({ file, onDelete }: { file: FileRecord; onDelete: (fileId: str
       </td>
     </tr>
   );
-}
+});
 
 export default function DashboardView({ userEmail, initialFiles }: DashboardViewProps) {
   const [files, setFiles] = useState(initialFiles);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const router = useRouter();
   const supabase = createClient();
 
@@ -243,14 +245,14 @@ export default function DashboardView({ userEmail, initialFiles }: DashboardView
     checkAdminRole();
   }, [supabase]);
 
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
     const result = await logoutAction();
     if (result.success) {
       router.push('/login');
     }
-  };
+  }, [router]);
 
-  const handleDeleteFile = async (fileId: string) => {
+  const handleDeleteFile = useCallback(async (fileId: string) => {
     try {
       // 直接fileIdを渡すようにシンプル化
       const deleteResult = await deleteFileAction(fileId);
@@ -265,7 +267,14 @@ export default function DashboardView({ userEmail, initialFiles }: DashboardView
       logger.error('Delete error:', error);
       alert('ファイルの削除中にエラーが発生しました');
     }
-  };
+  }, []);
+
+  const handleUploadSuccess = useCallback((newFile: FileRecord) => {
+    setFiles(prev => [newFile, ...prev]);
+    setIsUploadModalOpen(false);
+    // ページをリロードして最新のファイル一覧を取得
+    router.refresh();
+  }, [router]);
 
   return (
     <div className="min-h-screen gradient-bg animate-fadeIn">
@@ -303,14 +312,14 @@ export default function DashboardView({ userEmail, initialFiles }: DashboardView
               </Link>
               
               {/* 新規アップロードボタン */}
-              <Link
-                href="/upload"
+              <button
+                onClick={() => setIsUploadModalOpen(true)}
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition-all duration-200 text-sm font-medium"
-                data-testid="new-upload-link"
+                data-testid="new-upload-button"
               >
                 <Upload className="w-4 h-4" />
                 <span>新規アップロード</span>
-              </Link>
+              </button>
               
               {/* ログアウトボタン */}
               <form action={handleLogout}>
@@ -392,6 +401,13 @@ export default function DashboardView({ userEmail, initialFiles }: DashboardView
           )}
         </div>
       </div>
+
+      {/* アップロードモーダル */}
+      <UploadModal 
+        isOpen={isUploadModalOpen}
+        onClose={() => setIsUploadModalOpen(false)}
+        onSuccess={handleUploadSuccess}
+      />
     </div>
   );
 }

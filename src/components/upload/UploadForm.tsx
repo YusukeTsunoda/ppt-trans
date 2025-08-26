@@ -33,7 +33,7 @@ function SubmitButton({ disabled = false }: { disabled?: boolean }) {
   );
 }
 
-export default function UploadForm() {
+export function UploadForm() {
   const [state, formAction] = useActionState(uploadFileAction, null);
   const [fileName, setFileName] = useState<string>('');
   const [fileSize, setFileSize] = useState<number>(0);
@@ -180,3 +180,4 @@ export default function UploadForm() {
     </form>
   );
 }
+export default UploadForm;

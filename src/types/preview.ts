@@ -9,6 +9,12 @@ export interface TextData {
   id: string;
   original: string;
   translated?: string;
+  content?: string;  // 後方互換性のために追加
+  text?: string;     // 後方互換性のために追加
+  x?: number;        // position以外のフォーマット対応
+  y?: number;
+  width?: number;
+  height?: number;
   position?: {
     x: number;
     y: number;
@@ -17,6 +23,9 @@ export interface TextData {
   };
   type?: string;
   is_title?: boolean;
+  fontSize?: number;
+  fontFamily?: string;
+  color?: string;
 }
 
 export interface ProcessingResult {

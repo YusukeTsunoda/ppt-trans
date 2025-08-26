@@ -260,7 +260,7 @@ export default function AdminDashboardClient({
                         {activity.user?.name || activity.user?.email || 'Unknown User'}
                       </p>
                       <p className="text-sm text-secondary-500 dark:text-secondary-400">
-                        {getActionLabel(activity.action)} - {activity.description || activity.details?.description || ''}
+                        {getActionLabel(activity.action)} - {(activity as any).description || activity.details?.description || ''}
                       </p>
                     </div>
                     <div className="text-sm text-secondary-500 dark:text-secondary-400">

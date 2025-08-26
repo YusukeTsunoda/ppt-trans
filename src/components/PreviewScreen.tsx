@@ -1,23 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import type { ProcessingResult, SlideData } from '@/types';
 import { getSettings } from '@/lib/settings';
 import { updateHistoryItem } from '@/lib/history';
 import { useResponsive } from '@/hooks/useResponsive';
 import logger from '@/lib/logger';
 
-// CSSアニメーションをグローバルスタイルとして追加
-const globalStyles = `
-  @keyframes pulse {
-    0%, 100% {
-      opacity: 1;
-    }
-    50% {
-      opacity: 0.5;
-    }
-  }
-`;
+// CSSアニメーションスタイル
+// Next.jsではCSS ModulesまたはCSS-in-JSを使用するため、
+// インラインスタイルとして定義
 
 interface PreviewScreenProps {
   data: ProcessingResult;
@@ -380,7 +372,16 @@ export function PreviewScreen({ data, onBack, onDataUpdate, historyId }: Preview
 
   return (
     <>
-      <style dangerouslySetInnerHTML={{ __html: globalStyles }} />
+      <style jsx>{`
+        @keyframes pulse {
+          0%, 100% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.5;
+          }
+        }
+      `}</style>
       <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
       <div className="container mx-auto px-4 py-6 max-w-7xl">
         {/* ヘッダー */}

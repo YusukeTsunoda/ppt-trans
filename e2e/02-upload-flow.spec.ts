@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
-import { TEST_CONFIG } from './fixtures/test-config';
+import { Config } from './config';
+import { WaitUtils } from './utils/wait-utils';
 import { join } from 'path';
 import * as fs from 'fs';
 
@@ -47,21 +48,20 @@ test.describe('アップロードフロー統合テスト（厳格版）', () =>
 
   test.describe('正常系：ファイルアップロード', () => {
     test('PPTXファイルの完全なアップロードフロー検証', async ({ page, baseURL }) => {
-      // アップロードページへ遷移
-      await page.goto(`${baseURL}/upload`);
+      // 新しいuploadFileメソッドは自動的にダッシュボードからモーダルを開く
+      // 手動でアップロードページへ遷移する代わりに、Config.uploadFileを使用することもできる
       
-      // ログインページにリダイレクトされた場合はエラー
-      if (page.url().includes('/login')) {
-        throw new Error('アップロードページへのアクセスに失敗しました。認証が必要です。');
-      }
+      // ダッシュボードからアップロードモーダルを開く
+      await page.goto(`${baseURL}/dashboard`);
+      await WaitUtils.waitForAuthentication(page);
       
-      await page.waitForLoadState('networkidle');
-      
-      // ページタイトルの確認
-      await expect(page.locator('h1')).toContainText('PowerPointファイルのアップロード');
+      // アップロードボタンをクリックしてモーダルを開く
+      const openModalButton = page.locator(Config.selectors.dashboard.uploadButton);
+      await openModalButton.click();
+      await WaitUtils.waitForUploadReady(page);
       
       // 初期状態の検証
-      const uploadButton = page.locator('button:has-text("アップロード")');
+      const uploadButton = page.locator(Config.selectors.upload.uploadButton);
       await expect(uploadButton).toBeDisabled();
       
       // ファイル選択前の説明テキスト確認（実際のUIテキストに合わせる）
@@ -73,7 +73,7 @@ test.describe('アップロードフロー統合テスト（厳格版）', () =>
       
       // ファイル情報の表示確認
       await expect(page.locator('text="test-presentation.pptx"')).toBeVisible({
-        timeout: TEST_CONFIG.timeouts.element
+        timeout: Config.timeouts.element
       });
       
       // ファイルサイズの表示確認（MB単位で表示される）
@@ -93,7 +93,7 @@ test.describe('アップロードフロー統合テスト（厳格版）', () =>
       // アップロード実行
       const uploadResponse = page.waitForResponse(
         response => response.url().includes('/upload') && response.request().method() === 'POST',
-        { timeout: TEST_CONFIG.timeouts.upload }
+        { timeout: Config.timeouts.upload }
       );
       
       await uploadButton.click();
@@ -112,12 +112,12 @@ test.describe('アップロードフロー統合テスト（厳格版）', () =>
       
       if (successElementExists) {
         await expect(successElement).toBeVisible({
-          timeout: TEST_CONFIG.timeouts.element
+          timeout: Config.timeouts.element
         });
         
         const successText = await successElement.textContent();
         expect(
-          successText?.includes(TEST_CONFIG.successMessages.uploadSuccess) ||
+          successText?.includes(Config.successMessages.uploadSuccess) ||
           successText?.includes('アップロードが完了しました') ||
           successText?.includes('Upload successful')
         ).toBeTruthy();
@@ -125,22 +125,18 @@ test.describe('アップロードフロー統合テスト（厳格版）', () =>
       
       // ダッシュボードへの自動遷移確認
       await page.waitForURL('**/dashboard', {
-        timeout: TEST_CONFIG.timeouts.navigation
+        timeout: Config.timeouts.navigation
       });
       
       // アップロードしたファイルが一覧に表示されることを確認（複数ある場合は最初のものを確認）
       await expect(page.locator('tr:has-text("test-presentation.pptx")').first()).toBeVisible({
-        timeout: TEST_CONFIG.timeouts.element
+        timeout: Config.timeouts.element
       });
     });
 
     test('アップロード後のファイル操作検証', async ({ page, baseURL }) => {
-      // 事前にファイルをアップロード
-      await page.goto(`${baseURL}/upload`);
-      const fileInput = page.locator('input[type="file"]');
-      await fileInput.setInputFiles(validPPTXPath);
-      await page.click('button:has-text("アップロード")');
-      await page.waitForURL('**/dashboard');
+      // 新しいuploadFileメソッドを使用してファイルをアップロード
+      await Config.uploadFile(page, validPPTXPath);
       
       // ファイル一覧での表示確認（複数ある場合は最初のものを選択）
       const fileRow = page.locator('tr:has-text("test-presentation.pptx")').first();
@@ -176,7 +172,12 @@ test.describe('アップロードフロー統合テスト（厳格版）', () =>
 
   test.describe('異常系：バリデーション', () => {
     test('無効なファイル形式の完全な拒否検証', async ({ page, baseURL }) => {
-      await page.goto(`${baseURL}/upload`);
+      // ダッシュボードからアップロードモーダルを開く
+      await page.goto(`${baseURL}/dashboard`);
+      await WaitUtils.waitForAuthentication(page);
+      const openModalButton = page.locator(Config.selectors.dashboard.uploadButton);
+      await openModalButton.click();
+      await WaitUtils.waitForUploadReady(page);
       
       const fileInput = page.locator('input[type="file"]');
       
@@ -186,7 +187,7 @@ test.describe('アップロードフロー統合テスト（厳格版）', () =>
       // エラーメッセージの即座の表示確認（実際のUIに合わせて修正）
       const errorElement = page.locator('[data-testid="upload-error"]').first();
       await expect(errorElement).toBeVisible({
-        timeout: TEST_CONFIG.timeouts.element
+        timeout: Config.timeouts.element
       });
       
       const errorText = await errorElement.textContent();
@@ -224,12 +225,12 @@ test.describe('アップロードフロー統合テスト（厳格版）', () =>
         
         if (errorCount > 0) {
           await expect(errorElement).toBeVisible({
-            timeout: TEST_CONFIG.timeouts.element
+            timeout: Config.timeouts.element
           });
           
           const errorText = await errorElement.textContent();
           expect(
-            errorText?.includes(TEST_CONFIG.errorMessages.fileSizeExceeded) ||
+            errorText?.includes(Config.errorMessages.fileSizeExceeded) ||
             errorText?.includes('ファイルサイズが大きすぎます') ||
             errorText?.includes('File size exceeds limit')
           ).toBeTruthy();
@@ -287,7 +288,7 @@ test.describe('アップロードフロー統合テスト（厳格版）', () =>
       // 重複警告または成功メッセージの確認
       const warningOrSuccess = await page.waitForSelector(
         'text=/既に同じファイル|重複|正常にアップロード/',
-        { timeout: TEST_CONFIG.timeouts.element }
+        { timeout: Config.timeouts.element }
       );
       
       expect(warningOrSuccess).toBeTruthy();
@@ -307,7 +308,7 @@ test.describe('アップロードフロー統合テスト（厳格版）', () =>
       
       // エラーメッセージの表示確認
       await expect(page.locator('text=/ネットワークエラー|接続エラー|Connection error/')).toBeVisible({
-        timeout: TEST_CONFIG.timeouts.element
+        timeout: Config.timeouts.element
       });
       
       // オンラインに戻す
@@ -325,7 +326,7 @@ test.describe('アップロードフロー統合テスト（厳格版）', () =>
       
       // 遅いネットワークをシミュレート
       await page.route('**/upload', async route => {
-        await page.waitForTimeout(TEST_CONFIG.timeouts.upload + 5000);
+        await page.waitForTimeout(Config.timeouts.upload + 5000);
         await route.abort();
       });
       
@@ -335,7 +336,7 @@ test.describe('アップロードフロー統合テスト（厳格版）', () =>
       
       // タイムアウトエラーメッセージの表示確認
       await expect(page.locator('text=/タイムアウト|timeout|時間切れ/')).toBeVisible({
-        timeout: TEST_CONFIG.timeouts.upload + 10000
+        timeout: Config.timeouts.upload + 10000
       });
     });
   });
@@ -350,8 +351,8 @@ test.describe('アップロードフロー統合テスト（厳格版）', () =>
       
       // ログイン（基本的なフォーム送信）
       await noJsPage.goto(`${baseURL}/login`);
-      await noJsPage.fill('input[type="email"]', TEST_CONFIG.auth.email);
-      await noJsPage.fill('input[type="password"]', TEST_CONFIG.auth.password);
+      await noJsPage.fill('input[type="email"]', Config.auth.email);
+      await noJsPage.fill('input[type="password"]', Config.auth.password);
       await noJsPage.click('button[type="submit"]');
       
       // サーバーサイドレンダリングでダッシュボードが表示されることを確認

@@ -176,8 +176,8 @@ test.describe('セキュリティ', () => {
     await context1.close();
   });
 
-  test.skip('ファイルアクセス権限の検証', async ({ page, browser, baseURL }) => {
-    // TODO: 異なるユーザーでのテストのため、認証フローの修正が必要
+  test('ファイルアクセス権限の検証', async ({ page, browser, baseURL }) => {
+    // 異なるユーザーでファイルアクセス権限をテスト
     // ユーザー1でログインしてファイルをアップロード
     const context1 = await browser.newContext();
     const page1 = await context1.newPage();

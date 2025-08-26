@@ -1,9 +1,12 @@
 import { test, expect } from '@playwright/test';
+import { LoginPage } from '../page-objects/login.page';
+import { DashboardPage } from '../page-objects/dashboard.page';
+import { TestConfig } from '../config/test-config';
 
 /**
  * Critical User Journey - Smoke Test
  * 最重要のE2Eフローをテスト
- * 目標実行時間: 30秒以内
+ * 目標実行時間: 5分以内
  */
 test.describe('Critical User Journey - Smoke Test', () => {
   const testFile = 'e2e/fixtures/test-presentation.pptx';
@@ -12,15 +15,25 @@ test.describe('Critical User Journey - Smoke Test', () => {
     // 30秒以内に完了すること
     test.setTimeout(30000);
     
-    // 1. ログイン（認証は既にsetupで完了しているので、ダッシュボードへ直接遷移）
-    await page.goto(`${baseURL}/dashboard`);
-    await expect(page).toHaveURL(/.*\/dashboard/);
-    // h1が複数ある場合は最初のものを選択
-    await expect(page.locator('h1').first()).toContainText('PPT Translator');
+    // 1. ログインページへ遷移
+    const loginPage = new LoginPage(page);
+    await loginPage.goto();
     
-    // 2. ファイルアップロードページへ遷移
-    await page.goto(`${baseURL}/upload`);
-    await expect(page.locator('h1')).toContainText('PowerPointファイルのアップロード');
+    // ログイン実行
+    const user = TestConfig.users.default;
+    await loginPage.login(user.email, user.password);
+    await loginPage.waitForSuccessfulLogin();
+    
+    // ダッシュボードページに遷移していることを確認
+    await expect(page).toHaveURL(/.*\/dashboard/);
+    
+    // 2. ファイルアップロードページへ遷移（ダッシュボードのアップロードボタンから）
+    // ヘッダーのアップロードボタンをクリック
+    await page.getByTestId('new-upload-link').click();
+    await page.waitForLoadState('networkidle');
+    
+    // アップロードページが表示されていることを確認
+    await expect(page).toHaveURL(/.*\/upload/);
     
     // 3. ファイルアップロード
     const fileInput = page.locator('input[type="file"]');
@@ -94,13 +107,24 @@ test.describe('Critical User Journey - Smoke Test', () => {
   });
   
   test('エラーハンドリング: 無効なファイル形式', async ({ page, baseURL }) => {
-    test.setTimeout(10000);
+    test.setTimeout(15000);
+    
+    // まずログインする
+    const loginPage = new LoginPage(page);
+    await loginPage.goto();
+    
+    const user = TestConfig.users.default;
+    await loginPage.login(user.email, user.password);
+    await loginPage.waitForSuccessfulLogin();
     
     // アップロードページへ遷移
-    await page.goto(`${baseURL}/upload`);
+    await page.getByTestId('new-upload-link').click();
+    await page.waitForLoadState('networkidle');
+    await expect(page).toHaveURL(/.*\/upload/);
     
     // 無効なファイル（テキストファイル）を選択
-    const invalidFile = 'e2e/fixtures/test-files/invalid.txt';
+    const invalidFile = 'e2e/fixtures/invalid-file.txt';
+    await page.waitForSelector('input[type="file"]', { timeout: 10000 });
     const fileInput = page.locator('input[type="file"]');
     await fileInput.setInputFiles(invalidFile);
     

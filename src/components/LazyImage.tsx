@@ -169,4 +169,4 @@ export function LazyImage({
       )}
     </div>
   );
-}
+}export default LazyImage;
