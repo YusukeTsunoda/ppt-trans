@@ -226,25 +226,29 @@ describe('uploadFileAction', () => {
 
   describe('ストレージエラー', () => {
     it('ストレージアップロードエラーの場合適切なメッセージを返す', async () => {
-      const mockUser = { id: 'user-123' };
-      mockSupabase.auth.getUser.mockResolvedValue({
-        data: { user: mockUser },
-        error: null
-      });
+      const mockUser = aUser().withId('user-123').build();
+      
+      mockSupabase.auth.getUser.mockResolvedValue(
+        aSupabaseResponse()
+          .withData({ user: mockUser })
+          .build()
+      );
 
       mockSupabase.storage.from = jest.fn(() => ({
-        upload: jest.fn().mockResolvedValue({
-          data: null,
-          error: new Error('Storage error')
-        }),
-        remove: jest.fn()
+        upload: jest.fn().mockResolvedValue(
+          aSupabaseResponse()
+            .withError('Storage error')
+            .build()
+        ),
+        remove: jest.fn(),
+        download: jest.fn(),
+        createSignedUrl: jest.fn(),
+        getPublicUrl: jest.fn()
       }));
 
-      const formData = new FormData();
-      const file = new File(['content'], 'test.pptx', {
-        type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
-      });
-      formData.append('file', file);
+      const formData = aFormData()
+        .withFile()
+        .build();
 
       const result = await uploadFileAction(null, formData);
 
@@ -253,26 +257,28 @@ describe('uploadFileAction', () => {
     });
 
     it('権限エラーの場合適切なメッセージを返す', async () => {
-      const mockUser = { id: 'user-123' };
-      mockSupabase.auth.getUser.mockResolvedValue({
-        data: { user: mockUser },
-        error: null
-      });
+      const mockUser = aUser().withId('user-123').build();
+      
+      mockSupabase.auth.getUser.mockResolvedValue(
+        aSupabaseResponse()
+          .withData({ user: mockUser })
+          .build()
+      );
 
-      const uploadError = new Error('row-level security policy violation');
       mockSupabase.storage.from = jest.fn(() => ({
         upload: jest.fn().mockResolvedValue({
           data: null,
           error: { message: 'row-level security policy violation' }
         }),
-        remove: jest.fn()
+        remove: jest.fn(),
+        download: jest.fn(),
+        createSignedUrl: jest.fn(),
+        getPublicUrl: jest.fn()
       }));
 
-      const formData = new FormData();
-      const file = new File(['content'], 'test.pptx', {
-        type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
-      });
-      formData.append('file', file);
+      const formData = aFormData()
+        .withFile()
+        .build();
 
       const result = await uploadFileAction(null, formData);
 
@@ -280,25 +286,28 @@ describe('uploadFileAction', () => {
     });
 
     it('重複ファイルエラーの場合適切なメッセージを返す', async () => {
-      const mockUser = { id: 'user-123' };
-      mockSupabase.auth.getUser.mockResolvedValue({
-        data: { user: mockUser },
-        error: null
-      });
+      const mockUser = aUser().withId('user-123').build();
+      
+      mockSupabase.auth.getUser.mockResolvedValue(
+        aSupabaseResponse()
+          .withData({ user: mockUser })
+          .build()
+      );
 
       mockSupabase.storage.from = jest.fn(() => ({
         upload: jest.fn().mockResolvedValue({
           data: null,
           error: { message: 'file already exists' }
         }),
-        remove: jest.fn()
+        remove: jest.fn(),
+        download: jest.fn(),
+        createSignedUrl: jest.fn(),
+        getPublicUrl: jest.fn()
       }));
 
-      const formData = new FormData();
-      const file = new File(['content'], 'test.pptx', {
-        type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
-      });
-      formData.append('file', file);
+      const formData = aFormData()
+        .withFile()
+        .build();
 
       const result = await uploadFileAction(null, formData);
 
@@ -308,37 +317,45 @@ describe('uploadFileAction', () => {
 
   describe('データベースエラー', () => {
     it('DB保存エラーの場合ストレージからファイルを削除する', async () => {
-      const mockUser = { id: 'user-123' };
-      mockSupabase.auth.getUser.mockResolvedValue({
-        data: { user: mockUser },
-        error: null
-      });
+      const mockUser = aUser().withId('user-123').build();
+      
+      mockSupabase.auth.getUser.mockResolvedValue(
+        aSupabaseResponse()
+          .withData({ user: mockUser })
+          .build()
+      );
 
       const removeMock = jest.fn();
       mockSupabase.storage.from = jest.fn(() => ({
-        upload: jest.fn().mockResolvedValue({
-          data: { path: 'path' },
-          error: null
-        }),
-        remove: removeMock
+        upload: jest.fn().mockResolvedValue(
+          aSupabaseResponse()
+            .withData({ path: 'path' })
+            .build()
+        ),
+        remove: removeMock,
+        download: jest.fn(),
+        createSignedUrl: jest.fn(),
+        getPublicUrl: jest.fn()
       }));
 
       mockSupabase.from = jest.fn(() => ({
         insert: jest.fn(() => ({
           select: jest.fn(() => ({
-            single: jest.fn().mockResolvedValue({
-              data: null,
-              error: new Error('DB error')
-            })
+            single: jest.fn().mockResolvedValue(
+              aSupabaseResponse()
+                .withError('DB error')
+                .build()
+            )
           }))
-        }))
+        })),
+        select: jest.fn(),
+        update: jest.fn(),
+        delete: jest.fn()
       }));
 
-      const formData = new FormData();
-      const file = new File(['content'], 'test.pptx', {
-        type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
-      });
-      formData.append('file', file);
+      const formData = aFormData()
+        .withFile()
+        .build();
 
       const result = await uploadFileAction(null, formData);
 
@@ -352,11 +369,9 @@ describe('uploadFileAction', () => {
     it('予期しないエラーの場合適切なメッセージを返す', async () => {
       (createClient as jest.Mock).mockRejectedValue(new Error('Unexpected error'));
 
-      const formData = new FormData();
-      const file = new File(['content'], 'test.pptx', {
-        type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
-      });
-      formData.append('file', file);
+      const formData = aFormData()
+        .withFile()
+        .build();
 
       const result = await uploadFileAction(null, formData);
 
@@ -369,11 +384,9 @@ describe('uploadFileAction', () => {
       abortError.name = 'AbortError';
       (createClient as jest.Mock).mockRejectedValue(abortError);
 
-      const formData = new FormData();
-      const file = new File(['content'], 'test.pptx', {
-        type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
-      });
-      formData.append('file', file);
+      const formData = aFormData()
+        .withFile()
+        .build();
 
       const result = await uploadFileAction(null, formData);
 
