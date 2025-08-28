@@ -7,6 +7,7 @@ import { ErrorCodes, type ErrorCode } from '@/lib/errors/ErrorCodes';
 import { ErrorStatusMap } from '@/lib/errors/ErrorStatusMap';
 import logger from '@/lib/logger';
 import type { JsonObject } from '@/types/common';
+import { fetchWithCSRF } from '@/lib/security/csrf';
 
 interface ErrorDetailModalProps {
   error: Error | AppError;
@@ -71,7 +72,7 @@ export function ErrorDetailModal({
           url: window.location.href
         };
 
-        await fetch('/api/error-report', {
+        await fetchWithCSRF('/api/error-report', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(reportData)

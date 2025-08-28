@@ -1,6 +1,8 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { withRateLimit, createRateLimitResponse } from '@/lib/rate-limiter';
+import logger from '@/lib/logger';
+import { CSRFTokenRotation } from '@/lib/security/token-rotation';
 
 // 包括的なセキュリティヘッダーの定義
 const SECURITY_HEADERS = {
@@ -85,6 +87,31 @@ export async function middleware(request: NextRequest) {
   
   // 現在のユーザー情報を取得
   const { data: { user } } = await supabase.auth.getUser();
+  
+  // CSRFトークンローテーションチェック（POST/PUT/DELETE リクエストの場合）
+  if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(request.method)) {
+    try {
+      const rotation = CSRFTokenRotation.getInstance();
+      
+      // トークンローテーションが必要かチェック
+      if (rotation.shouldRotate(request)) {
+        logger.info('[Middleware] CSRF token rotation triggered', {
+          path: request.nextUrl.pathname,
+          method: request.method,
+          userId: user?.id,
+        });
+        
+        // 新しいトークンを生成
+        rotation.rotateToken(response, user?.id);
+      }
+    } catch (error) {
+      logger.error('[Middleware] Token rotation error:', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        path: request.nextUrl.pathname,
+      });
+      // エラーがあってもリクエストは続行（フェイルオープン）
+    }
+  }
 
   // 認証エラーは通常の動作なのでログは出力しない
   // デバッグが必要な場合のみ以下をアンコメント
@@ -109,7 +136,7 @@ export async function middleware(request: NextRequest) {
     
     if (hasAuthCookie && !user) {
       // クッキーはあるが認証が取れない場合はそのまま通す（テスト用）
-      console.log('[E2E Test] Auth cookie found but user not authenticated, allowing access');
+      logger.info('[E2E Test] Auth cookie found but user not authenticated, allowing access');
       return response;
     }
   }

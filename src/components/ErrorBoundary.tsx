@@ -5,6 +5,7 @@ import { AppError } from '@/lib/errors/AppError';
 import { ErrorCodes } from '@/lib/errors/ErrorCodes';
 import logger from '@/lib/logger';
 import { getErrorMessageObject } from '@/lib/errors/ErrorMessages';
+import { fetchWithCSRF } from '@/lib/security/csrf';
 
 interface Props {
   children: ReactNode;
@@ -203,8 +204,8 @@ export class ErrorBoundary extends Component<Props, State> {
         timestamp: new Date().toISOString()
       };
       
-      // エラーレポートAPIに送信
-      await fetch('/api/error-report', {
+      // エラーレポートAPIに送信（CSRF保護付き）
+      await fetchWithCSRF('/api/error-report', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(errorReport)
