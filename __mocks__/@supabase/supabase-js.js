@@ -66,5 +66,6 @@ const supabaseClient = {
   rpc: jest.fn(() => Promise.resolve({ data: {}, error: null })),
 };
 
-export const createClient = jest.fn(() => supabaseClient);
-export default { createClient };
+module.exports = {
+  createClient: jest.fn(() => supabaseClient)
+};
