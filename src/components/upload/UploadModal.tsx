@@ -2,7 +2,8 @@
 
 import { useState, useRef } from 'react';
 import { X, Upload, FileText } from 'lucide-react';
-import { uploadFileAction } from '@/app/actions/upload';
+import { fetchWithCSRF } from '@/hooks/useCSRF';
+// Removed Server Action import - will use API Routes instead
 
 interface UploadModalProps {
   isOpen: boolean;
@@ -68,14 +69,19 @@ export function UploadModal({ isOpen, onClose, onSuccess }: UploadModalProps) {
       const formData = new FormData();
       formData.append('file', file);
       
-      // Server Actionを使用
-      const result = await uploadFileAction(null, formData);
+      // API Routeを使用
+      const response = await fetchWithCSRF('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
       
-      if (result?.success) {
+      if (response.ok) {
+        const result = await response.json();
         onSuccess(result.file);
         onClose();
       } else {
-        throw new Error(result?.error || 'アップロードに失敗しました');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'アップロードに失敗しました');
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'アップロード中にエラーが発生しました');

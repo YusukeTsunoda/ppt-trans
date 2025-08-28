@@ -6,6 +6,7 @@ import { getSettings } from '@/lib/settings';
 import { updateHistoryItem } from '@/lib/history';
 import { useResponsive } from '@/hooks/useResponsive';
 import logger from '@/lib/logger';
+import { fetchWithCSRF } from '@/hooks/useCSRF';
 
 // CSSアニメーションスタイル
 // Next.jsではCSS ModulesまたはCSS-in-JSを使用するため、
@@ -102,7 +103,7 @@ export function PreviewScreen({ data, onBack, onDataUpdate, historyId }: Preview
         const batch = batches[i];
         
         // API Route経由で翻訳
-        const response = await fetch('/api/translate/batch-simple', {
+        const response = await fetchWithCSRF('/api/translate/batch-simple', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -289,7 +290,7 @@ export function PreviewScreen({ data, onBack, onDataUpdate, historyId }: Preview
       logger.debug('Generating translated PPTX...', { requestData });
 
       // API Route経由でPPTXファイルを生成
-      const response = await fetch('/api/generate/pptx', {
+      const response = await fetchWithCSRF('/api/generate/pptx', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

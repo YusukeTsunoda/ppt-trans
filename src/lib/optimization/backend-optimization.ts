@@ -5,6 +5,7 @@
 
 import { LRUCache } from 'lru-cache';
 import crypto from 'crypto';
+import logger from '@/lib/logger';
 
 /**
  * デメリット1: 並列化による同時接続数の増加
@@ -221,7 +222,7 @@ export class MultiLayerCache {
         // バックグラウンドで更新
         fetchFn().then(value => {
           this.set(key, value, options.ttl);
-        }).catch(console.error);
+        }).catch(error => logger.error('Background cache update failed:', error));
       }
       
       return cached;

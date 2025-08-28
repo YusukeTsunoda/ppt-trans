@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { Config } from './config';
 import { WaitUtils } from './utils/wait-utils';
+import { ServerActionsHelper } from './helpers/server-actions-helper';
 import { join } from 'path';
 import * as fs from 'fs';
 
@@ -90,13 +91,13 @@ test.describe('アップロードフロー統合テスト（厳格版）', () =>
         await expect(progressBar).toHaveAttribute('aria-valuenow', '0');
       }
       
-      // アップロード実行
-      const uploadResponse = page.waitForResponse(
-        response => response.url().includes('/upload') && response.request().method() === 'POST',
-        { timeout: Config.timeouts.upload }
-      );
+      // Server Actionでアップロード実行
+      const uploadResponsePromise = ServerActionsHelper.waitForServerAction(page, 'upload');
       
       await uploadButton.click();
+      
+      // Server Actionの完了を待つ
+      await uploadResponsePromise;
       
       // アップロード中の状態確認
       await expect(uploadButton).toBeDisabled();

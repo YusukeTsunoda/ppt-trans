@@ -4,8 +4,32 @@ import { spawn } from 'child_process';
 import path from 'path';
 import fs from 'fs/promises';
 import logger from '@/lib/logger';
+import { performSecurityChecks, createErrorResponse, createSuccessResponse } from '@/lib/security/api-security';
 
 export async function POST(request: NextRequest) {
+  // セキュリティチェックを追加
+  const securityCheck = await performSecurityChecks(request, {
+    csrf: true,
+    origin: true,
+    rateLimit: {
+      max: 10,
+      windowMs: 60 * 1000, // 1分あたり10リクエスト
+    },
+    contentType: 'application/json',
+    methods: ['POST'],
+  });
+  
+  if (!securityCheck.success) {
+    return createErrorResponse(
+      securityCheck.error!,
+      securityCheck.status!,
+      securityCheck.headers,
+      securityCheck.requestId
+    );
+  }
+  
+  const requestId = securityCheck.requestId;
+  
   try {
     const { fileId, filePath, translations } = await request.json();
     

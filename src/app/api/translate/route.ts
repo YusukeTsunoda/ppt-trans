@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import Anthropic from '@anthropic-ai/sdk';
 import logger from '@/lib/logger';
+import { performSecurityChecks, createErrorResponse, createSuccessResponse } from '@/lib/security/api-security';
+import { rateLimitConfigs } from '@/lib/security/advanced-rate-limiter';
 
 // Anthropic APIクライアントの初期化
 const anthropic = new Anthropic({
@@ -9,6 +11,29 @@ const anthropic = new Anthropic({
 });
 
 export async function POST(request: NextRequest) {
+  // セキュリティチェックを追加
+  const securityCheck = await performSecurityChecks(request, {
+    csrf: true,
+    origin: true,
+    rateLimit: {
+      max: 30,
+      windowMs: 60 * 1000, // 1分あたり30リクエスト
+    },
+    contentType: 'application/json',
+    methods: ['POST'],
+  });
+  
+  if (!securityCheck.success) {
+    return createErrorResponse(
+      securityCheck.error!,
+      securityCheck.status!,
+      securityCheck.headers,
+      securityCheck.requestId
+    );
+  }
+  
+  const requestId = securityCheck.requestId;
+  
   try {
     const { texts, targetLanguage } = await request.json();
     
@@ -88,19 +113,28 @@ Translation:`
       }
     }
     
-    return NextResponse.json({
-      success: true,
-      translations,
-    });
+    // 成功レスポンスを返す
+    return createSuccessResponse(
+      {
+        success: true,
+        translations,
+      },
+      200,
+      requestId
+    );
     
   } catch (error) {
-    logger.error('Translate API error:', error);
-    return NextResponse.json(
-      { 
-        success: false, 
-        error: '翻訳処理中にエラーが発生しました' 
-      },
-      { status: 500 }
+    logger.error('Translate API error:', {
+      requestId,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+    });
+    
+    return createErrorResponse(
+      '翻訳処理中にエラーが発生しました',
+      500,
+      undefined,
+      requestId
     );
   }
 }

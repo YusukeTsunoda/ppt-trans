@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { Config } from './config';
 import { WaitUtils } from './utils/wait-utils';
+import { ServerActionsHelper } from './helpers/server-actions-helper';
 import { join } from 'path';
 
 /**
@@ -72,18 +73,18 @@ test.describe('翻訳機能テスト', () => {
       const translateCurrentButton = page.locator('button:has-text("現在のスライドを翻訳")');
       await expect(translateCurrentButton).toBeEnabled();
       
-      // 翻訳APIレスポンスを待つ
-      const translateResponsePromise = page.waitForResponse(
-        response => response.url().includes('/api/translate') && response.status() === 200,
-        { timeout: 30000 }
-      );
+      // Server Actionで翻訳を実行
+      const translateResponsePromise = ServerActionsHelper.waitForServerAction(page, 'translate');
       
       // ボタンをクリック
       await translateCurrentButton.click();
       
-      // API呼び出しの完了を待つ
+      // Server Actionの完了を待つ
       const translateResponse = await translateResponsePromise;
       expect(translateResponse).toBeTruthy();
+      
+      // pending状態の完了を待つ
+      await ServerActionsHelper.waitForPendingState(page);
       
       // 翻訳完了を待つ（翻訳済みテキストまたは翻訳結果の表示）
       await page.waitForFunction(

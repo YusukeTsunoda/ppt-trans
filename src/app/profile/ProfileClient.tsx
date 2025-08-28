@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import type { User } from '@supabase/supabase-js';
+import logger from '@/lib/logger';
 
 export default function ProfileClient() {
   const [user, setUser] = useState<User | null>(null);
@@ -27,7 +28,7 @@ export default function ProfileClient() {
           router.push('/login');
         }
       } catch (error) {
-        console.error('Error fetching user:', error);
+        logger.error('Error fetching user:', error);
         router.push('/login');
       } finally {
         setLoading(false);
@@ -64,7 +65,7 @@ export default function ProfileClient() {
       setMessage('プロフィールを更新しました');
       setTimeout(() => setMessage(''), 3000);
     } catch (error) {
-      console.error('Error updating profile:', error);
+      logger.error('Error updating profile:', error);
       setMessage('更新に失敗しました');
     } finally {
       setUpdating(false);

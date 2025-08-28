@@ -8,7 +8,7 @@ export const TEST_CONFIG = {
   timeouts: {
     unit: 5000,
     integration: 15000,
-    e2e: 30ためす000,
+    e2e: 30000,
     async: 10000,
   },
   

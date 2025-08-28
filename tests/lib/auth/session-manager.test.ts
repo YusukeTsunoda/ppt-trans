@@ -276,7 +276,16 @@ describe('session-manager', () => {
 
   describe('getSessionMetadata', () => {
     test('returns metadata for authenticated user', async () => {
-      const mockUser = { id: 'user-123', email: 'test@example.com' };
+      const mockUser = { 
+        id: 'user-123', 
+        email: 'test@example.com',
+        aud: 'authenticated',
+        role: 'authenticated',
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
+        app_metadata: {},
+        user_metadata: {}
+      } as any;
       
       // Mock session info and user
       jest.doMock('../../../src/lib/auth/session-manager', () => ({

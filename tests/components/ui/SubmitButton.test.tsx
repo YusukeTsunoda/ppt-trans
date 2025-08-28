@@ -16,7 +16,12 @@ describe('SubmitButton', () => {
   });
 
   test('renders with default text when not pending', () => {
-    mockUseFormStatus.mockReturnValue({ pending: false });
+    mockUseFormStatus.mockReturnValue({ 
+      pending: false,
+      data: null,
+      method: null,
+      action: null
+    });
     
     render(
       <SubmitButton 
@@ -30,7 +35,12 @@ describe('SubmitButton', () => {
   });
 
   test('renders with pending text and spinner when pending', () => {
-    mockUseFormStatus.mockReturnValue({ pending: true });
+    mockUseFormStatus.mockReturnValue({ 
+      pending: true,
+      data: new FormData(),
+      method: 'POST',
+      action: '/api/submit'
+    });
     
     render(
       <SubmitButton 
@@ -45,7 +55,12 @@ describe('SubmitButton', () => {
   });
 
   test('is disabled when disabled prop is true', () => {
-    mockUseFormStatus.mockReturnValue({ pending: false });
+    mockUseFormStatus.mockReturnValue({ 
+      pending: false,
+      data: null,
+      method: null,
+      action: null
+    });
     
     render(
       <SubmitButton 
@@ -59,7 +74,12 @@ describe('SubmitButton', () => {
   });
 
   test('applies custom className', () => {
-    mockUseFormStatus.mockReturnValue({ pending: false });
+    mockUseFormStatus.mockReturnValue({ 
+      pending: false,
+      data: null,
+      method: null,
+      action: null
+    });
     
     render(
       <SubmitButton 
@@ -73,7 +93,12 @@ describe('SubmitButton', () => {
   });
 
   test('is disabled when both pending and disabled are true', () => {
-    mockUseFormStatus.mockReturnValue({ pending: true });
+    mockUseFormStatus.mockReturnValue({ 
+      pending: true,
+      data: new FormData(),
+      method: 'POST',
+      action: '/api/submit'
+    });
     
     render(
       <SubmitButton 

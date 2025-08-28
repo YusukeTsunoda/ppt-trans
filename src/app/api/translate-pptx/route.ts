@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { createClient as createServerClient } from '@/lib/supabase/server';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import path from 'path';
 import fs from 'fs/promises';
 import logger from '@/lib/logger';
+import { getTranslationService } from '@/lib/translation/pptx-translation-service';
+import { TranslationConfig } from '@/lib/translation/claude-translator';
+import { performSecurityChecks, createErrorResponse, createSuccessResponse } from '@/lib/security/api-security';
 
 const execAsync = promisify(exec);
 
@@ -15,8 +19,40 @@ const supabase = createClient(
 );
 
 export async function POST(request: NextRequest) {
+  // セキュリティチェックを追加（非常に重い処理のため厳しいレート制限）
+  const securityCheck = await performSecurityChecks(request, {
+    csrf: true,
+    origin: true,
+    rateLimit: {
+      max: 5,
+      windowMs: 60 * 1000, // 1分あたり5リクエスト（非常に重い処理）
+    },
+    contentType: 'application/json',
+    methods: ['POST'],
+  });
+  
+  if (!securityCheck.success) {
+    return createErrorResponse(
+      securityCheck.error!,
+      securityCheck.status!,
+      securityCheck.headers,
+      securityCheck.requestId
+    );
+  }
+  
+  const requestId = securityCheck.requestId;
+  
   try {
-    const { fileId } = await request.json();
+    // ユーザー認証の確認
+    const supabaseServer = await createServerClient();
+    const { data: { user }, error: authError } = await supabaseServer.auth.getUser();
+    
+    if (authError || !user) {
+      logger.warn('Unauthorized translate-pptx attempt', { requestId });
+      return createErrorResponse('認証が必要です', 401, undefined, requestId);
+    }
+    
+    const { fileId, sourceLanguage = 'auto-detect', targetLanguage = 'ja' } = await request.json();
     
     if (!fileId) {
       return NextResponse.json({ error: 'File ID is required' }, { status: 400 });
@@ -68,61 +104,53 @@ export async function POST(request: NextRequest) {
       throw new Error(extractedData.error || 'Failed to extract text');
     }
 
-    // 翻訳処理（デモ用の簡易実装）
-    const translations: Record<number, any[]> = {};
+    // Real AI translation using Claude API
+    const translationService = getTranslationService();
     
-    for (const slide of extractedData.slides) {
-      const slideTranslations = [];
+    // Set up progress tracking (could be extended to WebSocket or SSE)
+    translationService.setProgressCallback((progress) => {
+      logger.info('Translation progress:', { ...progress });
       
-      for (const text of slide.texts) {
-        if (text.text) {
-          // デモ用：簡単な翻訳ルール
-          let translatedText = text.text;
-          
-          // 基本的な英日翻訳の例
-          const translationMap: Record<string, string> = {
-            'Test Presentation': 'テストプレゼンテーション',
-            'Sample Content': 'サンプルコンテンツ',
-            'First bullet point': '最初の箇条書き',
-            'Second bullet point': '2番目の箇条書き',
-            'Third bullet point': '3番目の箇条書き',
-            'This is a test PowerPoint file for upload testing': 'これはアップロードテスト用のPowerPointファイルです',
-            'This is a custom text box': 'これはカスタムテキストボックスです'
-          };
-          
-          // マッピングで翻訳
-          for (const [en, ja] of Object.entries(translationMap)) {
-            translatedText = translatedText.replace(en, ja);
+      // Update file status with progress
+      supabase
+        .from('files')
+        .update({ 
+          status: 'processing',
+          translation_result: {
+            progress: progress.percentage,
+            current_slide: progress.current_slide,
+            message: progress.message
           }
-          
-          // 箇条書きの記号を変換
-          translatedText = translatedText.replace(/•/g, '・');
-          
-          slideTranslations.push({
-            ...text,
-            translated_text: translatedText
-          });
-        } else if (text.table) {
-          // テーブルの翻訳
-          const translatedTable = text.table.map((row: string[]) =>
-            row.map((cell: string) => {
-              // 簡単な翻訳
-              let translated = cell;
-              if (cell.includes('Test')) translated = cell.replace('Test', 'テスト');
-              if (cell.includes('Sample')) translated = translated.replace('Sample', 'サンプル');
-              return translated;
-            })
-          );
-          
-          slideTranslations.push({
-            ...text,
-            translated_table: translatedTable
-          });
-        }
-      }
-      
-      translations[slide.slide_number] = slideTranslations;
-    }
+        })
+        .eq('id', fileId)
+        .then(({ error }) => {
+          if (error) {
+            logger.error('Failed to update progress:', error);
+          }
+        });
+    });
+
+    // Configure translation
+    const translationConfig: Omit<TranslationConfig, 'documentType'> = {
+      sourceLanguage,
+      targetLanguage,
+      preserveFormatting: true
+    };
+
+    // Translate the presentation
+    const translatedSlides = await translationService.translatePresentation(
+      extractedData.slides,
+      translationConfig
+    );
+
+    // Optimize translations for better quality
+    const optimizedSlides = await translationService.optimizeTranslations(
+      translatedSlides,
+      { ...translationConfig, documentType: 'general' }
+    );
+
+    // Format translations for Python script
+    const translations = translationService.formatForPythonScript(optimizedSlides);
 
     // 翻訳されたテキストでPowerPointを更新
     const updateScript = path.join(process.cwd(), 'src/lib/pptx/update_pptx.py');

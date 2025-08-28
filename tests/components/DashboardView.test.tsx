@@ -1,13 +1,11 @@
+import React from 'react';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import DashboardView from '@/components/dashboard/DashboardView';
-import { translateFileAction, deleteFileAction } from '@/app/actions/dashboard';
-import { logoutAction } from '@/app/actions/auth';
 
-// モック
-jest.mock('@/app/actions/dashboard');
-jest.mock('@/app/actions/auth');
+// Mock fetch API
+global.fetch = jest.fn();
 jest.mock('next/navigation', () => ({
   useRouter: () => ({
     push: jest.fn(),
@@ -94,10 +92,11 @@ describe('DashboardView', () => {
   });
 
   it('翻訳ボタンが正しく動作する', async () => {
-    const mockTranslateAction = jest.fn().mockResolvedValue({
-      success: true,
+    // Mock fetch for translation API
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ success: true, fileId: '1' })
     });
-    (translateFileAction as jest.Mock).mockImplementation(mockTranslateAction);
 
     render(
       <DashboardView userEmail="test@example.com" initialFiles={mockFiles} />
@@ -108,15 +107,18 @@ describe('DashboardView', () => {
     await userEvent.click(translateButtons[0]);
 
     await waitFor(() => {
-      expect(mockTranslateAction).toHaveBeenCalledWith('1');
+      expect(global.fetch).toHaveBeenCalledWith('/api/translate-pptx', expect.objectContaining({
+        method: 'POST'
+      }));
     });
   });
 
   it('ファイル削除機能が動作する', async () => {
-    const mockDeleteAction = jest.fn().mockResolvedValue({
-      success: true,
+    // Mock fetch for delete API
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ success: true })
     });
-    (deleteFileAction as jest.Mock).mockImplementation(mockDeleteAction);
 
     // window.confirmをモック
     global.confirm = jest.fn(() => true);
@@ -130,15 +132,18 @@ describe('DashboardView', () => {
     await userEvent.click(deleteButtons[0]);
 
     await waitFor(() => {
-      expect(mockDeleteAction).toHaveBeenCalledWith('1');
+      expect(global.fetch).toHaveBeenCalledWith('/api/files/1', expect.objectContaining({
+        method: 'DELETE'
+      }));
     });
   });
 
   it('ログアウトボタンが正しく動作する', async () => {
-    const mockLogoutAction = jest.fn().mockResolvedValue({
-      success: true,
+    // Mock fetch for logout API
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ success: true })
     });
-    (logoutAction as jest.Mock).mockImplementation(mockLogoutAction);
 
     render(
       <DashboardView userEmail="test@example.com" initialFiles={mockFiles} />
@@ -149,7 +154,9 @@ describe('DashboardView', () => {
     await userEvent.click(logoutButton);
 
     await waitFor(() => {
-      expect(mockLogoutAction).toHaveBeenCalled();
+      expect(global.fetch).toHaveBeenCalledWith('/api/auth/logout', expect.objectContaining({
+        method: 'POST'
+      }));
     });
   });
 

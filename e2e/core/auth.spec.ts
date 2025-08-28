@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { TEST_CONFIG, generateTestUser } from '../fixtures/test-config-v2';
 import { LoginPage } from '../pages/LoginPage';
+import { APIRoutesHelper } from '../helpers/api-routes-helper';
 
 /**
  * 認証フロー - コアテスト
@@ -15,9 +16,18 @@ test.describe('認証フロー', () => {
 
   test.describe('ログイン機能', () => {
     test('正常なログイン', async ({ page }) => {
-      await loginPage.navigate();
-      await loginPage.loginAsStandardUser();
-      await loginPage.expectLoginSuccess();
+      await loginPage.goto();
+      
+      // API Routesを使用してログイン
+      await APIRoutesHelper.fillAndSubmitForm(
+        page,
+        { 
+          email: TEST_CONFIG.users.standard.email, 
+          password: TEST_CONFIG.users.standard.password 
+        },
+        'button[type="submit"]',
+        /.*\/dashboard/
+      );
       
       // ダッシュボードの基本要素を確認
       await expect(page.locator('h1').first()).toBeVisible();
@@ -25,24 +35,31 @@ test.describe('認証フロー', () => {
     });
 
     test('無効な認証情報でのログイン失敗', async ({ page }) => {
-      await loginPage.navigate();
-      await loginPage.login('invalid@example.com', 'wrongpassword');
+      await loginPage.goto();
       
-      // エラーメッセージの表示を確認
-      const errorElement = page.locator('.bg-red-50, [role="alert"], .error-message');
-      await expect(errorElement.first()).toBeVisible({
-        timeout: TEST_CONFIG.timeouts.quick
-      });
+      // API Routesを使用して無効な認証情報で送信
+      await APIRoutesHelper.fillAndSubmitForm(
+        page,
+        { 
+          email: 'invalid@example.com', 
+          password: 'wrongpassword' 
+        },
+        'button[type="submit"]'
+      );
+      
+      // エラーメッセージの確認
+      const hasError = await ServerActionsHelper.hasServerActionError(page);
+      expect(hasError).toBeTruthy();
       
       // ログインページに留まることを確認
       await expect(page).toHaveURL(/.*\/login/);
     });
 
     test('空のフィールドでの送信防止', async ({ page }) => {
-      await loginPage.navigate();
+      await loginPage.goto();
       
-      // 空のフォームで送信
-      await loginPage.submit();
+      // 空のフォームで送信（submitボタンをクリック）
+      await loginPage.submitButton.click();
       
       // HTML5バリデーションまたはフォームの無効状態を確認
       const emailInput = loginPage.emailInput;
@@ -98,19 +115,28 @@ test.describe('認証フロー', () => {
     test('ログアウト機能', async ({ page, baseURL }) => {
       // まずログインする
       const loginPage = new LoginPage(page);
-      await loginPage.navigate();
-      await loginPage.loginAsStandardUser();
-      await loginPage.expectLoginSuccess();
+      await loginPage.goto();
       
-      // ログアウトボタンをクリック
+      // Server Actionsでログイン
+      await ServerActionsHelper.fillAndSubmitForm(
+        page,
+        { 
+          email: TEST_CONFIG.users.standard.email, 
+          password: TEST_CONFIG.users.standard.password 
+        },
+        'button[type="submit"]',
+        /.*\/dashboard/
+      );
+      
+      // ログアウトボタンをクリック（Server Action）
       const logoutButton = page.locator('button:has-text("ログアウト")');
       if (await logoutButton.isVisible()) {
-        await logoutButton.click();
-        
-        // ホームページまたはログインページへのリダイレクトを確認
-        await page.waitForURL((url) => {
-          return url.pathname === '/' || url.pathname === '/login';
-        }, { timeout: TEST_CONFIG.timeouts.navigation });
+        await Promise.all([
+          page.waitForURL((url) => {
+            return url.pathname === '/' || url.pathname === '/login';
+          }, { timeout: TEST_CONFIG.timeouts.navigation }),
+          logoutButton.click()
+        ]);
       }
     });
   });

@@ -30,14 +30,14 @@ describe('middleware-security', () => {
 
     test('includes HSTS header in production', () => {
       const originalEnv = process.env.NODE_ENV;
-      process.env.NODE_ENV = 'production';
+      (process.env as any).NODE_ENV = 'production';
 
       // Re-import to get updated headers
       const { SECURITY_HEADERS: prodHeaders } = require('../src/middleware-security');
       
       expect(prodHeaders).toHaveProperty('Strict-Transport-Security');
       
-      process.env.NODE_ENV = originalEnv;
+      (process.env as any).NODE_ENV = originalEnv;
     });
 
     test('excludes HSTS header in development', () => {
@@ -217,7 +217,7 @@ describe('middleware-security', () => {
     });
 
     test('requires content-type for POST requests', () => {
-      mockRequest.method = 'POST';
+      (mockRequest as any).method = 'POST';
       
       (mockRequest.headers!.get as jest.Mock).mockImplementation((header: string) => {
         switch (header) {

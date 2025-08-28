@@ -2,7 +2,7 @@
 
 import { useState, useCallback, memo } from 'react';
 import Link from 'next/link';
-import { deleteFileAction, downloadFileAction } from '@/app/actions/files';
+// Removed Server Actions imports - will use API Routes instead
 import { FileRecord } from '@/lib/data/files';
 import { Loader2, Trash2, Download, FileText } from 'lucide-react';
 import { DashboardLayout } from '@/components/DashboardLayout';
@@ -24,12 +24,19 @@ export default function FilesView({ initialFiles }: FilesViewProps) {
     }
     setDeletingFileId(fileId);
     try {
-      const result = await deleteFileAction(fileId);
-      if (result.success) {
+      const response = await fetch(`/api/files/${fileId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      
+      if (response.ok) {
         setFiles(prevFiles => prevFiles.filter(f => f.id !== fileId));
       } else {
-        alert(result.error || 'ファイルの削除に失敗しました');
+        const data = await response.json();
+        alert(data.error || 'ファイルの削除に失敗しました');
       }
+    } catch (error) {
+      alert('ファイルの削除中にエラーが発生しました');
     } finally {
       setDeletingFileId(null);
     }
@@ -39,12 +46,24 @@ export default function FilesView({ initialFiles }: FilesViewProps) {
   const handleDownload = useCallback(async (fileId: string, fileType: 'original' | 'translated') => {
     setDownloadingFileId(fileId);
     try {
-      const result = await downloadFileAction(fileId, fileType);
-      if (result.success && result.message) {
-        // ダウンロードURLが返ってくるので、それを使ってダウンロード
-        window.open(result.message, '_blank');
+      const response = await fetch(`/api/files/${fileId}/download?type=${fileType}`, {
+        method: 'GET',
+        credentials: 'include',
+      });
+      
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `file_${fileType}.pptx`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
       } else {
-        alert(result.error || 'ダウンロードに失敗しました');
+        const data = await response.json();
+        alert(data.error || 'ダウンロードに失敗しました');
       }
     } finally {
       setDownloadingFileId(null);

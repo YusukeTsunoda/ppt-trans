@@ -36,8 +36,29 @@ describe('/api/auth/callback', () => {
     mockRequest = {
       nextUrl: {
         searchParams: new URLSearchParams(),
-        origin: 'http://localhost:3000'
-      }
+        origin: 'http://localhost:3000',
+        href: 'http://localhost:3000/api/auth/callback',
+        hostname: 'localhost',
+        pathname: '/api/auth/callback',
+        protocol: 'http:',
+        port: '3000',
+        host: 'localhost:3000',
+        password: '',
+        username: '',
+        hash: '',
+        search: '',
+        basePath: '',
+        buildId: '',
+        locale: '',
+        defaultLocale: '',
+        domainLocale: undefined,
+        analyze: jest.fn(),
+        formatPathname: jest.fn(),
+        formatSearch: jest.fn(),
+        toString: jest.fn(),
+        toJSON: jest.fn(),
+        clone: jest.fn()
+      } as any
     };
 
     mockRedirect.mockImplementation((url) => ({

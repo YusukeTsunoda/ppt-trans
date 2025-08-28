@@ -115,20 +115,20 @@ describe('validationUtils', () => {
     });
 
     test('validates HTTPS URLs in production', () => {
-      process.env.NODE_ENV = 'production';
+      (process.env as any).NODE_ENV = 'production';
       const result = validateURL('https://example.com');
       expect(result.valid).toBe(true);
     });
 
     test('rejects HTTP URLs in production', () => {
-      process.env.NODE_ENV = 'production';
+      (process.env as any).NODE_ENV = 'production';
       const result = validateURL('http://example.com');
       expect(result.valid).toBe(false);
       expect(result.error).toBe('HTTPSのURLのみ使用可能です');
     });
 
     test('allows HTTP URLs in development', () => {
-      process.env.NODE_ENV = 'development';
+      (process.env as any).NODE_ENV = 'development';
       const result = validateURL('http://localhost:3000');
       expect(result.valid).toBe(true);
     });

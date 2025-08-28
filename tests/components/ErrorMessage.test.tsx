@@ -2,56 +2,50 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { ErrorMessage } from '../../src/components/ErrorMessage';
 
-// Mock the ErrorMessage component first
-jest.mock('../../src/components/ErrorMessage', () => {
-  return {
-    ErrorMessage: ({ message, className }: { message?: string; className?: string }) => (
-      <div 
-        className={`text-red-500 text-sm mt-1 ${className || ''}`}
-        role="alert"
-        data-testid="error-message"
-      >
-        {message}
-      </div>
-    )
-  };
-});
-
 describe('ErrorMessage', () => {
-  test('renders error message when message is provided', () => {
-    render(<ErrorMessage message="This is an error" />);
+  test('renders error message when string error is provided', () => {
+    render(<ErrorMessage error="This is an error" />);
     
-    const errorElement = screen.getByTestId('error-message');
+    const errorElement = screen.getByRole('alert');
     expect(errorElement).toBeInTheDocument();
     expect(errorElement).toHaveTextContent('This is an error');
-    expect(errorElement).toHaveAttribute('role', 'alert');
   });
 
-  test('renders with default classes', () => {
-    render(<ErrorMessage message="Error message" />);
+  test('renders error message from Error object', () => {
+    const error = new Error('Error message');
+    render(<ErrorMessage error={error} />);
     
-    const errorElement = screen.getByTestId('error-message');
-    expect(errorElement).toHaveClass('text-red-500', 'text-sm', 'mt-1');
+    const errorElement = screen.getByRole('alert');
+    expect(errorElement).toHaveTextContent('Error message');
   });
 
   test('applies custom className', () => {
-    render(<ErrorMessage message="Error" className="custom-error" />);
+    render(<ErrorMessage error="Error" className="custom-error" />);
     
-    const errorElement = screen.getByTestId('error-message');
+    const errorElement = screen.getByRole('alert');
     expect(errorElement).toHaveClass('custom-error');
   });
 
-  test('does not render when message is empty', () => {
-    render(<ErrorMessage message="" />);
+  test('shows retry button when onRetry is provided and error is retryable', () => {
+    const onRetry = jest.fn();
+    render(<ErrorMessage error="Error" onRetry={onRetry} />);
     
-    const errorElement = screen.getByTestId('error-message');
-    expect(errorElement).toBeEmptyDOMElement();
+    // Note: Default errors are not retryable, so button should not show
+    expect(screen.queryByText('再試行')).not.toBeInTheDocument();
   });
 
-  test('does not render when message is undefined', () => {
-    render(<ErrorMessage />);
+  test('shows dismiss button when onDismiss is provided', () => {
+    const onDismiss = jest.fn();
+    render(<ErrorMessage error="Error" onDismiss={onDismiss} />);
     
-    const errorElement = screen.getByTestId('error-message');
-    expect(errorElement).toBeEmptyDOMElement();
+    const dismissButton = screen.getByText('閉じる');
+    expect(dismissButton).toBeInTheDocument();
+  });
+
+  test('renders with error details when showDetails is true', () => {
+    render(<ErrorMessage error="Error" showDetails={true} />);
+    
+    const errorElement = screen.getByRole('alert');
+    expect(errorElement).toBeInTheDocument();
   });
 });

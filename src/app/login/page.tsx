@@ -1,5 +1,4 @@
-// import LoginForm from '@/components/auth/LoginForm';
-import LoginFormStable from '@/components/auth/LoginFormStable';
+import LoginForm from '@/components/auth/LoginForm';
 import Link from 'next/link';
 
 export default function LoginPage() {
@@ -15,7 +14,7 @@ export default function LoginPage() {
           </p>
         </div>
         
-        <LoginFormStable />
+        <LoginForm />
         
         <div className="text-center space-y-2">
           <div>

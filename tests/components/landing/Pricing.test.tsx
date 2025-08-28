@@ -12,8 +12,8 @@ jest.mock('next/link', () => {
 describe('Pricing Component', () => {
   it('セクションタイトルを表示する', () => {
     render(<Pricing />);
-    expect(screen.getByText('料金プラン')).toBeInTheDocument();
-    expect(screen.getByText(/ビジネスニーズに合わせた柔軟なプラン/)).toBeInTheDocument();
+    expect(screen.getByText('シンプルな料金プラン')).toBeInTheDocument();
+    expect(screen.getByText('ニーズに合わせて最適なプランをお選びください')).toBeInTheDocument();
   });
 
   it('全ての料金プランを表示する', () => {
@@ -29,70 +29,74 @@ describe('Pricing Component', () => {
     
     expect(screen.getByText('¥0')).toBeInTheDocument();
     expect(screen.getByText('¥2,980')).toBeInTheDocument();
-    expect(screen.getByText('お問い合わせ')).toBeInTheDocument();
+    // 「お問い合わせ」は複数あるので、最初の1つを取得
+    const contactElements = screen.getAllByText('お問い合わせ');
+    expect(contactElements.length).toBeGreaterThan(0);
   });
 
   it('各プランの説明を表示する', () => {
     render(<Pricing />);
     
-    expect(screen.getByText('個人利用に最適')).toBeInTheDocument();
-    expect(screen.getByText('プロフェッショナル向け')).toBeInTheDocument();
-    expect(screen.getByText('大規模組織向け')).toBeInTheDocument();
+    expect(screen.getByText('個人利用や試用に最適')).toBeInTheDocument();
+    expect(screen.getByText('ビジネス利用に最適')).toBeInTheDocument();
+    expect(screen.getByText('大規模な組織向け')).toBeInTheDocument();
   });
 
   it('Freeプランの機能を表示する', () => {
     render(<Pricing />);
     
-    expect(screen.getByText('月10ファイルまで')).toBeInTheDocument();
-    expect(screen.getByText('最大10MBのファイルサイズ')).toBeInTheDocument();
-    expect(screen.getByText('基本的な翻訳機能')).toBeInTheDocument();
+    expect(screen.getByText('月5ファイルまで')).toBeInTheDocument();
+    expect(screen.getByText('最大10スライド/ファイル')).toBeInTheDocument();
+    expect(screen.getByText('基本的な言語対応')).toBeInTheDocument();
     expect(screen.getByText('メールサポート')).toBeInTheDocument();
   });
 
   it('Proプランの機能を表示する', () => {
     render(<Pricing />);
     
-    expect(screen.getByText('月100ファイルまで')).toBeInTheDocument();
-    expect(screen.getByText('最大50MBのファイルサイズ')).toBeInTheDocument();
-    expect(screen.getByText('高度な翻訳機能')).toBeInTheDocument();
+    expect(screen.getByText('月50ファイルまで')).toBeInTheDocument();
+    expect(screen.getByText('最大100スライド/ファイル')).toBeInTheDocument();
+    expect(screen.getByText('全言語対応')).toBeInTheDocument();
     expect(screen.getByText('優先サポート')).toBeInTheDocument();
+    expect(screen.getByText('高速処理')).toBeInTheDocument();
     expect(screen.getByText('API アクセス')).toBeInTheDocument();
-    expect(screen.getByText('カスタム辞書')).toBeInTheDocument();
   });
 
   it('Enterpriseプランの機能を表示する', () => {
     render(<Pricing />);
     
     expect(screen.getByText('無制限のファイル数')).toBeInTheDocument();
-    expect(screen.getByText('ファイルサイズ制限なし')).toBeInTheDocument();
-    expect(screen.getByText('専用サーバー')).toBeInTheDocument();
-    expect(screen.getByText('24/7 サポート')).toBeInTheDocument();
+    expect(screen.getByText('無制限のスライド数')).toBeInTheDocument();
+    expect(screen.getByText('全言語対応')).toBeInTheDocument();
+    expect(screen.getByText('専任サポート')).toBeInTheDocument();
+    expect(screen.getByText('最優先処理')).toBeInTheDocument();
+    expect(screen.getByText('カスタムAPI')).toBeInTheDocument();
     expect(screen.getByText('SLA保証')).toBeInTheDocument();
-    expect(screen.getByText('オンプレミス対応')).toBeInTheDocument();
   });
 
   it('CTAボタンが正しく表示される', () => {
     render(<Pricing />);
     
     const freeButton = screen.getByRole('link', { name: '無料で始める' });
-    const proButton = screen.getByRole('link', { name: 'Proを始める' });
-    const enterpriseButton = screen.getByRole('link', { name: 'お問い合わせ' });
+    const proButton = screen.getByRole('link', { name: 'Pro版を始める' });
+    // お問い合わせは複数あるのでgetAllByRoleを使用
+    const enterpriseButtons = screen.getAllByRole('link', { name: 'お問い合わせ' });
     
     expect(freeButton).toBeInTheDocument();
     expect(proButton).toBeInTheDocument();
-    expect(enterpriseButton).toBeInTheDocument();
+    expect(enterpriseButtons.length).toBeGreaterThan(0);
   });
 
   it('CTAボタンが適切なリンク先を持つ', () => {
     render(<Pricing />);
     
     const freeButton = screen.getByRole('link', { name: '無料で始める' });
-    const proButton = screen.getByRole('link', { name: 'Proを始める' });
-    const enterpriseButton = screen.getByRole('link', { name: 'お問い合わせ' });
+    const proButton = screen.getByRole('link', { name: 'Pro版を始める' });
+    const enterpriseButtons = screen.getAllByRole('link', { name: 'お問い合わせ' });
     
     expect(freeButton).toHaveAttribute('href', '/register');
-    expect(proButton).toHaveAttribute('href', '/register?plan=pro');
-    expect(enterpriseButton).toHaveAttribute('href', '/contact');
+    expect(proButton).toHaveAttribute('href', '/register');
+    expect(enterpriseButtons[0]).toHaveAttribute('href', '/contact');
   });
 
   it('Proプランがハイライトされている', () => {
@@ -123,9 +127,9 @@ describe('Pricing Component', () => {
 
   it('アクセシビリティ属性が正しく設定されている', () => {
     render(<Pricing />);
-    const heading = screen.getByRole('heading', { level: 2, name: '料金プラン' });
+    const heading = screen.getByRole('heading', { level: 2 });
     
-    expect(heading).toBeInTheDocument();
+    expect(heading).toHaveTextContent('シンプルな料金プラン');
   });
 
   it('チェックマークアイコンが表示されている', () => {

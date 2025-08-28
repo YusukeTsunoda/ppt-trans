@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { TEST_CONFIG } from '../fixtures/test-config-v2';
+import { ServerActionsHelper } from '../helpers/server-actions-helper';
 
 /**
  * ファイルアップロード - コアテスト
@@ -36,14 +37,24 @@ test.describe('ファイルアップロード', () => {
     // アップロードボタンが有効になる
     await expect(uploadButton).toBeEnabled();
     
-    // アップロード実行
-    await uploadButton.click();
+    // Server Actionでアップロード実行
+    const uploadResponse = await ServerActionsHelper.submitServerActionForm(
+      page,
+      'button:has-text("アップロード")',
+      /.*\/dashboard/
+    );
+    
+    // pending状態の完了を待つ
+    await ServerActionsHelper.waitForPendingState(page);
     
     // 成功を確認（ダッシュボードへのリダイレクトまたは成功メッセージ）
-    await Promise.race([
-      page.waitForURL('**/dashboard', { timeout: TEST_CONFIG.timeouts.upload }),
-      expect(page.locator('text=/アップロードが完了|Upload complete/')).toBeVisible()
-    ]);
+    const currentUrl = page.url();
+    const successMessage = page.locator('text=/アップロードが完了|Upload complete/');
+    
+    expect(
+      currentUrl.includes('/dashboard') || 
+      await successMessage.isVisible({ timeout: 1000 }).catch(() => false)
+    ).toBeTruthy();
   });
 
   test('無効なファイル形式の拒否', async ({ page, baseURL }) => {

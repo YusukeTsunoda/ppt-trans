@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { SlideData } from './usePreviewState';
+import logger from '@/lib/logger';
 
 interface FileRecord {
   id: string;
@@ -85,7 +86,7 @@ export function usePreviewOperations({
         throw new Error('スライドデータの形式が不正です');
       }
     } catch (error) {
-      console.error('Extraction error:', error);
+      logger.error('Extraction error:', error);
       setError(error instanceof Error ? error.message : 'テキスト抽出中にエラーが発生しました');
     } finally {
       setIsExtracting(false);
@@ -141,7 +142,7 @@ export function usePreviewOperations({
                   translated: result.translatedText
                 };
               } catch (error) {
-                console.error('Translation error for text:', error);
+                logger.error('Translation error for text:', error);
                 processedTexts++;
                 setTranslationProgress((processedTexts / totalTexts) * 100);
                 return text;
@@ -169,7 +170,7 @@ export function usePreviewOperations({
       setTranslationMessage('翻訳が完了しました！');
       setTimeout(() => setTranslationMessage(''), 3000);
     } catch (error) {
-      console.error('Translation error:', error);
+      logger.error('Translation error:', error);
       setError(error instanceof Error ? error.message : '翻訳中にエラーが発生しました');
     } finally {
       setIsTranslating(false);
@@ -207,7 +208,7 @@ export function usePreviewOperations({
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch (error) {
-      console.error('Download error:', error);
+      logger.error('Download error:', error);
       setError(error instanceof Error ? error.message : 'ダウンロード中にエラーが発生しました');
     } finally {
       setIsDownloading(false);

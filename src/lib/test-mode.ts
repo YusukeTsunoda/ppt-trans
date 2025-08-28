@@ -3,6 +3,8 @@
  * 環境変数に基づいてテスト時の動作を制御
  */
 
+import logger from '@/lib/logger';
+
 /**
  * テストモードかどうかを判定
  */
@@ -44,7 +46,7 @@ export function getTestCredentials() {
   const password = process.env.TEST_USER_PASSWORD;
   
   if (!email || !password) {
-    console.warn('[TEST] Test credentials not configured in environment variables');
+    logger.warn('[TEST] Test credentials not configured in environment variables');
     return null;
   }
   
@@ -56,7 +58,7 @@ export function getTestCredentials() {
  */
 export function testLog(message: string, ...args: any[]) {
   if (isTestMode() && process.env.LOG_LEVEL === 'debug') {
-    console.log(`[TEST] ${message}`, ...args);
+    logger.info(`[TEST] ${message}`, { args });
   }
 }
 
@@ -115,7 +117,7 @@ export function getApiEndpoint(path: string): string {
 export function handleTestError(error: any) {
   if (isTestMode()) {
     // テストモードでは詳細なエラー情報を出力
-    console.error('[TEST ERROR]', {
+    logger.error('[TEST ERROR]', error, {
       message: error.message,
       stack: error.stack,
       timestamp: new Date().toISOString()
@@ -124,7 +126,7 @@ export function handleTestError(error: any) {
     // スクリーンショットのトリガー
     if (process.env.SCREENSHOT_ON_FAILURE === 'true') {
       // PlaywrightやE2Eテストツールでキャプチャ
-      console.log('[TEST] スクリーンショットをトリガー');
+      logger.info('[TEST] スクリーンショットをトリガー');
     }
   }
   

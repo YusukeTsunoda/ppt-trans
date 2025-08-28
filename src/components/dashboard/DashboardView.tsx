@@ -1,14 +1,14 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { translateFileAction, deleteFileAction } from '@/app/actions/dashboard';
-import { logoutAction } from '@/app/actions/auth';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import logger from '@/lib/logger';
 import { User, LogOut, Upload, Settings, Plus } from 'lucide-react';
 import { UploadModal } from '@/components/upload/UploadModal';
+import { TranslationProgressModal } from '@/components/translation/TranslationProgressModal';
+import { fetchWithCSRF } from '@/hooks/useCSRF';
 
 interface FileRecord {
   id: string;
@@ -30,7 +30,7 @@ interface DashboardViewProps {
 }
 
 
-const FileCard = React.memo(function FileCard({ file, onDelete }: { file: FileRecord; onDelete: (fileId: string) => void }) {
+const FileCard = React.memo(function FileCard({ file, onDelete, onTranslate }: { file: FileRecord; onDelete: (fileId: string) => void; onTranslate: (fileId: string) => void }) {
   const [isTranslating, setIsTranslating] = useState(false);
   const [translateError, setTranslateError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -163,18 +163,7 @@ const FileCard = React.memo(function FileCard({ file, onDelete }: { file: FileRe
           {/* 翻訳ボタン */}
           {file.status === 'uploaded' && (
             <button
-              onClick={async () => {
-                setIsTranslating(true);
-                setTranslateError(null);
-                try {
-                  const result = await translateFileAction(file.id);
-                  if (!result.success) {
-                    setTranslateError(result.error || '翻訳に失敗しました');
-                  }
-                } finally {
-                  setIsTranslating(false);
-                }
-              }}
+              onClick={() => onTranslate(file.id)}
               disabled={isTranslating}
               className="text-sm bg-emerald-500 text-white px-4 py-2 rounded-lg hover:bg-emerald-600 disabled:opacity-50 transition-all duration-200"
             >
@@ -220,6 +209,8 @@ export default function DashboardView({ userEmail, initialFiles }: DashboardView
   const [files, setFiles] = useState(initialFiles);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [translatingFileId, setTranslatingFileId] = useState<string | null>(null);
+  const [isTranslationModalOpen, setIsTranslationModalOpen] = useState(false);
   const router = useRouter();
   const supabase = createClient();
 
@@ -246,28 +237,66 @@ export default function DashboardView({ userEmail, initialFiles }: DashboardView
   }, [supabase]);
 
   const handleLogout = useCallback(async () => {
-    const result = await logoutAction();
-    if (result.success) {
+    // Call logout API with CSRF protection
+    const response = await fetchWithCSRF('/api/auth/logout', {
+      method: 'POST',
+    });
+    
+    if (response.ok) {
       router.push('/login');
+      router.refresh();
     }
   }, [router]);
 
   const handleDeleteFile = useCallback(async (fileId: string) => {
     try {
-      // 直接fileIdを渡すようにシンプル化
-      const deleteResult = await deleteFileAction(fileId);
+      // Call delete API endpoint with CSRF protection
+      const response = await fetchWithCSRF(`/api/files/${fileId}`, {
+        method: 'DELETE',
+      });
       
-      if (deleteResult.success) {
-        // ローカルの状態を更新（楽観的UI更新）
+      if (response.ok) {
+        // Update local state (optimistic UI update)
         setFiles(prevFiles => prevFiles.filter(f => f.id !== fileId));
       } else {
-        alert(deleteResult.error || 'ファイルの削除に失敗しました');
+        const data = await response.json();
+        alert(data.error || 'ファイルの削除に失敗しました');
       }
     } catch (error) {
       logger.error('Delete error:', error);
       alert('ファイルの削除中にエラーが発生しました');
     }
   }, []);
+
+  const handleTranslateFile = useCallback(async (fileId: string) => {
+    setTranslatingFileId(fileId);
+    setIsTranslationModalOpen(true);
+    
+    try {
+      const response = await fetchWithCSRF('/api/translate-pptx', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          fileId,
+          sourceLanguage: 'auto-detect',
+          targetLanguage: 'ja'
+        }),
+      });
+      
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Translation failed');
+      }
+      
+      // Refresh file list after translation
+      router.refresh();
+    } catch (error) {
+      logger.error('Translation error:', error);
+      alert(error instanceof Error ? error.message : '翻訳中にエラーが発生しました');
+    }
+  }, [router]);
 
   const handleUploadSuccess = useCallback((newFile: FileRecord) => {
     setFiles(prev => [newFile, ...prev]);
@@ -393,7 +422,12 @@ export default function DashboardView({ userEmail, initialFiles }: DashboardView
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {files.map((file) => (
-                    <FileCard key={file.id} file={file} onDelete={handleDeleteFile} />
+                    <FileCard 
+                      key={file.id} 
+                      file={file} 
+                      onDelete={handleDeleteFile}
+                      onTranslate={handleTranslateFile}
+                    />
                   ))}
                 </tbody>
               </table>
@@ -407,6 +441,17 @@ export default function DashboardView({ userEmail, initialFiles }: DashboardView
         isOpen={isUploadModalOpen}
         onClose={() => setIsUploadModalOpen(false)}
         onSuccess={handleUploadSuccess}
+      />
+
+      {/* 翻訳進捗モーダル */}
+      <TranslationProgressModal
+        isOpen={isTranslationModalOpen}
+        fileId={translatingFileId}
+        onClose={() => {
+          setIsTranslationModalOpen(false);
+          setTranslatingFileId(null);
+          router.refresh();
+        }}
       />
     </div>
   );

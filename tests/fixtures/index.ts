@@ -56,8 +56,11 @@ export class TestFixtures {
     mimeType = 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
   ): File {
     const actualContent = content || 'test content';
+    const blobContent = typeof actualContent === 'string' 
+      ? actualContent 
+      : actualContent as any;
     const blob = new Blob(
-      [actualContent],
+      [blobContent],
       { type: mimeType }
     );
     

@@ -169,7 +169,7 @@ describe('AppError', () => {
     });
 
     test('returns basic client response in production', () => {
-      process.env.NODE_ENV = 'production';
+      (process.env as any).NODE_ENV = 'production';
 
       const details = { sensitive: 'data' };
       const error = new AppError(
@@ -195,7 +195,7 @@ describe('AppError', () => {
     });
 
     test('includes debug information in development', () => {
-      process.env.NODE_ENV = 'development';
+      (process.env as any).NODE_ENV = 'development';
 
       const details = { debug: 'info' };
       const error = new AppError(
@@ -219,7 +219,7 @@ describe('AppError', () => {
     });
 
     test('includes debug information in test environment', () => {
-      process.env.NODE_ENV = 'test';
+      (process.env as any).NODE_ENV = 'test';
 
       const error = new AppError('Test error', 'TEST_ERROR');
       const clientResponse = error.toClientResponse();

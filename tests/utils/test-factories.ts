@@ -17,19 +17,13 @@ export const createMockFile = (overrides = {}): FileRecord => ({
   id: 'file-test-id',
   user_id: 'user-test-id',
   filename: 'test-presentation.pptx',
-  original_name: 'My Presentation.pptx',
+  original_filename: 'My Presentation.pptx',
   file_size: 1024000,
   mime_type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-  file_path: 'uploads/user-test-id/test-presentation.pptx',
+  storage_path: 'uploads/user-test-id/test-presentation.pptx',
   status: 'uploaded',
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString(),
-  source_lang: 'en',
-  target_lang: 'ja',
-  translation_status: null,
-  translation_progress: 0,
-  translated_file_path: null,
-  error_message: null,
   ...overrides,
 });
 
@@ -121,10 +115,10 @@ export const createMockRouter = () => ({
   query: {},
 });
 
-export const createMockSearchParams = (params = {}) => ({
-  get: jest.fn((key) => params[key] || null),
-  has: jest.fn((key) => key in params),
-  getAll: jest.fn((key) => params[key] ? [params[key]] : []),
+export const createMockSearchParams = (params: Record<string, any> = {}) => ({
+  get: jest.fn((key: string) => params[key] || null),
+  has: jest.fn((key: string) => key in params),
+  getAll: jest.fn((key: string) => params[key] ? [params[key]] : []),
   entries: jest.fn(() => Object.entries(params)),
   keys: jest.fn(() => Object.keys(params)),
   values: jest.fn(() => Object.values(params)),

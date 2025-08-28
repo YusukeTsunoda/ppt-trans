@@ -86,19 +86,13 @@ export class FileBuilder extends TestDataBuilder<FileRecord> {
       id: `file-${FileBuilder.counter}`,
       user_id: 'user-123',
       filename: `file-${FileBuilder.counter}.pptx`,
-      original_name: `Presentation ${FileBuilder.counter}.pptx`,
+      original_filename: `Presentation ${FileBuilder.counter}.pptx`,
       file_size: 1024 * 1024, // 1MB
       mime_type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-      file_path: `uploads/file-${FileBuilder.counter}.pptx`,
+      storage_path: `uploads/file-${FileBuilder.counter}.pptx`,
       status: 'uploaded',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
-      source_lang: 'en',
-      target_lang: 'ja',
-      translation_status: null,
-      translation_progress: 0,
-      translated_file_path: null,
-      error_message: null,
     };
   }
   
@@ -108,7 +102,7 @@ export class FileBuilder extends TestDataBuilder<FileRecord> {
   }
   
   withName(name: string): this {
-    this.data.original_name = name;
+    this.data.original_filename = name;
     this.data.filename = name.toLowerCase().replace(/\s+/g, '-');
     return this;
   }
@@ -123,22 +117,28 @@ export class FileBuilder extends TestDataBuilder<FileRecord> {
     return this;
   }
   
-  asTranslating(progress = 50): this {
-    this.data.translation_status = 'processing';
-    this.data.translation_progress = progress;
+  asTranslating(progress?: number): this {
+    this.data.status = 'processing';
+    this.data.translation_result = {
+      slide_count: 10,
+    };
     return this;
   }
   
   asTranslated(): this {
-    this.data.translation_status = 'completed';
-    this.data.translation_progress = 100;
-    this.data.translated_file_path = `translated/${this.data.filename}`;
+    this.data.status = 'completed';
+    this.data.translation_result = {
+      translated_path: `translated/${this.data.filename}`,
+      slide_count: 10,
+    };
     return this;
   }
   
   withError(message: string): this {
-    this.data.status = 'error';
-    this.data.error_message = message;
+    this.data.status = 'failed';
+    this.data.translation_result = {
+      error: message,
+    };
     return this;
   }
   

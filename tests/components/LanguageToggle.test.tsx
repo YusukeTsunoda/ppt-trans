@@ -2,82 +2,92 @@ import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { LanguageToggle } from '../../src/components/LanguageToggle';
 
-// Mock the LanguageToggle component
-jest.mock('../../src/components/LanguageToggle', () => {
-  return {
-    LanguageToggle: ({ onLanguageChange, currentLanguage = 'ja' }: { 
-      onLanguageChange?: (lang: string) => void; 
-      currentLanguage?: string;
-    }) => (
-      <div data-testid="language-toggle">
-        <select 
-          value={currentLanguage}
-          onChange={(e) => onLanguageChange?.(e.target.value)}
-          data-testid="language-select"
-        >
-          <option value="ja">日本語</option>
-          <option value="en">English</option>
-          <option value="es">Español</option>
-          <option value="fr">Français</option>
-        </select>
-        <span data-testid="current-language">{currentLanguage}</span>
-      </div>
-    )
-  };
-});
+// Mock the LanguageContext
+jest.mock('@/contexts/LanguageContext', () => ({
+  useLanguage: jest.fn(() => ({
+    language: 'ja',
+    setLanguage: jest.fn()
+  })),
+  Language: {
+    ja: 'ja',
+    en: 'en',
+    zh: 'zh',
+    ko: 'ko'
+  }
+}));
 
 describe('LanguageToggle', () => {
+  const mockSetLanguage = jest.fn();
+  
+  beforeEach(() => {
+    jest.clearAllMocks();
+    const { useLanguage } = require('@/contexts/LanguageContext');
+    useLanguage.mockReturnValue({
+      language: 'ja',
+      setLanguage: mockSetLanguage
+    });
+  });
+  
   test('renders language toggle with default language', () => {
     render(<LanguageToggle />);
     
-    expect(screen.getByTestId('language-toggle')).toBeInTheDocument();
-    expect(screen.getByTestId('language-select')).toHaveValue('ja');
-    expect(screen.getByTestId('current-language')).toHaveTextContent('ja');
+    expect(screen.getByLabelText('Select language')).toBeInTheDocument();
   });
 
   test('renders with custom current language', () => {
-    render(<LanguageToggle currentLanguage="en" />);
+    const { useLanguage } = require('@/contexts/LanguageContext');
+    useLanguage.mockReturnValue({
+      language: 'en',
+      setLanguage: mockSetLanguage
+    });
     
-    expect(screen.getByTestId('language-select')).toHaveValue('en');
-    expect(screen.getByTestId('current-language')).toHaveTextContent('en');
-  });
-
-  test('calls onLanguageChange when language is selected', () => {
-    const mockOnLanguageChange = jest.fn();
-    render(<LanguageToggle onLanguageChange={mockOnLanguageChange} />);
-    
-    const select = screen.getByTestId('language-select');
-    fireEvent.change(select, { target: { value: 'en' } });
-    
-    expect(mockOnLanguageChange).toHaveBeenCalledWith('en');
-  });
-
-  test('renders all language options', () => {
     render(<LanguageToggle />);
     
-    const select = screen.getByTestId('language-select');
-    const options = select.querySelectorAll('option');
-    
-    expect(options).toHaveLength(4);
-    expect(options[0]).toHaveValue('ja');
-    expect(options[1]).toHaveValue('en');
-    expect(options[2]).toHaveValue('es');
-    expect(options[3]).toHaveValue('fr');
+    expect(screen.getByText(/English/)).toBeInTheDocument();
   });
 
-  test('updates language multiple times', () => {
-    const mockOnLanguageChange = jest.fn();
-    render(<LanguageToggle onLanguageChange={mockOnLanguageChange} />);
+  test('opens dropdown when clicked', () => {
+    render(<LanguageToggle />);
     
-    const select = screen.getByTestId('language-select');
+    const button = screen.getByLabelText('Select language');
+    fireEvent.click(button);
     
-    fireEvent.change(select, { target: { value: 'en' } });
-    fireEvent.change(select, { target: { value: 'es' } });
-    fireEvent.change(select, { target: { value: 'fr' } });
+    // Check if language options are visible
+    expect(screen.getByText('English')).toBeInTheDocument();
+    expect(screen.getByText('中文')).toBeInTheDocument();
+    expect(screen.getByText('한국어')).toBeInTheDocument();
+  });
+
+  test('calls setLanguage when a language is selected', () => {
+    render(<LanguageToggle />);
     
-    expect(mockOnLanguageChange).toHaveBeenCalledTimes(3);
-    expect(mockOnLanguageChange).toHaveBeenNthCalledWith(1, 'en');
-    expect(mockOnLanguageChange).toHaveBeenNthCalledWith(2, 'es');
-    expect(mockOnLanguageChange).toHaveBeenNthCalledWith(3, 'fr');
+    const button = screen.getByLabelText('Select language');
+    fireEvent.click(button);
+    
+    const englishOption = screen.getByText('English');
+    fireEvent.click(englishOption);
+    
+    expect(mockSetLanguage).toHaveBeenCalledWith('en');
+  });
+
+  test('closes dropdown when clicking outside', () => {
+    render(
+      <div>
+        <LanguageToggle />
+        <button data-testid="outside">Outside</button>
+      </div>
+    );
+    
+    // Open dropdown
+    const button = screen.getByLabelText('Select language');
+    fireEvent.click(button);
+    expect(screen.getByText('English')).toBeInTheDocument();
+    
+    // Click outside
+    const outsideButton = screen.getByTestId('outside');
+    fireEvent.mouseDown(outsideButton);
+    
+    // Dropdown should be closed
+    expect(screen.queryByText('English')).not.toBeInTheDocument();
   });
 });
