@@ -38,6 +38,39 @@ Object.defineProperty(window, 'scrollTo', {
   value: jest.fn(),
 });
 
+// Mock EventSource for SSE
+global.EventSource = class EventSource {
+  url: string;
+  readyState: number = 0;
+  onopen: ((event: any) => void) | null = null;
+  onmessage: ((event: any) => void) | null = null;
+  onerror: ((event: any) => void) | null = null;
+  
+  constructor(url: string) {
+    this.url = url;
+    this.readyState = 1;
+    // Simulate connection open
+    setTimeout(() => {
+      if (this.onopen) {
+        this.onopen({ type: 'open' });
+      }
+    }, 0);
+  }
+  
+  close() {
+    this.readyState = 2;
+  }
+  
+  addEventListener(type: string, listener: (event: any) => void) {
+    if (type === 'message') this.onmessage = listener;
+    if (type === 'error') this.onerror = listener;
+    if (type === 'open') this.onopen = listener;
+  }
+  
+  removeEventListener() {}
+  dispatchEvent() { return true; }
+} as any;
+
 // Mock console methods to reduce noise in tests
 const originalError = console.error;
 const originalWarn = console.warn;

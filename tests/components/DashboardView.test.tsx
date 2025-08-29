@@ -140,10 +140,11 @@ describe('DashboardView', () => {
 
   it('ログアウトボタンが正しく動作する', async () => {
     // Mock fetch for logout API
-    (global.fetch as jest.Mock).mockResolvedValueOnce({
+    const mockFetch = jest.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ success: true })
     });
+    global.fetch = mockFetch as any;
 
     render(
       <DashboardView userEmail="test@example.com" initialFiles={mockFiles} />
@@ -154,7 +155,7 @@ describe('DashboardView', () => {
     await userEvent.click(logoutButton);
 
     await waitFor(() => {
-      expect(global.fetch).toHaveBeenCalledWith('/api/auth/logout', expect.objectContaining({
+      expect(mockFetch).toHaveBeenCalledWith('/api/auth/logout', expect.objectContaining({
         method: 'POST'
       }));
     });

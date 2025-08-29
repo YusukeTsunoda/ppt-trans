@@ -10,6 +10,8 @@ describe('AuthProvider', () => {
         <div data-testid="test-child">Test Child</div>
       </AuthProvider>
     );
-    expect(screen.getByTestId('AuthProvider')).toBeInTheDocument();
+    // AuthProviderはchildrenをレンダリングする
+    expect(screen.getByTestId('test-child')).toBeInTheDocument();
+    expect(screen.getByText('Test Child')).toBeInTheDocument();
   });
 });

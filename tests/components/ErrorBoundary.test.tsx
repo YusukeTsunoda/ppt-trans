@@ -10,6 +10,8 @@ describe('ErrorBoundary', () => {
         <div data-testid="test-child">Test Child</div>
       </ErrorBoundary>
     );
-    expect(screen.getByTestId('ErrorBoundary')).toBeInTheDocument();
+    // ErrorBoundaryはエラーがない場合、childrenをそのままレンダリングする
+    expect(screen.getByTestId('test-child')).toBeInTheDocument();
+    expect(screen.getByText('Test Child')).toBeInTheDocument();
   });
 });
