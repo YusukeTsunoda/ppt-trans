@@ -8,10 +8,24 @@ import { testConfig } from '../config/test.config';
 import { randomBytes } from 'crypto';
 
 // Supabaseクライアント（Service Role Key使用）
-const supabase = createClient(
-  testConfig.supabase.url,
-  testConfig.supabase.serviceKey || testConfig.supabase.anonKey
-);
+// 環境変数が設定されていない場合はモックオブジェクトを使用
+const supabase = testConfig.supabase.anonKey ? 
+  createClient(
+    testConfig.supabase.url,
+    testConfig.supabase.serviceKey || testConfig.supabase.anonKey
+  ) :
+  // モックSupabaseクライアント
+  {
+    auth: {
+      signUp: async () => ({ data: { user: { id: 'mock-id' } }, error: null }),
+      signInWithPassword: async () => ({ data: { user: { id: 'mock-id' } }, error: null })
+    },
+    from: () => ({
+      insert: async () => ({ data: null, error: null }),
+      delete: async () => ({ data: null, error: null }),
+      select: async () => ({ data: [], error: null })
+    })
+  } as any;
 
 /**
  * テストユーザーの型定義
@@ -48,32 +62,41 @@ export async function createTestUser(options: Partial<TestUser> = {}): Promise<T
   };
   
   try {
-    // Supabaseでユーザーを作成
-    const { data, error } = await supabase.auth.admin.createUser({
-      email: testUser.email,
-      password: testUser.password,
-      email_confirm: true, // メール確認をスキップ
-      user_metadata: {
-        role: testUser.role,
-        test_user: true,
-        created_for_test: timestamp
+    // Supabaseが設定されている場合のみ実行
+    if (testConfig.supabase.anonKey && supabase.auth && supabase.auth.admin) {
+      const { data, error } = await supabase.auth.admin.createUser({
+        email: testUser.email,
+        password: testUser.password,
+        email_confirm: true, // メール確認をスキップ
+        user_metadata: {
+          role: testUser.role,
+          test_user: true,
+          created_for_test: timestamp
+        }
+      });
+      
+      if (error) {
+        console.error('Failed to create test user:', error);
+        // フォールバック: モックユーザーを返す
+        return testUser;
       }
-    });
-    
-    if (error) {
-      console.error('Failed to create test user:', error);
-      // フォールバック: モックユーザーを返す
-      return testUser;
+      
+      testUser.id = data.user?.id;
+      testUser.createdAt = new Date();
+      
+      // 作成したユーザーをトラッキング（クリーンアップ用）
+      trackTestData('user', testUser.id!);
+    } else {
+      // モックユーザーを使用
+      testUser.id = `mock-${timestamp}-${randomId}`;
+      testUser.createdAt = new Date();
+      trackTestData('user', testUser.id);
     }
-    
-    testUser.id = data.user?.id;
-    testUser.createdAt = new Date();
-    
-    // 作成したユーザーをトラッキング（クリーンアップ用）
-    trackTestData('user', testUser.id!);
-    
   } catch (err) {
     console.warn('Supabase connection failed, using mock user:', err);
+    testUser.id = `mock-${timestamp}-${randomId}`;
+    testUser.createdAt = new Date();
+    trackTestData('user', testUser.id);
   }
   
   return testUser;
@@ -157,30 +180,36 @@ function trackTestData(type: string, id: string): void {
 export async function cleanupTestData(): Promise<void> {
   console.log('🧹 Cleaning up test data...');
   
-  // ユーザーのクリーンアップ
-  const userIds = testDataRegistry.get('user');
-  if (userIds) {
-    for (const userId of userIds) {
-      try {
-        await supabase.auth.admin.deleteUser(userId);
-        console.log(`  ✓ Deleted test user: ${userId}`);
-      } catch (err) {
-        console.warn(`  ⚠️ Failed to delete user ${userId}:`, err);
+  // Supabaseが設定されている場合のみクリーンアップ
+  if (testConfig.supabase.anonKey && supabase.auth && supabase.auth.admin) {
+    // ユーザーのクリーンアップ
+    const userIds = testDataRegistry.get('user');
+    if (userIds) {
+      for (const userId of userIds) {
+        // モックユーザーはスキップ
+        if (userId.startsWith('mock-')) continue;
+        
+        try {
+          await supabase.auth.admin.deleteUser(userId);
+          console.log(`  ✓ Deleted test user: ${userId}`);
+        } catch (err) {
+          console.warn(`  ⚠️ Failed to delete user ${userId}:`, err);
+        }
       }
     }
-  }
-  
-  // ファイルのクリーンアップ
-  const fileIds = testDataRegistry.get('file');
-  if (fileIds) {
-    for (const fileId of fileIds) {
-      try {
-        await supabase.storage
-          .from('pptx-files')
-          .remove([fileId]);
-        console.log(`  ✓ Deleted test file: ${fileId}`);
-      } catch (err) {
-        console.warn(`  ⚠️ Failed to delete file ${fileId}:`, err);
+    
+    // ファイルのクリーンアップ
+    const fileIds = testDataRegistry.get('file');
+    if (fileIds) {
+      for (const fileId of fileIds) {
+        try {
+          await supabase.storage
+            .from('pptx-files')
+            .remove([fileId]);
+          console.log(`  ✓ Deleted test file: ${fileId}`);
+        } catch (err) {
+          console.warn(`  ⚠️ Failed to delete file ${fileId}:`, err);
+        }
       }
     }
   }
