@@ -1,5 +1,5 @@
 import { LRUCache } from 'lru-cache';
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 export type RateLimitConfig = {
   interval: number; // ミリ秒
@@ -48,22 +48,21 @@ export class RateLimiter {
   /**
    * レート制限をチェック
    */
-  async check(
-    identifier: string,
-    limit: number = 10
-  ): Promise<RateLimitResult> {
+  check(token: string, limit: number = 10): RateLimitResult {
     const now = Date.now();
     const windowStart = now - this.config.interval;
-
-    // 現在のウィンドウ内のリクエストを取得
-    const requests = this.cache.get(identifier) || [];
-    const recentRequests = requests.filter((timestamp) => timestamp > windowStart);
-
-    // リクエスト数が制限を超えているかチェック
+    
+    // 現在のトークンのリクエスト履歴を取得
+    const requests = this.cache.get(token) || [];
+    
+    // ウィンドウ内のリクエストのみを保持
+    const recentRequests = requests.filter(timestamp => timestamp > windowStart);
+    
+    // レート制限チェック
     if (recentRequests.length >= limit) {
       const oldestRequest = Math.min(...recentRequests);
       const reset = new Date(oldestRequest + this.config.interval);
-
+      
       return {
         success: false,
         limit,
@@ -71,11 +70,11 @@ export class RateLimiter {
         reset,
       };
     }
-
+    
     // 新しいリクエストを記録
     recentRequests.push(now);
-    this.cache.set(identifier, recentRequests);
-
+    this.cache.set(token, recentRequests);
+    
     return {
       success: true,
       limit,
@@ -83,98 +82,62 @@ export class RateLimiter {
       reset: new Date(now + this.config.interval),
     };
   }
-
-  /**
-   * 識別子のレート制限をリセット
-   */
-  reset(identifier: string): void {
-    this.cache.delete(identifier);
-  }
 }
 
-// グローバルレートリミッターインスタンス
-const rateLimiters = new Map<string, RateLimiter>();
+// グローバルなレート制限インスタンス
+const rateLimiters: Record<string, RateLimiter> = {};
 
 /**
- * レートリミッターを取得または作成
- */
-export function getRateLimiter(
-  name: string,
-  config?: RateLimitConfig
-): RateLimiter {
-  if (!rateLimiters.has(name)) {
-    const limiterConfig = config || defaultRateLimitConfig[name] || defaultRateLimitConfig.api;
-    rateLimiters.set(name, new RateLimiter(limiterConfig));
-  }
-  return rateLimiters.get(name)!;
-}
-
-/**
- * リクエストから識別子を取得
- */
-export function getIdentifier(request: NextRequest): string {
-  // 優先順位: ユーザーID > セッションID > IPアドレス
-  const userId = request.headers.get('x-user-id');
-  if (userId) return `user:${userId}`;
-
-  const sessionId = request.cookies.get('session-id')?.value;
-  if (sessionId) return `session:${sessionId}`;
-
-  // IPアドレスを取得（プロキシ経由の場合も考慮）
-  const forwardedFor = request.headers.get('x-forwarded-for');
-  const realIp = request.headers.get('x-real-ip');
-  const ip = forwardedFor?.split(',')[0] || realIp || 'unknown';
-  
-  return `ip:${ip}`;
-}
-
-/**
- * レート制限ミドルウェアヘルパー
+ * レート制限を適用
  */
 export async function withRateLimit(
   request: NextRequest,
-  limiterName: string,
-  limit?: number
+  limiterName: string = 'api',
+  limit: number = 10
 ): Promise<RateLimitResult | null> {
-  // レート制限が無効な場合
-  if (process.env.ENABLE_RATE_LIMITING === 'false') {
+  // レート制限を無効化する環境変数チェック
+  if (process.env.DISABLE_RATE_LIMIT === 'true') {
     return null;
   }
-
-  const limiter = getRateLimiter(limiterName);
-  const identifier = getIdentifier(request);
-  const result = await limiter.check(identifier, limit);
-
-  // レスポンスヘッダーに制限情報を追加
+  
+  // レート制限インスタンスを取得または作成
+  if (!rateLimiters[limiterName]) {
+    const config = defaultRateLimitConfig[limiterName] || defaultRateLimitConfig.api;
+    rateLimiters[limiterName] = new RateLimiter(config);
+  }
+  
+  // クライアントIPアドレスを取得
+  const ip = request.headers.get('x-forwarded-for') || 
+             request.headers.get('x-real-ip') || 
+             'unknown';
+  
+  // レート制限チェック
+  const result = rateLimiters[limiterName].check(ip, limit);
+  
   if (!result.success) {
     return result;
   }
-
+  
   return null;
 }
 
 /**
  * レート制限エラーレスポンスを作成
  */
-export function createRateLimitResponse(result: RateLimitResult): Response {
-  const retryAfter = Math.ceil((result.reset.getTime() - Date.now()) / 1000);
-
-  return new Response(
-    JSON.stringify({
-      error: 'Too Many Requests',
+export function createRateLimitResponse(result: RateLimitResult): NextResponse {
+  return NextResponse.json(
+    {
+      error: 'Too many requests',
       message: 'Rate limit exceeded. Please try again later.',
-      limit: result.limit,
-      remaining: result.remaining,
-      reset: result.reset.toISOString(),
-    }),
+      retryAfter: Math.ceil((result.reset.getTime() - Date.now()) / 1000),
+    },
     {
       status: 429,
       headers: {
-        'Content-Type': 'application/json',
         'X-RateLimit-Limit': result.limit.toString(),
         'X-RateLimit-Remaining': result.remaining.toString(),
         'X-RateLimit-Reset': result.reset.toISOString(),
-        'Retry-After': retryAfter.toString(),
+        'Retry-After': Math.ceil((result.reset.getTime() - Date.now()) / 1000).toString(),
       },
     }
   );

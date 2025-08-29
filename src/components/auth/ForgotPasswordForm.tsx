@@ -1,6 +1,8 @@
 'use client';
 
-import { useFormState, useFormStatus } from 'react-dom';
+// @ts-ignore - React 19 exports
+import { useActionState } from 'react';
+import { useFormStatus } from 'react-dom';
 import { AuthState } from '@/app/actions/auth';
 import Link from 'next/link';
 
@@ -33,7 +35,7 @@ interface ForgotPasswordFormProps {
 }
 
 export default function ForgotPasswordForm({ action }: ForgotPasswordFormProps) {
-  const [state, formAction] = useFormState(action, null);
+  const [state, formAction] = useActionState(action, null);
   
   if (state?.success) {
     return (

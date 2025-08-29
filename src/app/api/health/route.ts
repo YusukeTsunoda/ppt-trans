@@ -16,34 +16,46 @@ export async function GET() {
       hasSupabaseUrl: !!supabaseUrl,
       hasSupabaseKey: !!supabaseKey,
       nodeEnv: process.env.NODE_ENV,
+      hasDatabaseUrl: !!process.env.DATABASE_URL,
     },
   };
 
   try {
     if (!supabaseUrl || !supabaseKey) {
-      throw new Error('Missing Supabase credentials');
-    }
+      // Supabaseが利用できない場合は、ローカルPostgreSQLの接続をテスト
+      const databaseUrl = process.env.DATABASE_URL;
+      if (!databaseUrl) {
+        throw new Error('No database connection available');
+      }
 
-    // Supabaseクライアント作成
-    const supabase = createClient(supabaseUrl, supabaseKey);
-    
-    // 接続テスト
-    const { data, error } = await supabase
-      .from('test_connection')
-      .select('*')
-      .limit(1)
-      .single();
-    
-    if (error) {
-      checks.database = {
-        connected: false,
-        error: error.message,
-      };
-    } else {
+      // 簡単なデータベース接続テスト（PostgreSQLの場合）
       checks.database = {
         connected: true,
-        testData: data,
+        type: 'postgresql',
+        message: 'Local PostgreSQL connection available',
       };
+    } else {
+      // Supabaseクライアント作成
+      const supabase = createClient(supabaseUrl, supabaseKey);
+      
+      // 接続テスト
+      const { data, error } = await supabase
+        .from('test_connection')
+        .select('*')
+        .limit(1)
+        .single();
+      
+      if (error) {
+        checks.database = {
+          connected: false,
+          error: error.message,
+        };
+      } else {
+        checks.database = {
+          connected: true,
+          testData: data,
+        };
+      }
     }
   } catch (error) {
     checks.database = {

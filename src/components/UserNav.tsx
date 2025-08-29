@@ -28,7 +28,9 @@ export function UserNav() {
             .eq('id', user.id)
             .single();
 
-          setUserRole(profile?.role || 'USER');
+          const roleValue = profile?.role || 'USER';
+          console.log('User role from profile:', roleValue);
+          setUserRole(roleValue);
         }
       } catch (error) {
         console.error('Auth check error:', error);
@@ -95,7 +97,7 @@ export function UserNav() {
     );
   }
 
-  const isAdmin = userRole === 'ADMIN' || userRole === 'SUPER_ADMIN';
+  const isAdmin = userRole?.toLowerCase() === 'admin' || userRole?.toLowerCase() === 'super_admin';
 
   return (
     <div className="relative">

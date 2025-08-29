@@ -58,7 +58,53 @@ export async function GET(_request: NextRequest) {
     }
 
     // 各テーブルのアクセシビリティチェック
-    const tablesToCheck = ['profiles', 'files', 'translations', 'activity_logs'];
+    const tablesToCheck = ['profiles', 'activity_logs'];
+    
+    // filesテーブルの存在チェック
+    try {
+      const { count, error } = await supabase
+        .from('files')
+        .select('*', { count: 'exact', head: true });
+      
+      if (!error) {
+        tablesToCheck.push('files');
+        health.tables.files = {
+          accessible: true,
+          rowCount: count || 0
+        };
+      } else {
+        health.tables.files = {
+          accessible: false
+        };
+      }
+    } catch (_error) {
+      health.tables.files = {
+        accessible: false
+      };
+    }
+    
+    // translationsテーブルの存在チェック
+    try {
+      const { count, error } = await supabase
+        .from('translations')
+        .select('*', { count: 'exact', head: true });
+      
+      if (!error) {
+        tablesToCheck.push('translations');
+        health.tables.translations = {
+          accessible: true,
+          rowCount: count || 0
+        };
+      } else {
+        health.tables.translations = {
+          accessible: false
+        };
+      }
+    } catch (_error) {
+      health.tables.translations = {
+        accessible: false
+      };
+    }
     
     for (const table of tablesToCheck) {
       try {

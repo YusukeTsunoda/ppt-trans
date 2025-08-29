@@ -91,7 +91,7 @@ export const getAuthenticatedUser = cache(async () => {
   return {
     id: user.id,
     email: user.email,
-    role: profile?.role || 'user',
+    role: profile?.role?.toLowerCase() || 'user',
     username: profile?.username,
     full_name: profile?.full_name,
     created_at: user.created_at,
@@ -118,7 +118,7 @@ export async function requireAdminRole() {
     throw new Error('Authentication required');
   }
   
-  if (user.role !== 'ADMIN') {
+  if (user.role?.toLowerCase() !== 'admin') {
     throw new Error('Admin role required');
   }
   

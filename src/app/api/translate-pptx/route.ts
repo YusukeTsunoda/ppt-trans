@@ -4,28 +4,36 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import path from 'path';
 import fs from 'fs/promises';
+import { getRequestScopedSupabase, requireAuthentication } from '@/lib/auth/request-scoped-auth';
 
 const execAsync = promisify(exec);
 
-// Supabaseクライアント初期化
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
 export async function POST(request: NextRequest) {
   try {
+    // 認証チェック
+    const user = await requireAuthentication().catch(() => null);
+    if (!user) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+
     const { fileId } = await request.json();
     
     if (!fileId) {
       return NextResponse.json({ error: 'File ID is required' }, { status: 400 });
     }
 
+    // Service Roleクライアントを使用（Storageアクセス用）
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+
     // ファイル情報を取得
     const { data: fileRecord, error: fileError } = await supabase
       .from('files')
       .select('*')
       .eq('id', fileId)
+      .eq('user_id', user.id)
       .single();
 
     if (fileError || !fileRecord) {
@@ -48,7 +56,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 一時ファイルとして保存
-    const tempDir = '/tmp';
+    const tempDir = process.env.TEMP_DIR || '/tmp';
     const tempInputPath = path.join(tempDir, `input_${fileId}.pptx`);
     const tempOutputPath = path.join(tempDir, `output_${fileId}.pptx`);
     
@@ -58,7 +66,7 @@ export async function POST(request: NextRequest) {
     // PowerPointからテキストを抽出
     const extractScript = path.join(process.cwd(), 'src/lib/pptx/extract_text.py');
     const { stdout: extractOutput } = await execAsync(
-      `cd ${process.cwd()} && python3 ${extractScript} ${tempInputPath}`
+      `cd ${process.cwd()} && python3 "${extractScript}" "${tempInputPath}"`
     );
     
     const extractedData = JSON.parse(extractOutput);
@@ -125,9 +133,18 @@ export async function POST(request: NextRequest) {
 
     // 翻訳されたテキストでPowerPointを更新
     const updateScript = path.join(process.cwd(), 'src/lib/pptx/update_pptx.py');
+    // JSONをファイルに書き込んでコマンドインジェクションを回避
+    const translationsFile = path.join(tempDir, `translations_${fileId}.json`);
+    await fs.writeFile(translationsFile, JSON.stringify(translations));
+    
     const { stdout: updateOutput } = await execAsync(
-      `cd ${process.cwd()} && python3 ${updateScript} ${tempInputPath} ${tempOutputPath} '${JSON.stringify(translations)}'`
+      `cd ${process.cwd()} && python3 "${updateScript}" "${tempInputPath}" "${tempOutputPath}" "${translationsFile}"`
     );
+    
+    // 一時ファイルを削除
+    await fs.unlink(translationsFile).catch((err) => {
+      console.error('Failed to delete translations file:', err);
+    });
     
     const updateResult = JSON.parse(updateOutput);
     
@@ -166,8 +183,12 @@ export async function POST(request: NextRequest) {
     }
 
     // 一時ファイルをクリーンアップ
-    await fs.unlink(tempInputPath).catch(() => {});
-    await fs.unlink(tempOutputPath).catch(() => {});
+    await fs.unlink(tempInputPath).catch((err) => {
+      console.error('Failed to delete temp input file:', err);
+    });
+    await fs.unlink(tempOutputPath).catch((err) => {
+      console.error('Failed to delete temp output file:', err);
+    });
 
     return NextResponse.json({
       success: true,
@@ -183,7 +204,11 @@ export async function POST(request: NextRequest) {
     try {
       const body = await request.json().catch(() => ({}));
       if (body.fileId) {
-        await supabase
+        const supabaseError = createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.SUPABASE_SERVICE_ROLE_KEY!
+        );
+        await supabaseError
           .from('files')
           .update({ 
             status: 'failed',

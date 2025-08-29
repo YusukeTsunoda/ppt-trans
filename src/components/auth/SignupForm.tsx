@@ -1,6 +1,8 @@
 'use client';
 
-import { useFormState, useFormStatus } from 'react-dom';
+// @ts-ignore - React 19 exports
+import { useActionState } from 'react';
+import { useFormStatus } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { AuthState } from '@/app/actions/auth';
@@ -35,7 +37,7 @@ interface SignupFormProps {
 }
 
 export default function SignupForm({ action }: SignupFormProps) {
-  const [state, formAction] = useFormState(action, null);
+  const [state, formAction] = useActionState(action, null);
   const router = useRouter();
   
   useEffect(() => {

@@ -16,8 +16,9 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 CREATE TABLE IF NOT EXISTS public.user_settings (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE UNIQUE,
-  translation_model TEXT DEFAULT 'claude-3-haiku-20240307',
-  target_language TEXT DEFAULT 'Japanese',
+  translation_model TEXT DEFAULT 'claude-3-5-haiku-20241022',
+  source_language TEXT DEFAULT 'auto',
+  target_language TEXT DEFAULT 'ja',
   batch_size INTEGER DEFAULT 5,
   auto_save BOOLEAN DEFAULT true,
   theme TEXT DEFAULT 'light',
@@ -25,19 +26,24 @@ CREATE TABLE IF NOT EXISTS public.user_settings (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
 );
 
--- Create files table
+-- Create files table (統合版)
 CREATE TABLE IF NOT EXISTS public.files (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
   filename TEXT NOT NULL,
-  original_name TEXT NOT NULL,
-  file_path TEXT,
+  original_filename TEXT NOT NULL,
+  storage_path TEXT NOT NULL,
+  translated_path TEXT,
   file_size INTEGER,
   mime_type TEXT,
-  status TEXT DEFAULT 'pending',
+  status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'completed', 'failed')),
+  source_language TEXT DEFAULT 'auto',
+  target_language TEXT DEFAULT 'ja',
   slide_count INTEGER DEFAULT 0,
   text_count INTEGER DEFAULT 0,
   translation_progress DECIMAL(5,2) DEFAULT 0,
+  error_message TEXT,
+  metadata JSONB DEFAULT '{}',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
 );
@@ -50,7 +56,7 @@ CREATE TABLE IF NOT EXISTS public.translations (
   translated_text TEXT,
   slide_number INTEGER,
   element_index INTEGER,
-  status TEXT DEFAULT 'pending',
+  status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'completed', 'failed')),
   model_used TEXT,
   tokens_used INTEGER,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()),
@@ -82,14 +88,26 @@ CREATE TABLE IF NOT EXISTS public.usage_limits (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
 );
 
+-- Create test_connection table for health checks
+CREATE TABLE IF NOT EXISTS public.test_connection (
+  id INTEGER PRIMARY KEY DEFAULT 1,
+  status TEXT DEFAULT 'ok',
+  last_check TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Insert initial test record
+INSERT INTO public.test_connection (id, status) 
+VALUES (1, 'ok') 
+ON CONFLICT (id) DO NOTHING;
+
 -- Create indexes
-CREATE INDEX idx_files_user_id ON public.files(user_id);
-CREATE INDEX idx_files_status ON public.files(status);
-CREATE INDEX idx_files_created_at ON public.files(created_at);
-CREATE INDEX idx_translations_file_id ON public.translations(file_id);
-CREATE INDEX idx_translations_status ON public.translations(status);
-CREATE INDEX idx_activity_logs_user_id ON public.activity_logs(user_id);
-CREATE INDEX idx_activity_logs_created_at ON public.activity_logs(created_at);
+CREATE INDEX IF NOT EXISTS idx_files_user_id ON public.files(user_id);
+CREATE INDEX IF NOT EXISTS idx_files_status ON public.files(status);
+CREATE INDEX IF NOT EXISTS idx_files_created_at ON public.files(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_translations_file_id ON public.translations(file_id);
+CREATE INDEX IF NOT EXISTS idx_translations_status ON public.translations(status);
+CREATE INDEX IF NOT EXISTS idx_activity_logs_user_id ON public.activity_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_activity_logs_created_at ON public.activity_logs(created_at);
 
 -- Create updated_at trigger function
 CREATE OR REPLACE FUNCTION public.update_updated_at_column()
@@ -195,6 +213,7 @@ GRANT ALL ON public.files TO authenticated;
 GRANT ALL ON public.translations TO authenticated;
 GRANT ALL ON public.activity_logs TO authenticated;
 GRANT ALL ON public.usage_limits TO authenticated;
+GRANT ALL ON public.test_connection TO authenticated;
 
 -- Grant permissions to service role (for admin operations)
 GRANT ALL ON public.profiles TO service_role;
@@ -203,6 +222,7 @@ GRANT ALL ON public.files TO service_role;
 GRANT ALL ON public.translations TO service_role;
 GRANT ALL ON public.activity_logs TO service_role;
 GRANT ALL ON public.usage_limits TO service_role;
+GRANT ALL ON public.test_connection TO service_role;
 
 -- Function to handle new user creation
 CREATE OR REPLACE FUNCTION public.handle_new_user()
@@ -215,6 +235,15 @@ BEGIN
     NEW.raw_user_meta_data->>'name',
     COALESCE(NEW.raw_user_meta_data->>'role', 'user')
   );
+  
+  -- 新規ユーザー用の設定も自動作成
+  INSERT INTO public.user_settings (user_id)
+  VALUES (NEW.id);
+  
+  -- 使用制限の初期設定も作成
+  INSERT INTO public.usage_limits (user_id, reset_date)
+  VALUES (NEW.id, DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month');
+  
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;

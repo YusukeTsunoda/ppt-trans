@@ -38,15 +38,28 @@ export class TranslationManager {
   private static readonly DEFAULT_BATCH_SIZE = 5;
   private static readonly DEFAULT_MAX_RETRIES = 3;
   private static readonly DEFAULT_RETRY_DELAY = 2000; // 2秒
+  private static readonly DEFAULT_MODEL = process.env.ANTHROPIC_MODEL || 'claude-3-5-haiku-20241022';
+  private static readonly API_KEY = process.env.ANTHROPIC_API_KEY;
 
   /**
    * テキストチャンクを翻訳（部分的な再試行機能付き）
    */
   static async translateWithPartialRetry(
     chunks: TranslationChunk[],
-    apiKey: string,
+    apiKey?: string,
     options: TranslationOptions = {}
   ): Promise<TranslationResult> {
+    // 環境変数からAPIキーを取得（引数が指定されていない場合）
+    const effectiveApiKey = apiKey || this.API_KEY;
+    if (!effectiveApiKey) {
+      throw new AppError(
+        'Anthropic API key is not configured',
+        ErrorCodes.CONFIGURATION_ERROR,
+        500,
+        false,
+        'APIキーが設定されていません'
+      );
+    }
     const {
       model = 'claude-3-haiku-20240307',
       targetLanguage,
@@ -122,7 +135,7 @@ export class TranslationManager {
             
             const translatedText = await this.translateSingleChunk(
               chunk.text,
-              apiKey,
+              effectiveApiKey,
               {
                 model,
                 targetLanguage,
@@ -228,7 +241,7 @@ export class TranslationManager {
    */
   private static async translateSingleChunk(
     text: string,
-    apiKey: string,
+    apiKey: string | undefined,
     options: {
       model: string;
       targetLanguage: string;
@@ -247,9 +260,24 @@ ${(!sourceLanguage || sourceLanguage === 'auto') ? 'Automatically detect the sou
 Maintain the original formatting and style. This is slide ${slideNumber ? `#${slideNumber}` : 'content'} from a presentation.`;
 
     try {
-      const anthropic = new Anthropic({ apiKey });
+      const effectiveApiKey = apiKey || this.API_KEY;
+      if (!effectiveApiKey) {
+        throw new AppError(
+          'Anthropic API key is not configured',
+          ErrorCodes.CONFIGURATION_ERROR,
+          500,
+          false,
+          'APIキーが設定されていません'
+        );
+      }
+      
+      const anthropic = new Anthropic({ 
+        apiKey: effectiveApiKey,
+        timeout: 60000, // 60秒のタイムアウト
+        maxRetries: 3, // リトライ回数を制限
+      });
       const response = await anthropic.messages.create({
-        model: model || 'claude-3-haiku-20240307',
+        model: model || this.DEFAULT_MODEL,
         max_tokens: 4096,
         system: systemPrompt,
         messages: [
@@ -296,7 +324,7 @@ Maintain the original formatting and style. This is slide ${slideNumber ? `#${sl
    */
   static async translateBatch(
     texts: string[],
-    apiKey: string,
+    apiKey?: string,
     options: {
       model?: string;
       targetLanguage?: string;
@@ -333,9 +361,24 @@ ${(!sourceLanguage || sourceLanguage === 'auto') ? 'Automatically detect the sou
 Return the translations in the same format with [TRANSLATION_N] tags, maintaining original formatting and style.`;
 
     try {
-      const anthropic = new Anthropic({ apiKey });
+      const effectiveApiKey = apiKey || this.API_KEY;
+      if (!effectiveApiKey) {
+        throw new AppError(
+          'Anthropic API key is not configured',
+          ErrorCodes.CONFIGURATION_ERROR,
+          500,
+          false,
+          'APIキーが設定されていません'
+        );
+      }
+      
+      const anthropic = new Anthropic({ 
+        apiKey: effectiveApiKey,
+        timeout: 60000, // 60秒のタイムアウト
+        maxRetries: 3, // リトライ回数を制限
+      });
       const response = await anthropic.messages.create({
-        model: model || 'claude-3-haiku-20240307',
+        model: model || this.DEFAULT_MODEL,
         max_tokens: 4096,
         system: systemPrompt,
         messages: [

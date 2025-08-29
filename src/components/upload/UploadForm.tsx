@@ -1,6 +1,8 @@
 'use client';
 
-import { useFormState, useFormStatus } from 'react-dom';
+// @ts-ignore - React 19 exports
+import { useActionState } from 'react';
+import { useFormStatus } from 'react-dom';
 import { UploadState } from '@/app/actions/upload';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -35,7 +37,7 @@ interface UploadFormProps {
 }
 
 export default function UploadForm({ action }: UploadFormProps) {
-  const [state, formAction] = useFormState(action, null);
+  const [state, formAction] = useActionState(action, null);
   const [fileName, setFileName] = useState<string>('');
   const [fileSize, setFileSize] = useState<number>(0);
   const router = useRouter();

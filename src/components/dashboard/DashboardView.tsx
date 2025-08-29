@@ -1,12 +1,15 @@
 'use client';
 
 import { useState } from 'react';
-import { useFormState, useFormStatus } from 'react-dom';
+// @ts-ignore - React 19 exports
+import { useActionState } from 'react';
+import { useFormStatus } from 'react-dom';
 import { translateFileAction, deleteFileAction } from '@/app/actions/dashboard';
 import { logoutAction } from '@/app/actions/auth';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
+import { useEffect, useState as useStateReact } from 'react';
 
 interface FileRecord {
   id: string;
@@ -62,8 +65,8 @@ function DeleteButton({ fileId }: { fileId: string }) {
 }
 
 function FileCard({ file }: { file: FileRecord }) {
-  const [translateState, translateAction] = useFormState(translateFileAction, null);
-  const [deleteState, deleteAction] = useFormState(deleteFileAction, null);
+  const [translateState, translateAction] = useActionState(translateFileAction, null);
+  const [deleteState, deleteAction] = useActionState(deleteFileAction, null);
   const router = useRouter();
 
   const formatFileSize = (bytes: number) => {
@@ -212,7 +215,27 @@ function FileCard({ file }: { file: FileRecord }) {
 
 export default function DashboardView({ userEmail, initialFiles }: DashboardViewProps) {
   const [files] = useState(initialFiles);
+  const [isAdmin, setIsAdmin] = useStateReact(false);
   const router = useRouter();
+  const supabase = createClient();
+
+  useEffect(() => {
+    // ユーザーロールを確認
+    const checkUserRole = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single();
+        
+        const userRole = profile?.role?.toLowerCase();
+        setIsAdmin(userRole === 'admin' || userRole === 'super_admin');
+      }
+    };
+    checkUserRole();
+  }, [supabase]);
 
   const handleLogout = async () => {
     const result = await logoutAction();
@@ -232,12 +255,33 @@ export default function DashboardView({ userEmail, initialFiles }: DashboardView
               <p className="text-blue-100 mt-1">ようこそ、{userEmail}さん</p>
             </div>
             <div className="flex gap-3">
+              {/* 管理者ダッシュボードボタン（管理者のみ表示） */}
+              {isAdmin && (
+                <Link
+                  href="/admin"
+                  className="btn-accent bg-orange-500 hover:bg-orange-600 text-white"
+                >
+                  🛠️ 管理画面
+                </Link>
+              )}
+              
+              {/* プロフィールボタン */}
+              <Link
+                href="/profile"
+                className="btn-accent bg-purple-500 hover:bg-purple-600 text-white"
+              >
+                👤 プロフィール
+              </Link>
+              
+              {/* 新規アップロードボタン */}
               <Link
                 href="/upload"
                 className="btn-accent"
               >
                 📄 新規アップロード
               </Link>
+              
+              {/* ログアウトボタン */}
               <form action={handleLogout}>
                 <button
                   type="submit"
@@ -252,6 +296,66 @@ export default function DashboardView({ userEmail, initialFiles }: DashboardView
       </div>
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* クイックアクセスカード */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          {/* プロフィールカード */}
+          <Link
+            href="/profile"
+            className="card hover:shadow-xl transition-all duration-200 group"
+          >
+            <div className="flex items-center space-x-4">
+              <div className="p-3 bg-purple-100 rounded-lg group-hover:bg-purple-200 transition-colors">
+                <svg className="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900">プロフィール設定</h3>
+                <p className="text-sm text-gray-600">アカウント情報の確認・編集</p>
+              </div>
+            </div>
+          </Link>
+
+          {/* ファイル管理カード */}
+          <Link
+            href="/files"
+            className="card hover:shadow-xl transition-all duration-200 group"
+          >
+            <div className="flex items-center space-x-4">
+              <div className="p-3 bg-blue-100 rounded-lg group-hover:bg-blue-200 transition-colors">
+                <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900">ファイル管理</h3>
+                <p className="text-sm text-gray-600">アップロード済みファイルの一覧</p>
+              </div>
+            </div>
+          </Link>
+
+          {/* 管理画面カード（管理者のみ） */}
+          {isAdmin && (
+            <Link
+              href="/admin"
+              className="card hover:shadow-xl transition-all duration-200 group"
+            >
+              <div className="flex items-center space-x-4">
+                <div className="p-3 bg-orange-100 rounded-lg group-hover:bg-orange-200 transition-colors">
+                  <svg className="w-8 h-8 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900">管理画面</h3>
+                  <p className="text-sm text-gray-600">システム管理・統計情報</p>
+                </div>
+              </div>
+            </Link>
+          )}
+        </div>
+
         {/* ファイル一覧 */}
         <div className="card">
           <div className="flex items-center justify-between mb-6">

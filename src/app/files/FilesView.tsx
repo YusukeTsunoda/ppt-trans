@@ -1,7 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { useFormState, useFormStatus } from 'react-dom';
+// @ts-ignore - React 19 exports
+import { useActionState } from 'react';
+import { useFormStatus } from 'react-dom';
 import Link from 'next/link';
 import { deleteFileAction, downloadFileAction, type FilesState } from '@/app/actions/files';
 import { FileRecord } from '@/lib/data/files';
@@ -53,8 +55,8 @@ interface FilesViewProps {
 
 export default function FilesView({ userEmail, initialFiles }: FilesViewProps) {
   const [files, setFiles] = useState<FileRecord[]>(initialFiles);
-  const [deleteState, deleteFormAction] = useFormState(deleteFileAction, null);
-  const [downloadState, downloadFormAction] = useFormState(downloadFileAction, null);
+  const [deleteState, deleteFormAction] = useActionState(deleteFileAction, null);
+  const [downloadState, downloadFormAction] = useActionState(downloadFileAction, null);
   
   // ファイル削除時のOptimistic Update
   const handleDeleteWithOptimistic = (fileId: string) => {
