@@ -82,20 +82,16 @@ export async function uploadFileAction(
       return { error: errorMessage };
     }
 
-    // データベースにファイル情報を保存（カラム名を調整）
-    const fileData: any = {
+    // データベースにファイル情報を保存
+    const fileData = {
       user_id: user.id,
       filename: fileName,
+      original_filename: file.name, // 必須カラム
+      storage_path: uploadData.path,
       file_size: buffer.length,
       mime_type: file.type,
-      status: 'uploaded'
+      status: 'pending' // 'uploaded'ではなく'pending'を使用
     };
-
-    // original_filenameまたはoriginal_nameを試す
-    fileData.original_filename = file.name;
-    
-    // storage_pathまたはfile_pathを試す  
-    fileData.storage_path = uploadData.path;
 
     const { data: fileRecord, error: dbError } = await supabase
       .from('files')
@@ -105,6 +101,13 @@ export async function uploadFileAction(
 
     if (dbError) {
       console.error('Database insert error:', dbError);
+      console.error('Insert data:', fileData);
+      console.error('Error details:', {
+        code: dbError.code,
+        message: dbError.message,
+        details: dbError.details,
+        hint: dbError.hint
+      });
       
       // ストレージからファイルを削除（ロールバック）
       await supabase.storage.from('uploads').remove([fileName]);

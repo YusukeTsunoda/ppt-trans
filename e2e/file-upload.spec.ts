@@ -35,10 +35,10 @@ test.describe('【High 🟡】コア機能フロー（ファイルアップロ�
   });
 
   test.beforeEach(async ({ page }) => {
-    // 各テストの前にログイン
+    // 各テストの前にログイン（実際のテストユーザーを使用）
     await page.goto('/login');
-    await page.fill('input[type="email"]', 'test@example.com');
-    await page.fill('input[type="password"]', 'testpassword123');
+    await page.fill('input[type="email"]', 'user1@example.com');
+    await page.fill('input[type="password"]', 'User123!');
     await page.click('button:has-text("ログイン")');
     await page.waitForURL('**/dashboard', { timeout: 15000 });
   });

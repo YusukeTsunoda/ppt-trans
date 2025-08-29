@@ -10,6 +10,8 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState as useStateReact } from 'react';
+import { SkeletonTable } from '@/components/ui/SkeletonLoader';
+import RealtimeProgress from '@/components/progress/RealtimeProgress';
 
 interface FileRecord {
   id: string;
@@ -86,11 +88,12 @@ function FileCard({ file }: { file: FileRecord }) {
   };
 
   const getStatusBadge = (status: string) => {
+    // Design.md準拠のステータス表示
     const statusStyles = {
-      uploaded: 'bg-blue-100 text-blue-800',
-      processing: 'bg-yellow-100 text-yellow-800',
-      completed: 'bg-green-100 text-green-800',
-      failed: 'bg-red-100 text-red-800'
+      uploaded: 'bg-blue-100 text-blue-600',
+      processing: 'bg-blue-100 text-blue-600 animate-pulse', // Design.md: 翻訳中のアニメーション
+      completed: 'bg-emerald-100 text-emerald-600', // Design.md: アクセントカラー
+      failed: 'bg-red-100 text-red-600'
     };
     
     const statusLabels = {
@@ -101,7 +104,7 @@ function FileCard({ file }: { file: FileRecord }) {
     };
     
     return (
-      <span className={`px-2 py-1 text-xs rounded-full ${statusStyles[status as keyof typeof statusStyles] || 'bg-gray-100 text-gray-800'}`}>
+      <span className={`px-3 py-1 text-xs font-medium rounded-lg ${statusStyles[status as keyof typeof statusStyles] || 'bg-slate-100 text-slate-600'}`}>
         {statusLabels[status as keyof typeof statusLabels] || status}
       </span>
     );
@@ -245,21 +248,21 @@ export default function DashboardView({ userEmail, initialFiles }: DashboardView
   };
 
   return (
-    <div className="min-h-screen gradient-bg animate-fadeIn">
-      {/* ヘッダー */}
-      <div className="header-gradient text-white shadow-lg">
+    <div className="min-h-screen bg-slate-50 animate-fadeIn">
+      {/* ヘッダー (Design.md準拠) */}
+      <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-3xl font-bold">PowerPoint Translator</h1>
-              <p className="text-blue-100 mt-1">ようこそ、{userEmail}さん</p>
+              <h1 className="text-3xl font-heading font-bold">PowerPoint Translator</h1>
+              <p className="text-blue-100 mt-1 font-body">ようこそ、{userEmail}さん</p>
             </div>
             <div className="flex gap-3">
               {/* 管理者ダッシュボードボタン（管理者のみ表示） */}
               {isAdmin && (
                 <Link
                   href="/admin"
-                  className="btn-accent bg-orange-500 hover:bg-orange-600 text-white"
+                  className="btn-secondary bg-orange-500 hover:bg-orange-600 text-white"
                 >
                   🛠️ 管理画面
                 </Link>
@@ -268,12 +271,12 @@ export default function DashboardView({ userEmail, initialFiles }: DashboardView
               {/* プロフィールボタン */}
               <Link
                 href="/profile"
-                className="btn-accent bg-purple-500 hover:bg-purple-600 text-white"
+                className="btn-secondary bg-slate-600 hover:bg-slate-700 text-white"
               >
                 👤 プロフィール
               </Link>
               
-              {/* 新規アップロードボタン */}
+              {/* 新規アップロードボタン (Design.md準拠のアクセントカラー) */}
               <Link
                 href="/upload"
                 className="btn-accent"
@@ -298,58 +301,58 @@ export default function DashboardView({ userEmail, initialFiles }: DashboardView
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* クイックアクセスカード */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          {/* プロフィールカード */}
+          {/* プロフィールカード (Design.md準拠) */}
           <Link
             href="/profile"
-            className="card hover:shadow-xl transition-all duration-200 group"
+            className="card hover:shadow-md transition-all duration-200 group"
           >
             <div className="flex items-center space-x-4">
-              <div className="p-3 bg-purple-100 rounded-lg group-hover:bg-purple-200 transition-colors">
-                <svg className="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="p-3 bg-slate-100 rounded-lg group-hover:bg-slate-200 transition-all duration-200">
+                <svg className="w-8 h-8 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900">プロフィール設定</h3>
-                <p className="text-sm text-gray-600">アカウント情報の確認・編集</p>
+                <h3 className="font-heading font-semibold text-slate-900">プロフィール設定</h3>
+                <p className="text-sm text-slate-600 font-body">アカウント情報の確認・編集</p>
               </div>
             </div>
           </Link>
 
-          {/* ファイル管理カード */}
+          {/* ファイル管理カード (Design.md準拠) */}
           <Link
             href="/files"
-            className="card hover:shadow-xl transition-all duration-200 group"
+            className="card hover:shadow-md transition-all duration-200 group"
           >
             <div className="flex items-center space-x-4">
-              <div className="p-3 bg-blue-100 rounded-lg group-hover:bg-blue-200 transition-colors">
+              <div className="p-3 bg-blue-100 rounded-lg group-hover:bg-blue-200 transition-all duration-200">
                 <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
                 </svg>
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900">ファイル管理</h3>
-                <p className="text-sm text-gray-600">アップロード済みファイルの一覧</p>
+                <h3 className="font-heading font-semibold text-slate-900">ファイル管理</h3>
+                <p className="text-sm text-slate-600 font-body">アップロード済みファイルの一覧</p>
               </div>
             </div>
           </Link>
 
-          {/* 管理画面カード（管理者のみ） */}
+          {/* 管理画面カード（管理者のみ）(Design.md準拠) */}
           {isAdmin && (
             <Link
               href="/admin"
-              className="card hover:shadow-xl transition-all duration-200 group"
+              className="card hover:shadow-md transition-all duration-200 group"
             >
               <div className="flex items-center space-x-4">
-                <div className="p-3 bg-orange-100 rounded-lg group-hover:bg-orange-200 transition-colors">
-                  <svg className="w-8 h-8 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="p-3 bg-emerald-100 rounded-lg group-hover:bg-emerald-200 transition-all duration-200">
+                  <svg className="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">管理画面</h3>
-                  <p className="text-sm text-gray-600">システム管理・統計情報</p>
+                  <h3 className="font-heading font-semibold text-slate-900">管理画面</h3>
+                  <p className="text-sm text-slate-600 font-body">システム管理・統計情報</p>
                 </div>
               </div>
             </Link>

@@ -1,0 +1,37 @@
+
+> pptx-translator@0.1.0 dev
+> next dev
+
+[dotenv@17.2.1] injecting env (2) from .env.build -- tip: 📡 auto-backup env with Radar: https://dotenvx.com/radar
+ ⚠ Port 3000 is in use by process 37101, using available port 3004 instead.
+[dotenv@17.2.1] injecting env (0) from .env.build -- tip: ⚙️  suppress all logs with { quiet: true }
+   ▲ Next.js 15.4.6
+   - Local:        http://localhost:3004
+   - Network:      http://10.186.241.75:3004
+   - Environments: .env
+   - Experiments (use with caution):
+     · serverActions
+
+ ✓ Starting...
+ ✓ Ready in 1940ms
+(node:49915) [DEP_WEBPACK_EXTERNALS_FUNCTION_PARAMETERS] DeprecationWarning: The externals-function should be defined like ({context, request}, cb) => { ... }
+(Use `node --trace-deprecation ...` to show where the warning was created)
+ ✓ Compiled /middleware in 317ms (225 modules)
+ ⨯ Error: Your project's URL and Key are required to create a Supabase client!
+
+Check your Supabase project's API settings to find these values
+
+https://supabase.com/dashboard/project/_/settings/api
+    at <unknown> (https://supabase.com/dashboard/project/_/settings/api)
+    at <unknown> (https://supabase.com/dashboard/project/_/settings/api)
+    at middleware (src/middleware.ts:40:4)
+  38 |   // Supabaseクライアントを作成（改善されたcookie処理）
+  39 |   const supabase = createServerClient(
+> 40 |     process.env.NEXT_PUBLIC_SUPABASE_URL!,
+     |    ^
+  41 |     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  42 |     {
+  43 |       cookies: {
+ ✓ Compiled /_error in 444ms (361 modules)
+ ✓ Compiled in 1508ms (225 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (108kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)

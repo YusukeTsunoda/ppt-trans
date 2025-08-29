@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getFiles } from '@/app/actions/dashboard';
 import DashboardView from '@/components/dashboard/DashboardView';
+import AppLayout from '@/components/layout/AppLayout';
 
 // 動的レンダリングを強制
 export const dynamic = 'force-dynamic';
@@ -24,9 +25,11 @@ export default async function DashboardPage() {
   }
   
   return (
-    <DashboardView 
-      userEmail={user.email || ''} 
-      initialFiles={files}
-    />
+    <AppLayout>
+      <DashboardView 
+        userEmail={user.email || ''} 
+        initialFiles={files}
+      />
+    </AppLayout>
   );
 }
