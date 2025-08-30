@@ -1,4 +1,5 @@
 import logger from '@/lib/logger';
+import type { JsonObject } from '@/types/common';
 
 export enum GenerationStatus {
   PENDING = 'pending',
@@ -18,7 +19,7 @@ export interface GenerationJob {
   error?: string;
   startedAt: Date;
   completedAt?: Date;
-  metadata?: Record<string, any>;
+  metadata?: JsonObject;
 }
 
 /**
@@ -49,7 +50,7 @@ export class GenerationStatusManager {
   /**
    * 新しいジョブを作成
    */
-  createJob(id: string, originalFileUrl?: string, metadata?: Record<string, any>): GenerationJob {
+  createJob(id: string, originalFileUrl?: string, metadata?: JsonObject): GenerationJob {
     // 最大ジョブ数を超えている場合は古いジョブを削除
     if (this.jobs.size >= this.MAX_JOBS) {
       this.cleanupOldJobs();
@@ -152,7 +153,7 @@ export class GenerationStatusManager {
   /**
    * ジョブを成功として完了
    */
-  completeJob(id: string, outputFileUrl: string, metadata?: Record<string, any>): GenerationJob | null {
+  completeJob(id: string, outputFileUrl: string, metadata?: JsonObject): GenerationJob | null {
     return this.updateJob(id, {
       status: GenerationStatus.COMPLETED,
       progress: 100,
@@ -165,7 +166,7 @@ export class GenerationStatusManager {
   /**
    * ジョブを失敗として完了
    */
-  failJob(id: string, error: string, metadata?: Record<string, any>): GenerationJob | null {
+  failJob(id: string, error: string, metadata?: JsonObject): GenerationJob | null {
     return this.updateJob(id, {
       status: GenerationStatus.FAILED,
       error,

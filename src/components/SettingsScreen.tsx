@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useTheme } from 'next-themes';
 import { getTranslationHistory, deleteHistoryItem, clearHistory, type TranslationHistoryItem } from '@/lib/history';
 import type { Settings, TranslationModel } from '@/lib/settings';
+import logger from '@/lib/logger';
 
 interface SettingsScreenProps {
   onSettingsChange?: (settings: Settings) => void;
@@ -39,7 +40,7 @@ export function SettingsScreen({ onSettingsChange }: SettingsScreenProps) {
         const parsed = JSON.parse(savedSettings);
         setSettings(parsed);
       } catch (e) {
-        console.error('Failed to parse saved settings:', e);
+        logger.error('Failed to parse saved settings:', e);
       }
     }
     
@@ -71,7 +72,7 @@ export function SettingsScreen({ onSettingsChange }: SettingsScreenProps) {
       setSaveMessage('設定を保存しました');
       setTimeout(() => setSaveMessage(''), 3000);
     } catch (e) {
-      console.error('Failed to save settings:', e);
+      logger.error('Failed to save settings:', e);
       setSaveMessage('設定の保存に失敗しました');
     } finally {
       setIsSaving(false);
@@ -109,7 +110,7 @@ export function SettingsScreen({ onSettingsChange }: SettingsScreenProps) {
     try {
       // ダウンロード中の状態を設定
       setDownloadingItems(prev => new Set(prev).add(downloadId));
-      console.log('Downloading file from:', url);
+      logger.debug('Downloading file from:', { url });
       
       // Supabase URLの場合、直接ダウンロードリンクを使用
       if (url.includes('supabase')) {
@@ -133,11 +134,14 @@ export function SettingsScreen({ onSettingsChange }: SettingsScreenProps) {
             a.click();
             document.body.removeChild(a);
             window.URL.revokeObjectURL(downloadUrl);
-            console.log('Download successful via fetch');
+            logger.debug('Download successful via fetch');
             return;
           }
         } catch (fetchError) {
-          console.log('Fetch download failed, trying direct link...', fetchError);
+          logger.debug('Fetch download failed, trying direct link...', { 
+            error: fetchError instanceof Error ? fetchError.message : String(fetchError),
+            stack: fetchError instanceof Error ? fetchError.stack : undefined
+          });
         }
         
         // 方法2: 直接リンクでダウンロード（CORSエラーの場合）
@@ -150,7 +154,7 @@ export function SettingsScreen({ onSettingsChange }: SettingsScreenProps) {
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
-        console.log('Download initiated via direct link');
+        logger.debug('Download initiated via direct link');
       } else {
         // その他のURLの場合
         const a = document.createElement('a');
@@ -163,7 +167,7 @@ export function SettingsScreen({ onSettingsChange }: SettingsScreenProps) {
         document.body.removeChild(a);
       }
     } catch (e) {
-      console.error('Download error:', e);
+      logger.error('Download error:', e);
       alert('ファイルのダウンロードに失敗しました。URLが無効か、ファイルが存在しない可能性があります。');
     } finally {
       // ダウンロード中の状態を解除
@@ -293,10 +297,10 @@ export function SettingsScreen({ onSettingsChange }: SettingsScreenProps) {
               <div className="flex gap-2">
                 <button
                   onClick={() => {
-                    console.log('Light button clicked');
+                    logger.debug('Light button clicked');
                     setSettings({ ...settings, theme: 'light' });
                     setTheme('light');
-                    console.log('Called setTheme with light');
+                    logger.debug('Called setTheme with light');
                   }}
                   disabled={!mounted}
                   className={`
@@ -314,10 +318,10 @@ export function SettingsScreen({ onSettingsChange }: SettingsScreenProps) {
                 </button>
                 <button
                   onClick={() => {
-                    console.log('Dark button clicked');
+                    logger.debug('Dark button clicked');
                     setSettings({ ...settings, theme: 'dark' });
                     setTheme('dark');
-                    console.log('Called setTheme with dark');
+                    logger.debug('Called setTheme with dark');
                   }}
                   disabled={!mounted}
                   className={`
@@ -581,3 +585,6 @@ export function SettingsScreen({ onSettingsChange }: SettingsScreenProps) {
     </div>
   );
 }
+
+// Default export for compatibility
+export default SettingsScreen;

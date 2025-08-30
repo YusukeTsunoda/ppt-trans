@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
+import logger from '@/lib/logger';
 
 export interface ProfileState {
   error?: string;
@@ -9,11 +10,45 @@ export interface ProfileState {
   message?: string;
 }
 
-// プロフィール更新アクション
+// プロフィール更新アクション（オーバーロード）
 export async function updateProfileAction(
-  prevState: ProfileState | null,
-  formData: FormData
-): Promise<ProfileState> {
+  userIdOrState: string | ProfileState | null,
+  displayNameOrFormData: string | FormData
+): Promise<{ success: boolean; error?: string } | ProfileState> {
+  // シンプル版の処理
+  if (typeof userIdOrState === 'string' && typeof displayNameOrFormData === 'string') {
+    const userId = userIdOrState;
+    const displayName = displayNameOrFormData;
+    
+    try {
+      const supabase = await createClient();
+      
+      // プロファイルデータの更新
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .upsert({
+          id: userId,
+          display_name: displayName,
+          updated_at: new Date().toISOString()
+        });
+
+      if (updateError) {
+        logger.error('Profile update error:', updateError);
+        return { success: false, error: 'プロフィールの更新に失敗しました' };
+      }
+
+      revalidatePath('/profile');
+      revalidatePath('/dashboard');
+
+      return { success: true };
+    } catch (error) {
+      logger.error('Profile action error:', error);
+      return { success: false, error: 'プロフィールの更新に失敗しました' };
+    }
+  }
+  
+  // FormData版の処理
+  const formData = displayNameOrFormData as FormData;
   try {
     const displayName = formData.get('displayName') as string;
     const bio = formData.get('bio') as string;
@@ -38,7 +73,7 @@ export async function updateProfileAction(
       });
 
     if (updateError) {
-      console.error('Profile update error:', updateError);
+      logger.error('Profile update error:', updateError);
       return { error: 'プロフィールの更新に失敗しました' };
     }
 
@@ -51,7 +86,7 @@ export async function updateProfileAction(
     };
 
   } catch (error) {
-    console.error('Profile action error:', error);
+    logger.error('Profile action error:', error);
     return { error: 'プロフィールの更新に失敗しました' };
   }
 }
@@ -94,7 +129,7 @@ export async function changePasswordAction(
     });
 
     if (updateError) {
-      console.error('Password update error:', updateError);
+      logger.error('Password update error:', updateError);
       return { 
         error: updateError.message.includes('incorrect') 
           ? '現在のパスワードが正しくありません'
@@ -110,7 +145,7 @@ export async function changePasswordAction(
     };
 
   } catch (error) {
-    console.error('Password change error:', error);
+    logger.error('Password change error:', error);
     return { error: 'パスワードの更新に失敗しました' };
   }
 }

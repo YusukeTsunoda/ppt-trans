@@ -38,6 +38,52 @@ yarn-error.log*
 tsconfig.tsbuildinfo
 next-env.d.ts
 
+# E2E test authentication
+auth.json
+.auth/
+*.auth.json
+test-results/
+playwright-report/
+
+# uploads directory
+uploads/
+/uploads
+
+# python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv
+ENV/
+env.bak/
+venv.bak/
+
+# uv
+.venv/
+uv.lock
+
+# temporary files
+/tmp/
+*.tmp
+*.temp
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+<<<<<<< HEAD
+EOF < /dev/nulle2e/fixtures/large-presentation.pptx
+
 # uploads directory
 uploads/
 /uploads
@@ -75,3 +121,31 @@ uv.lock
 .DS_Store
 Thumbs.db
 EOF < /dev/null
+=======
+EOF < /dev/null
+
+# PHP/Composer
+vendor/
+composer.json
+composer.lock
+*.phar
+
+# SQLite database
+*.db
+dev.db
+
+# Test outputs
+test-output.css
+debug-screenshot.png
+upload-test-result.png
+test_presentation.py
+test_translated.pptx
+clear_session.html
+
+# Public downloads
+public/downloads/
+
+# Test/error handling scripts
+test-error-handling.js
+test-optimizations.js
+>>>>>>> 2ef369c (Add environment configuration files for Supabase setup)

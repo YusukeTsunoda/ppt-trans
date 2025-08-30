@@ -1,16 +1,29 @@
-import AppNavigation from './AppNavigation';
-import { createClient } from '@/lib/supabase/server';
+'use client';
 
-export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+import React from 'react';
+import AppHeader from './AppHeader';
 
+interface AppLayoutProps {
+  children: React.ReactNode;
+  userEmail: string;
+  onUploadClick?: () => void;
+  showUploadButton?: boolean;
+}
+
+export default function AppLayout({ 
+  children, 
+  userEmail, 
+  onUploadClick, 
+  showUploadButton = true 
+}: AppLayoutProps) {
   return (
-    <div className="min-h-screen bg-slate-50">
-      {user && <AppNavigation user={user} />}
-      <main className="animate-fadeIn">
-        {children}
-      </main>
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
+      <AppHeader 
+        userEmail={userEmail} 
+        onUploadClick={onUploadClick}
+        showUploadButton={showUploadButton}
+      />
+      {children}
     </div>
   );
 }

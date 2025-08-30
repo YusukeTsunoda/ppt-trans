@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
+import logger from '@/lib/logger';
 
 export interface DashboardState {
   error?: string;
@@ -33,21 +34,18 @@ export async function getFiles() {
     .order('created_at', { ascending: false });
   
   if (error) {
-    console.error('Error fetching files:', error);
+    logger.error('Error fetching files:', error);
     return { files: [], error: error.message };
   }
   
   return { files: data || [], error: null };
 }
 
-// 翻訳実行アクション
-export async function translateFileAction(
-  prevState: TranslateState | null,
-  formData: FormData
-): Promise<TranslateState> {
+// 翻訳実行アクション（Server Action直接呼び出し版）
+export async function translateFileAction(fileId: string): Promise<TranslateState> {
+  'use server';
+  
   try {
-    const fileId = formData.get('fileId') as string;
-    
     if (!fileId) {
       return { error: 'ファイルIDが指定されていません' };
     }
@@ -73,15 +71,11 @@ export async function translateFileAction(
       return { error: 'ファイルが見つかりません' };
     }
     
-    // 翻訳APIを呼び出す
-    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/translate-pptx`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fileId })
-    });
+    // PPTXファイル翻訳のServer Actionをインポートして直接呼び出す
+    const { translatePPTXAction } = await import('./pptx');
+    const result = await translatePPTXAction(fileId, 'ja'); // デフォルトで日本語に翻訳
     
-    if (!response.ok) {
-      const result = await response.json();
+    if (!result.success) {
       return { error: result.error || '翻訳に失敗しました' };
     }
     
@@ -90,24 +84,21 @@ export async function translateFileAction(
     
     return {
       success: true,
-      message: '翻訳を開始しました',
+      message: '翻訳が完了しました',
       fileId
     };
     
   } catch (error) {
-    console.error('Translation error:', error);
+    logger.error('Translation error:', error);
     return { error: '翻訳処理中にエラーが発生しました' };
   }
 }
 
-// ファイル削除アクション
-export async function deleteFileAction(
-  prevState: DashboardState | null,
-  formData: FormData
-): Promise<DashboardState> {
+// ファイル削除アクション（改善版：直接引数を受け取る）
+export async function deleteFileAction(fileId: string): Promise<DashboardState> {
+  'use server';
+  
   try {
-    const fileId = formData.get('fileId') as string;
-    
     if (!fileId) {
       return { error: 'ファイルIDが指定されていません' };
     }
@@ -140,7 +131,7 @@ export async function deleteFileAction(
         .remove([file.filename]);
       
       if (storageError) {
-        console.error('Storage delete error:', storageError);
+        logger.error('Storage delete error:', storageError);
       }
     }
     
@@ -163,7 +154,7 @@ export async function deleteFileAction(
     };
     
   } catch (error) {
-    console.error('Delete error:', error);
+    logger.error('Delete error:', error);
     return { error: 'ファイル削除中にエラーが発生しました' };
   }
 }

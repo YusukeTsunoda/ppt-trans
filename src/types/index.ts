@@ -1,5 +1,12 @@
 // 共通型定義ファイル
 
+// 新しい型定義のエクスポート
+export * from './common';
+export * from './api';
+export * from './queue';
+export * from './generation';
+export * from './memory';
+
 // テキストの位置情報
 export interface TextPosition {
   x: number;

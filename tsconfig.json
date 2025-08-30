@@ -4,8 +4,14 @@
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
-    "strict": false,
-    "forceConsistentCasingInFileNames": false,
+    /* 厳密モード - 段階的に有効化 */
+    "strict": false,  // 今後段階的にtrueに変更
+    "strictNullChecks": true,  // null/undefinedチェックを有効化
+    "noImplicitAny": true,  // 暗黙のanyを禁止
+    "noUnusedLocals": false,  // 未使用ローカル変数の警告（今後有効化）
+    "noUnusedParameters": false,  // 未使用パラメータの警告（今後有効化）
+    "noFallthroughCasesInSwitch": true,  // switch文のfall-throughを禁止
+    "forceConsistentCasingInFileNames": true,  // ファイル名の大文字小文字を一貫
     "noEmit": true,
     "esModuleInterop": true,
     "module": "esnext",
@@ -24,5 +30,5 @@
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", "e2e/**/*", "cypress/**/*", "scripts/**/*"]
 }

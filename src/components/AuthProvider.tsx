@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { User } from '@supabase/supabase-js';
+import logger from '@/lib/logger';
 
 type AuthContextType = {
   user: User | null;
@@ -26,27 +27,28 @@ export default function AuthProvider({
   const supabase = createClient();
 
   useEffect(() => {
-    console.log('=== AuthProvider Initialization ===');
-    console.log('Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
-    console.log('Supabase Key exists:', !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+    if (process.env.NODE_ENV === 'development') {
+      logger.debug('=== AuthProvider Initialization ===');
+      logger.debug('Supabase configuration loaded');
+    }
     
     // 初回のセッション確認
     const checkSession = async () => {
-      console.log('Checking session...');
+      logger.debug('Checking session...');
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
-        console.log('Session check result:', { session: !!session, error });
+        logger.debug('Session check result:', { session: !!session, error });
         
         if (error) {
-          console.error('Session check error details:', error);
+          logger.error('Session check error details:', error);
         }
         
         setUser(session?.user || null);
-        console.log('User set to:', session?.user?.email || 'null');
+        logger.debug('User set to:', { email: session?.user?.email || 'null' });
       } catch (error) {
-        console.error('Session check exception:', error);
+        logger.error('Session check exception:', error);
       } finally {
-        console.log('Setting loading to false');
+        logger.debug('Setting loading to false');
         setLoading(false);
       }
     };

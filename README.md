@@ -18,6 +18,20 @@ AIを活用してPowerPointプレゼンテーションを自動翻訳するWeb�
 
 ## 🚀 クイックスタート
 
+  ✅ テストユーザー
+
+  - Email: test@example.com
+  - Password: testpassword123
+  - Role: user
+  - Status: ログイン成功確認済み
+
+  ✅ 管理者ユーザー
+
+  - Email: admin@example.com
+  - Password: adminpassword123
+  - Role: admin
+  - Status: ログイン成功確認済み
+
 ### 前提条件
 
 - Node.js 18以上

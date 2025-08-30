@@ -1,28 +1,26 @@
 'use client';
 
-import { useState } from 'react';
-// @ts-ignore - React 19 exports
-import { useActionState } from 'react';
-import { useFormStatus } from 'react-dom';
+import { useState, useEffect } from 'react';
 import { translateFileAction, deleteFileAction } from '@/app/actions/dashboard';
 import { logoutAction } from '@/app/actions/auth';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState as useStateReact } from 'react';
-import { SkeletonTable } from '@/components/ui/SkeletonLoader';
-import RealtimeProgress from '@/components/progress/RealtimeProgress';
+import logger from '@/lib/logger';
+import { User, LogOut, Upload, Settings } from 'lucide-react';
 
 interface FileRecord {
   id: string;
   filename: string;
-  original_filename: string;
+  original_name: string;  // original_filename -> original_nameに修正
   file_size: number;
   status: string;
-  translation_result?: {
+  extracted_data?: {
     translated_path?: string;
     slide_count?: number;
+    translation_completed_at?: string;
     error?: string;
+    [key: string]: any;
   };
   created_at: string;
 }
@@ -32,44 +30,11 @@ interface DashboardViewProps {
   initialFiles: FileRecord[];
 }
 
-function TranslateButton({ fileId }: { fileId: string }) {
-  const { pending } = useFormStatus();
-  
-  return (
-    <>
-      <input type="hidden" name="fileId" value={fileId} />
-      <button
-        type="submit"
-        disabled={pending}
-        className="text-sm bg-emerald-500 text-white px-4 py-2 rounded-lg hover:bg-emerald-600 disabled:opacity-50 transition-all duration-200"
-      >
-        {pending ? '翻訳中...' : '🌐 翻訳'}
-      </button>
-    </>
-  );
-}
 
-function DeleteButton({ fileId }: { fileId: string }) {
-  const { pending } = useFormStatus();
-  
-  return (
-    <>
-      <input type="hidden" name="fileId" value={fileId} />
-      <button
-        type="submit"
-        disabled={pending}
-        className="text-sm text-red-600 hover:text-red-800 disabled:opacity-50"
-      >
-        {pending ? '削除中...' : '削除'}
-      </button>
-    </>
-  );
-}
-
-function FileCard({ file }: { file: FileRecord }) {
-  const [translateState, translateAction] = useActionState(translateFileAction, null);
-  const [deleteState, deleteAction] = useActionState(deleteFileAction, null);
-  const router = useRouter();
+function FileCard({ file, onDelete }: { file: FileRecord; onDelete: (fileId: string) => void }) {
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [translateError, setTranslateError] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const formatFileSize = (bytes: number) => {
     if (bytes < 1024) return bytes + ' B';
@@ -88,12 +53,11 @@ function FileCard({ file }: { file: FileRecord }) {
   };
 
   const getStatusBadge = (status: string) => {
-    // Design.md準拠のステータス表示
     const statusStyles = {
-      uploaded: 'bg-blue-100 text-blue-600',
-      processing: 'bg-blue-100 text-blue-600 animate-pulse', // Design.md: 翻訳中のアニメーション
-      completed: 'bg-emerald-100 text-emerald-600', // Design.md: アクセントカラー
-      failed: 'bg-red-100 text-red-600'
+      uploaded: 'bg-blue-100 text-blue-800',
+      processing: 'bg-yellow-100 text-yellow-800',
+      completed: 'bg-green-100 text-green-800',
+      failed: 'bg-red-100 text-red-800'
     };
     
     const statusLabels = {
@@ -104,7 +68,7 @@ function FileCard({ file }: { file: FileRecord }) {
     };
     
     return (
-      <span className={`px-3 py-1 text-xs font-medium rounded-lg ${statusStyles[status as keyof typeof statusStyles] || 'bg-slate-100 text-slate-600'}`}>
+      <span className={`px-2 py-1 text-xs rounded-full ${statusStyles[status as keyof typeof statusStyles] || 'bg-gray-100 text-gray-800'}`}>
         {statusLabels[status as keyof typeof statusLabels] || status}
       </span>
     );
@@ -128,25 +92,33 @@ function FileCard({ file }: { file: FileRecord }) {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch (error) {
-      console.error('Download error:', error);
+      logger.error('Download error:', error);
       alert('ダウンロードに失敗しました');
     }
   };
 
-  // 状態に応じてページをリフレッシュ
-  if (translateState?.success || deleteState?.success) {
-    router.refresh();
-  }
+  // 削除ボタンのクリックハンドラ
+  const handleDelete = async () => {
+    if (!confirm('このファイルを削除してもよろしいですか？')) {
+      return;
+    }
+    setIsDeleting(true);
+    try {
+      await onDelete(file.id);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   return (
     <tr className="hover:bg-gray-50">
       <td className="px-6 py-4 whitespace-nowrap">
         <div className="text-sm font-medium text-gray-900">
-          {file.original_filename}
+          {file.original_name}
         </div>
-        {file.translation_result?.slide_count && (
+        {file.extracted_data?.slide_count && (
           <div className="text-xs text-gray-500">
-            {file.translation_result.slide_count} スライド
+            {file.extracted_data.slide_count} スライド
           </div>
         )}
       </td>
@@ -155,14 +127,14 @@ function FileCard({ file }: { file: FileRecord }) {
       </td>
       <td className="px-6 py-4 whitespace-nowrap">
         {getStatusBadge(file.status)}
-        {file.translation_result?.error && (
+        {file.extracted_data?.error && (
           <div className="text-xs text-red-600 mt-1">
-            {file.translation_result.error}
+            {file.extracted_data.error}
           </div>
         )}
-        {translateState?.error && (
+        {translateError && (
           <div className="text-xs text-red-600 mt-1">
-            {translateState.error}
+            {translateError}
           </div>
         )}
       </td>
@@ -171,19 +143,44 @@ function FileCard({ file }: { file: FileRecord }) {
       </td>
       <td className="px-6 py-4 whitespace-nowrap">
         <div className="flex gap-2">
-          {/* 元ファイルダウンロード */}
+          {/* PowerPointダウンロード */}
           <button
-            onClick={() => handleDownload(file.filename, file.original_filename)}
-            className="text-sm text-blue-600 hover:text-blue-800"
+            onClick={() => handleDownload(file.filename, file.original_name)}
+            className="text-sm bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-all duration-200 font-bold"
           >
-            元ファイル
+            💾 PowerPoint
           </button>
+          
+          {/* プレビューボタン */}
+          {(file.status === 'uploaded' || file.status === 'completed' || file.status === 'pending') && (
+            <Link
+              href={`/preview/${file.id}`}
+              className="text-sm bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-all duration-200 font-bold"
+            >
+              📄 プレビュー
+            </Link>
+          )}
           
           {/* 翻訳ボタン */}
           {file.status === 'uploaded' && (
-            <form action={translateAction}>
-              <TranslateButton fileId={file.id} />
-            </form>
+            <button
+              onClick={async () => {
+                setIsTranslating(true);
+                setTranslateError(null);
+                try {
+                  const result = await translateFileAction(file.id);
+                  if (!result.success) {
+                    setTranslateError(result.error || '翻訳に失敗しました');
+                  }
+                } finally {
+                  setIsTranslating(false);
+                }
+              }}
+              disabled={isTranslating}
+              className="text-sm bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-all duration-200 font-bold"
+            >
+              {isTranslating ? '翻訳中...' : '🌐 翻訳'}
+            </button>
           )}
           
           {/* 処理中表示 */}
@@ -193,23 +190,14 @@ function FileCard({ file }: { file: FileRecord }) {
             </span>
           )}
           
-          {/* 翻訳済みファイルダウンロード */}
-          {file.status === 'completed' && file.translation_result?.translated_path && (
-            <button
-              onClick={() => handleDownload(
-                file.translation_result!.translated_path!,
-                `translated_${file.original_filename}`
-              )}
-              className="text-sm bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-all duration-200"
-            >
-              翻訳済み
-            </button>
-          )}
-          
           {/* 削除ボタン */}
-          <form action={deleteAction}>
-            <DeleteButton fileId={file.id} />
-          </form>
+          <button
+            onClick={handleDelete}
+            disabled={isDeleting}
+            className="text-sm text-red-600 hover:text-red-800 disabled:opacity-50 transition-all duration-200"
+          >
+            {isDeleting ? '削除中...' : '🗑️ 削除'}
+          </button>
         </div>
       </td>
     </tr>
@@ -217,27 +205,31 @@ function FileCard({ file }: { file: FileRecord }) {
 }
 
 export default function DashboardView({ userEmail, initialFiles }: DashboardViewProps) {
-  const [files] = useState(initialFiles);
-  const [isAdmin, setIsAdmin] = useStateReact(false);
+  const [files, setFiles] = useState(initialFiles);
+  const [isAdmin, setIsAdmin] = useState(false);
   const router = useRouter();
   const supabase = createClient();
 
+  // 管理者権限の確認
   useEffect(() => {
-    // ユーザーロールを確認
-    const checkUserRole = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', user.id)
-          .single();
-        
-        const userRole = profile?.role?.toLowerCase();
-        setIsAdmin(userRole === 'admin' || userRole === 'super_admin');
+    const checkAdminRole = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single();
+          
+          setIsAdmin(profile?.role === 'admin');
+        }
+      } catch (error) {
+        logger.error('Error checking admin role:', error);
       }
     };
-    checkUserRole();
+
+    checkAdminRole();
   }, [supabase]);
 
   const handleLogout = async () => {
@@ -247,50 +239,77 @@ export default function DashboardView({ userEmail, initialFiles }: DashboardView
     }
   };
 
+  const handleDeleteFile = async (fileId: string) => {
+    try {
+      // 直接fileIdを渡すようにシンプル化
+      const deleteResult = await deleteFileAction(fileId);
+      
+      if (deleteResult.success) {
+        // ローカルの状態を更新（楽観的UI更新）
+        setFiles(prevFiles => prevFiles.filter(f => f.id !== fileId));
+      } else {
+        alert(deleteResult.error || 'ファイルの削除に失敗しました');
+      }
+    } catch (error) {
+      logger.error('Delete error:', error);
+      alert('ファイルの削除中にエラーが発生しました');
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-slate-50 animate-fadeIn">
-      {/* ヘッダー (Design.md準拠) */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <div className="min-h-screen gradient-bg animate-fadeIn">
+      {/* ヘッダー */}
+      <div className="header-gradient text-white shadow-lg">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-3xl font-heading font-bold">PowerPoint Translator</h1>
-              <p className="text-blue-100 mt-1 font-body">ようこそ、{userEmail}さん</p>
+              <h1 className="text-2xl sm:text-3xl font-bold">PowerPoint Translator</h1>
+              <p className="text-blue-100 text-sm mt-1">ようこそ、{userEmail}さん</p>
             </div>
-            <div className="flex gap-3">
-              {/* 管理者ダッシュボードボタン（管理者のみ表示） */}
+            <div className="flex items-center gap-2">
+              {/* 管理画面ボタン（管理者のみ） */}
               {isAdmin && (
                 <Link
                   href="/admin"
-                  className="btn-secondary bg-orange-500 hover:bg-orange-600 text-white"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-200 text-sm font-bold"
+                  title="管理画面"
                 >
-                  🛠️ 管理画面
+                  <Settings className="w-4 h-4" />
+                  <span className="hidden sm:inline">管理画面</span>
                 </Link>
               )}
               
               {/* プロフィールボタン */}
               <Link
                 href="/profile"
-                className="btn-secondary bg-slate-600 hover:bg-slate-700 text-white"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 backdrop-blur rounded-lg transition-all duration-200 text-sm"
+                title="プロフィール設定"
               >
-                👤 プロフィール
+                <div className="w-6 h-6 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                  {userEmail.charAt(0).toUpperCase()}
+                </div>
+                <span className="hidden sm:inline">プロフィール</span>
               </Link>
               
-              {/* 新規アップロードボタン (Design.md準拠のアクセントカラー) */}
+              {/* 新規アップロードボタン */}
               <Link
                 href="/upload"
-                className="btn-accent"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-200 text-sm font-bold"
+                data-testid="new-upload-link"
               >
-                📄 新規アップロード
+                <Upload className="w-4 h-4" />
+                <span>新規アップロード</span>
               </Link>
               
               {/* ログアウトボタン */}
               <form action={handleLogout}>
                 <button
                   type="submit"
-                  className="btn-secondary bg-white/20 hover:bg-white/30 text-white backdrop-blur"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white backdrop-blur rounded-lg transition-all duration-200 text-sm"
+                  title="ログアウト"
                 >
-                  ログアウト
+                  <LogOut className="w-4 h-4" />
+                  <span className="hidden sm:inline">ログアウト</span>
                 </button>
               </form>
             </div>
@@ -299,72 +318,15 @@ export default function DashboardView({ userEmail, initialFiles }: DashboardView
       </div>
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* クイックアクセスカード */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          {/* プロフィールカード (Design.md準拠) */}
-          <Link
-            href="/profile"
-            className="card hover:shadow-md transition-all duration-200 group"
-          >
-            <div className="flex items-center space-x-4">
-              <div className="p-3 bg-slate-100 rounded-lg group-hover:bg-slate-200 transition-all duration-200">
-                <svg className="w-8 h-8 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="font-heading font-semibold text-slate-900">プロフィール設定</h3>
-                <p className="text-sm text-slate-600 font-body">アカウント情報の確認・編集</p>
-              </div>
-            </div>
-          </Link>
-
-          {/* ファイル管理カード (Design.md準拠) */}
-          <Link
-            href="/files"
-            className="card hover:shadow-md transition-all duration-200 group"
-          >
-            <div className="flex items-center space-x-4">
-              <div className="p-3 bg-blue-100 rounded-lg group-hover:bg-blue-200 transition-all duration-200">
-                <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="font-heading font-semibold text-slate-900">ファイル管理</h3>
-                <p className="text-sm text-slate-600 font-body">アップロード済みファイルの一覧</p>
-              </div>
-            </div>
-          </Link>
-
-          {/* 管理画面カード（管理者のみ）(Design.md準拠) */}
-          {isAdmin && (
-            <Link
-              href="/admin"
-              className="card hover:shadow-md transition-all duration-200 group"
-            >
-              <div className="flex items-center space-x-4">
-                <div className="p-3 bg-emerald-100 rounded-lg group-hover:bg-emerald-200 transition-all duration-200">
-                  <svg className="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="font-heading font-semibold text-slate-900">管理画面</h3>
-                  <p className="text-sm text-slate-600 font-body">システム管理・統計情報</p>
-                </div>
-              </div>
-            </Link>
-          )}
-        </div>
-
         {/* ファイル一覧 */}
         <div className="card">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-slate-900">アップロードしたファイル</h2>
+            <h2 className="text-xl font-semibold text-slate-900" data-testid="uploaded-files-title">アップロードしたファイル</h2>
             <button
-              onClick={() => router.refresh()}
+              onClick={async () => {
+                // ダッシュボードページをリロードして最新データを取得
+                window.location.reload();
+              }}
               className="text-blue-600 hover:text-blue-700 transition-colors"
               title="更新"
             >
@@ -375,7 +337,7 @@ export default function DashboardView({ userEmail, initialFiles }: DashboardView
           </div>
           
           {files.length === 0 ? (
-            <div className="p-12 text-center">
+            <div className="p-12 text-center" data-testid="empty-file-list">
               <svg className="mx-auto h-24 w-24 text-slate-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
               </svg>
@@ -388,7 +350,7 @@ export default function DashboardView({ userEmail, initialFiles }: DashboardView
               </Link>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto file-list" data-testid="file-list">
               <table className="w-full">
                 <thead className="bg-gray-50">
                   <tr>
@@ -411,7 +373,7 @@ export default function DashboardView({ userEmail, initialFiles }: DashboardView
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {files.map((file) => (
-                    <FileCard key={file.id} file={file} />
+                    <FileCard key={file.id} file={file} onDelete={handleDeleteFile} />
                   ))}
                 </tbody>
               </table>

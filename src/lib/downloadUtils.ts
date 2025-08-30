@@ -3,6 +3,8 @@
  * 重複していたダウンロードロジックを統合
  */
 
+import logger from '@/lib/logger';
+
 interface DownloadOptions {
   url: string;
   fileName: string;
@@ -26,7 +28,7 @@ export async function downloadFile({
       ? fileName 
       : `${fileName}.pptx`;
 
-    console.log('Downloading file from:', url);
+    logger.debug('Downloading file from:', { url });
 
     // Supabase URLの場合、fetchを試みる
     if (url.includes('supabase')) {
@@ -68,7 +70,7 @@ export async function downloadFile({
           return downloadBlob(blob, normalizedFileName);
         }
       } catch (fetchError) {
-        console.log('Fetch download failed, trying direct link...', fetchError);
+        logger.debug('Fetch download failed, trying direct link...', fetchError);
       }
     }
 
@@ -76,7 +78,7 @@ export async function downloadFile({
     return downloadViaAnchor(url, normalizedFileName);
 
   } catch (error) {
-    console.error('Download error:', error);
+    logger.error('Download error:', error);
     if (onError) {
       onError(error instanceof Error ? error : new Error('Download failed'));
     }
@@ -99,7 +101,7 @@ function downloadBlob(blob: Blob, fileName: string): boolean {
     
     return success;
   } catch (error) {
-    console.error('Blob download error:', error);
+    logger.error('Blob download error:', error);
     return false;
   }
 }
@@ -128,10 +130,10 @@ function downloadViaAnchor(url: string, fileName: string): boolean {
       document.body.removeChild(anchor);
     }, 100);
     
-    console.log('Download initiated successfully');
+    logger.debug('Download initiated successfully');
     return true;
   } catch (error) {
-    console.error('Anchor download error:', error);
+    logger.error('Anchor download error:', error);
     return false;
   }
 }

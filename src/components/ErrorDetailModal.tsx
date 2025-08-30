@@ -6,6 +6,8 @@ import { getErrorMessageObject } from '@/lib/errors/ErrorMessages';
 import { ErrorCodes, type ErrorCode } from '@/lib/errors/ErrorCodes';
 import { ErrorStatusMap } from '@/lib/errors/ErrorStatusMap';
 import logger from '@/lib/logger';
+import type { JsonObject } from '@/types/common';
+import { fetchWithCSRF } from '@/lib/security/csrf';
 
 interface ErrorDetailModalProps {
   error: Error | AppError;
@@ -33,7 +35,7 @@ export function ErrorDetailModal({
 
   const isAppError = error instanceof AppError;
   const errorCode = isAppError ? error.code : ErrorCodes.UNKNOWN_ERROR;
-  const errorMessageObj = getErrorMessageObject(errorCode as any);
+  const errorMessageObj = getErrorMessageObject(errorCode as ErrorCode);
   const statusCode = isAppError ? error.statusCode : (errorCode in ErrorStatusMap ? ErrorStatusMap[errorCode as ErrorCode] : 500);
 
   const handleCopyError = async () => {
@@ -70,7 +72,7 @@ export function ErrorDetailModal({
           url: window.location.href
         };
 
-        await fetch('/api/error-report', {
+        await fetchWithCSRF('/api/error-report', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(reportData)
@@ -339,9 +341,9 @@ export function useErrorDetailModal() {
   const [isOpen, setIsOpen] = useState(false);
   const [error, setError] = useState<Error | AppError | null>(null);
   const [errorId, setErrorId] = useState<string>('');
-  const [metadata, setMetadata] = useState<Record<string, any> | undefined>();
+  const [metadata, setMetadata] = useState<JsonObject | undefined>();
 
-  const openModal = (error: Error | AppError, errorId?: string, metadata?: Record<string, any>) => {
+  const openModal = (error: Error | AppError, errorId?: string, metadata?: JsonObject) => {
     setError(error);
     setErrorId(errorId || `error-${Date.now()}`);
     setMetadata(metadata);

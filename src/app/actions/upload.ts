@@ -2,7 +2,8 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
-import { ALLOWED_MIME_TYPES } from '@/constants/mime-types';
+import { ALLOWED_MIME_TYPES, FILE_SIZE_LIMITS } from '@/constants/mime-types';
+import logger from '@/lib/logger';
 
 export interface UploadState {
   error?: string;
@@ -10,8 +11,6 @@ export interface UploadState {
   message?: string;
   fileId?: string;
 }
-
-const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
 
 function isValidMimeType(mimeType: string): boolean {
   return Object.values(ALLOWED_MIME_TYPES).includes(mimeType as any);
@@ -22,6 +21,10 @@ export async function uploadFileAction(
   prevState: UploadState | null,
   formData: FormData
 ): Promise<UploadState> {
+  // タイムアウトを設定（30秒）
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000);
+  
   try {
     const file = formData.get('file') as File;
     
@@ -30,9 +33,9 @@ export async function uploadFileAction(
     }
 
     // ファイルサイズの検証
-    if (file.size > MAX_FILE_SIZE) {
+    if (file.size > FILE_SIZE_LIMITS.MAX_FILE_SIZE) {
       return { 
-        error: `ファイルサイズが大きすぎます。最大100MBまでアップロード可能です。（現在: ${(file.size / 1024 / 1024).toFixed(2)}MB）`
+        error: `ファイルサイズが大きすぎます。最大${FILE_SIZE_LIMITS.MAX_FILE_SIZE_LABEL}までアップロード可能です。（現在: ${(file.size / 1024 / 1024).toFixed(2)}MB）`
       };
     }
 
@@ -70,7 +73,7 @@ export async function uploadFileAction(
       });
 
     if (uploadError) {
-      console.error('Storage upload error:', uploadError);
+      logger.error('Storage upload error:', uploadError);
       
       let errorMessage = 'ファイルのアップロードに失敗しました';
       if (uploadError.message?.includes('row-level security')) {
@@ -83,31 +86,22 @@ export async function uploadFileAction(
     }
 
     // データベースにファイル情報を保存
-    const fileData = {
-      user_id: user.id,
-      filename: fileName,
-      original_filename: file.name, // 必須カラム
-      storage_path: uploadData.path,
-      file_size: buffer.length,
-      mime_type: file.type,
-      status: 'pending' // 'uploaded'ではなく'pending'を使用
-    };
-
     const { data: fileRecord, error: dbError } = await supabase
       .from('files')
-      .insert(fileData)
+      .insert({
+        user_id: user.id,
+        filename: fileName,
+        original_name: file.name,  // original_filename -> original_name に修正
+        file_size: buffer.length,
+        mime_type: file.type,
+        file_path: uploadData.path,  // storage_path -> file_path に修正
+        status: 'completed'  // 'uploaded' -> 'completed' に修正（DBスキーマに合わせる）
+      })
       .select()
       .single();
 
     if (dbError) {
-      console.error('Database insert error:', dbError);
-      console.error('Insert data:', fileData);
-      console.error('Error details:', {
-        code: dbError.code,
-        message: dbError.message,
-        details: dbError.details,
-        hint: dbError.hint
-      });
+      logger.error('Database insert error:', dbError);
       
       // ストレージからファイルを削除（ロールバック）
       await supabase.storage.from('uploads').remove([fileName]);
@@ -120,6 +114,8 @@ export async function uploadFileAction(
     // ページを再検証
     revalidatePath('/dashboard');
     revalidatePath('/files');
+    
+    clearTimeout(timeoutId);
 
     return {
       success: true,
@@ -127,10 +123,21 @@ export async function uploadFileAction(
       fileId: fileRecord.id
     };
 
-  } catch (error) {
-    console.error('Upload action error:', error);
+  } catch (error: any) {
+    clearTimeout(timeoutId);
+    logger.error('Upload action error:', error);
+    
+    // タイムアウトエラーの場合
+    if (error.name === 'AbortError') {
+      return { 
+        error: 'タイムアウト: アップロードに時間がかかりすぎています。もう一度お試しください。'
+      };
+    }
+    
     return { 
       error: '予期しないエラーが発生しました。もう一度お試しください。'
     };
+  } finally {
+    clearTimeout(timeoutId);
   }
 }

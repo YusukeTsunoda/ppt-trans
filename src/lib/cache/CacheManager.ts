@@ -47,7 +47,7 @@ export class CacheManager {
       logger.debug(`Cache set: ${fullKey}`);
       return true;
     } catch (error) {
-      logger.error('Cache set error', { key, error });
+      logger.error('Cache set error', error, { key });
       return false;
     }
   }
@@ -80,7 +80,7 @@ export class CacheManager {
       logger.debug(`Cache hit: ${fullKey}`);
       return JSON.parse(value) as T;
     } catch (error) {
-      logger.error('Cache get error', { key, error });
+      logger.error('Cache get error', error, { key });
       return null;
     }
   }
@@ -102,7 +102,7 @@ export class CacheManager {
       logger.debug(`Cache delete: ${fullKey}`);
       return result > 0;
     } catch (error) {
-      logger.error('Cache delete error', { key, error });
+      logger.error('Cache delete error', error, { key });
       return false;
     }
   }
@@ -129,7 +129,7 @@ export class CacheManager {
       const result = await this.redis.exists(fullKey);
       return result > 0;
     } catch (error) {
-      logger.error('Cache exists error', { key, error });
+      logger.error('Cache exists error', error, { key });
       return false;
     }
   }
@@ -154,7 +154,7 @@ export class CacheManager {
       const result = await this.redis.expire(fullKey, ttl);
       return result > 0;
     } catch (error) {
-      logger.error('Cache expire error', { key, error });
+      logger.error('Cache expire error', error, { key });
       return false;
     }
   }
@@ -178,7 +178,7 @@ export class CacheManager {
     try {
       return await this.redis.ttl(fullKey);
     } catch (error) {
-      logger.error('Cache ttl error', { key, error });
+      logger.error('Cache ttl error', error, { key });
       return -1;
     }
   }
@@ -205,7 +205,7 @@ export class CacheManager {
       const keys = await this.redis.keys(fullPattern);
       return keys.map(k => k.replace(`${this.prefix}:`, ''));
     } catch (error) {
-      logger.error('Cache keys error', { pattern, error });
+      logger.error('Cache keys error', error, { pattern });
       return [];
     }
   }
@@ -240,7 +240,7 @@ export class CacheManager {
       logger.debug(`Cache delete pattern: ${fullPattern}, deleted: ${result}`);
       return result;
     } catch (error) {
-      logger.error('Cache delete pattern error', { pattern, error });
+      logger.error('Cache delete pattern error', error, { pattern });
       return 0;
     }
   }
@@ -357,7 +357,7 @@ export class CacheManager {
       
       return value;
     } catch (error) {
-      logger.error('Cache getOrSet error', { key, error });
+      logger.error('Cache getOrSet error', error, { key });
       // エラー時はファクトリー関数の結果を返す
       return factory();
     }

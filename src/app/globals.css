@@ -2,79 +2,34 @@
 @tailwind components;
 @tailwind utilities;
 
-/* プロフェッショナル・ブルー系デザインシステム */
 @layer base {
   :root {
-    /* プライマリカラー */
-    --primary: 217 91% 60%; /* #2563eb */
-    --primary-foreground: 0 0% 100%;
-    
-    /* セカンダリカラー */
-    --secondary: 215 14% 52%; /* #64748b */
-    --secondary-foreground: 0 0% 100%;
-    
-    /* アクセントカラー */
-    --accent: 158 64% 52%; /* #10b981 */
-    --accent-foreground: 0 0% 100%;
-    
-    /* 背景色 */
-    --background: 210 40% 98%; /* #f8fafc */
-    --foreground: 215 25% 19%; /* #1e293b */
-    
-    /* カード */
-    --card: 0 0% 100%;
-    --card-foreground: 215 25% 19%;
-    
-    /* ポップオーバー */
-    --popover: 0 0% 100%;
-    --popover-foreground: 215 25% 19%;
-    
-    /* Muted */
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
-    
-    /* 警告・エラー */
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 98%;
-    
-    /* ボーダー・入力 */
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 217 91% 60%;
-    
-    /* 角丸 */
-    --radius: 0.75rem;
+    /* Design System Colors */
+    --primary: #2563eb;
+    --secondary: #64748b;
+    --accent: #10b981;
+    --background: #f8fafc;
+    --foreground: #1e293b;
+    --card: #ffffff;
+    --border: #e2e8f0;
+    --error: #ef4444;
+    --success: #10b981;
+    --warning: #f59e0b;
   }
 
-  .dark {
-    /* ダークモード用カラー */
-    --primary: 217 91% 60%;
-    --primary-foreground: 0 0% 100%;
-    
-    --secondary: 215 14% 52%;
-    --secondary-foreground: 0 0% 100%;
-    
-    --accent: 158 64% 52%;
-    --accent-foreground: 0 0% 100%;
-    
-    --background: 222 47% 11%;
-    --foreground: 210 40% 98%;
-    
-    --card: 222 47% 13%;
-    --card-foreground: 210 40% 98%;
-    
-    --popover: 222 47% 13%;
-    --popover-foreground: 210 40% 98%;
-    
-    --muted: 217 33% 17%;
-    --muted-foreground: 215 20% 65%;
-    
-    --destructive: 0 62% 30%;
-    --destructive-foreground: 0 0% 98%;
-    
-    --border: 217 33% 17%;
-    --input: 217 33% 17%;
-    --ring: 217 91% 60%;
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --primary: #3b82f6;
+      --secondary: #94a3b8;
+      --accent: #34d399;
+      --background: #0f172a;
+      --foreground: #f1f5f9;
+      --card: #1e293b;
+      --border: #334155;
+      --error: #f87171;
+      --success: #34d399;
+      --warning: #fbbf24;
+    }
   }
 }
 
@@ -137,14 +92,8 @@
     @apply border border-slate-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white;
   }
 
-  /* ラベル */
-  .label {
-    @apply block text-sm font-medium text-slate-700 mb-2;
-  }
-
-  /* エラーメッセージ */
-  .error-message {
-    @apply text-red-600 text-sm mt-1;
+  .input-error {
+    @apply border border-red-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 bg-red-50;
   }
 
   /* 成功メッセージ */
@@ -196,6 +145,24 @@
   .container-custom {
     @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
   }
+
+  /* File Upload Area */
+  .upload-area {
+    @apply border-2 border-dashed border-slate-300 rounded-xl p-8 transition-all duration-200 hover:border-blue-400 hover:bg-blue-50/50;
+  }
+
+  .upload-area-active {
+    @apply border-2 border-dashed border-blue-500 bg-blue-50 rounded-xl p-8;
+  }
+
+  /* File List Table */
+  .file-list {
+    @apply divide-y divide-slate-200;
+  }
+
+  .file-list-item {
+    @apply py-4 hover:bg-slate-50 transition-colors duration-150;
+  }
 }
 
 /* Design.md準拠のアニメーション */
@@ -212,8 +179,9 @@
     }
   }
 
+  /* Animation Classes */
   .animate-fadeIn {
-    animation: fadeIn 0.3s ease-out;
+    animation: fadeIn 0.3s ease-in-out;
   }
 
   /* スライドイン */
@@ -226,10 +194,6 @@
       transform: translateX(0);
       opacity: 1;
     }
-  }
-
-  .animate-slideIn {
-    animation: slideIn 0.3s ease-out;
   }
 
   /* スケールイン */
@@ -350,6 +314,33 @@
   /* フォーカス時のリング */
   .focus-ring {
     @apply focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2;
+  }
+
+  /* Text Utilities */
+  .text-primary {
+    color: var(--primary);
+  }
+
+  .text-secondary {
+    color: var(--secondary);
+  }
+
+  .text-accent {
+    color: var(--accent);
+  }
+
+  /* Background Utilities */
+  .bg-background {
+    background-color: var(--background);
+  }
+
+  .bg-card {
+    background-color: var(--card);
+  }
+
+  /* Loading Spinner */
+  .spinner {
+    @apply animate-spin h-5 w-5 border-2 border-slate-300 rounded-full border-t-blue-600;
   }
 }
 

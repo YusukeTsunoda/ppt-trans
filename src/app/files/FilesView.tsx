@@ -1,72 +1,74 @@
 'use client';
 
-import { useState } from 'react';
-// @ts-ignore - React 19 exports
-import { useActionState } from 'react';
-import { useFormStatus } from 'react-dom';
+import { useState, useCallback, memo } from 'react';
 import Link from 'next/link';
-import { deleteFileAction, downloadFileAction, type FilesState } from '@/app/actions/files';
+// Removed Server Actions imports - will use API Routes instead
 import { FileRecord } from '@/lib/data/files';
-import { Loader2, Trash2, Download, FileText, AlertCircle } from 'lucide-react';
+import { Loader2, Trash2, Download, FileText } from 'lucide-react';
 import { DashboardLayout } from '@/components/DashboardLayout';
-
-function DeleteButton({ fileId }: { fileId: string }) {
-  const { pending } = useFormStatus();
-  
-  return (
-    <button
-      type="submit"
-      disabled={pending}
-      className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors disabled:opacity-50"
-      title="削除"
-    >
-      {pending ? (
-        <Loader2 className="w-5 h-5 animate-spin" />
-      ) : (
-        <Trash2 className="w-5 h-5" />
-      )}
-    </button>
-  );
-}
-
-function DownloadButton() {
-  const { pending } = useFormStatus();
-  
-  return (
-    <button
-      type="submit"
-      disabled={pending}
-      className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors disabled:opacity-50"
-      title="ダウンロード"
-    >
-      {pending ? (
-        <Loader2 className="w-5 h-5 animate-spin" />
-      ) : (
-        <Download className="w-5 h-5" />
-      )}
-    </button>
-  );
-}
 
 interface FilesViewProps {
   userEmail: string;
   initialFiles: FileRecord[];
 }
 
-export default function FilesView({ userEmail, initialFiles }: FilesViewProps) {
+export default function FilesView({ initialFiles }: FilesViewProps) {
   const [files, setFiles] = useState<FileRecord[]>(initialFiles);
-  const [deleteState, deleteFormAction] = useActionState(deleteFileAction, null);
-  const [downloadState, downloadFormAction] = useActionState(downloadFileAction, null);
+  const [deletingFileId, setDeletingFileId] = useState<string | null>(null);
+  const [downloadingFileId, setDownloadingFileId] = useState<string | null>(null);
   
-  // ファイル削除時のOptimistic Update
-  const handleDeleteWithOptimistic = (fileId: string) => {
+  // ファイル削除時の処理
+  const handleDelete = useCallback(async (fileId: string) => {
     if (!confirm('このファイルを削除してもよろしいですか？')) {
       return;
     }
-    
-    // Optimistic update
-    setFiles(prevFiles => prevFiles.filter(f => f.id !== fileId));
-  };
+    setDeletingFileId(fileId);
+    try {
+      const response = await fetch(`/api/files/${fileId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      
+      if (response.ok) {
+        setFiles(prevFiles => prevFiles.filter(f => f.id !== fileId));
+      } else {
+        const data = await response.json();
+        alert(data.error || 'ファイルの削除に失敗しました');
+      }
+    } catch (error) {
+      alert('ファイルの削除中にエラーが発生しました');
+    } finally {
+      setDeletingFileId(null);
+    }
+  }, []);
+  
+  // ファイルダウンロード時の処理
+  const handleDownload = useCallback(async (fileId: string, fileType: 'original' | 'translated') => {
+    setDownloadingFileId(fileId);
+    try {
+      const response = await fetch(`/api/files/${fileId}/download?type=${fileType}`, {
+        method: 'GET',
+        credentials: 'include',
+      });
+      
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `file_${fileType}.pptx`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      } else {
+        const data = await response.json();
+        alert(data.error || 'ダウンロードに失敗しました');
+      }
+    } finally {
+      setDownloadingFileId(null);
+    }
+  }, []);
   
   // フォーマット関数
   const formatDate = (dateString: string) => {
@@ -91,20 +93,6 @@ export default function FilesView({ userEmail, initialFiles }: FilesViewProps) {
     return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
   };
   
-  // ダウンロード処理
-  const handleDownload = async (signedUrl: string, fileName: string) => {
-    const link = document.createElement('a');
-    link.href = signedUrl;
-    link.download = fileName;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-  
-  // ダウンロードURLが返ってきたら処理
-  if (downloadState?.success && downloadState.message) {
-    handleDownload(downloadState.message, 'download.pptx');
-  }
   
   return (
     <DashboardLayout>
@@ -120,23 +108,6 @@ export default function FilesView({ userEmail, initialFiles }: FilesViewProps) {
             新しいファイルをアップロード
           </Link>
         </div>
-
-        {/* エラーメッセージ */}
-        {deleteState?.error && (
-          <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-            <div className="flex items-center">
-              <AlertCircle className="w-5 h-5 mr-2 text-red-500" />
-              <p className="text-red-700 dark:text-red-300">{deleteState.error}</p>
-            </div>
-          </div>
-        )}
-        
-        {/* 成功メッセージ */}
-        {deleteState?.success && (
-          <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-            <p className="text-green-700 dark:text-green-300">{deleteState.message}</p>
-          </div>
-        )}
 
         {/* ファイル一覧 */}
         {files.length === 0 ? (
@@ -156,7 +127,7 @@ export default function FilesView({ userEmail, initialFiles }: FilesViewProps) {
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                      {file.original_filename || file.filename}
+                      {file.original_name || file.filename}
                     </h3>
                     <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
                       <span>{formatFileSize(file.file_size)}</span>
@@ -177,42 +148,61 @@ export default function FilesView({ userEmail, initialFiles }: FilesViewProps) {
                          file.status === 'failed' ? '失敗' : 'アップロード済み'}
                       </span>
                     </div>
-                    {file.translation_result?.error && (
+                    {file.extracted_data?.error && (
                       <p className="mt-2 text-sm text-red-600 dark:text-red-400">
-                        エラー: {file.translation_result.error}
+                        エラー: {file.extracted_data.error}
                       </p>
                     )}
                   </div>
                   <div className="flex items-center gap-2 ml-4">
                     {/* ダウンロードボタン */}
-                    <form action={downloadFormAction}>
-                      <input type="hidden" name="fileId" value={file.id} />
-                      <input type="hidden" name="fileType" value="original" />
-                      <DownloadButton />
-                    </form>
+                    <button
+                      onClick={() => handleDownload(file.id, 'original')}
+                      disabled={downloadingFileId === file.id}
+                      className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                    >
+                      {downloadingFileId === file.id ? (
+                        <span className="flex items-center">
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          ダウンロード中...
+                        </span>
+                      ) : (
+                        <span className="flex items-center">
+                          <Download className="w-4 h-4 mr-2" />
+                          ダウンロード
+                        </span>
+                      )}
+                    </button>
                     
                     {/* 翻訳済みファイルのダウンロード */}
-                    {file.status === 'completed' && file.translation_result?.translated_path && (
-                      <form action={downloadFormAction}>
-                        <input type="hidden" name="fileId" value={file.id} />
-                        <input type="hidden" name="fileType" value="translated" />
-                        <button
-                          type="submit"
-                          className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors"
-                        >
-                          翻訳済み
-                        </button>
-                      </form>
+                    {file.status === 'completed' && file.extracted_data?.translated_path && (
+                      <button
+                        onClick={() => handleDownload(file.id, 'translated')}
+                        disabled={downloadingFileId === file.id}
+                        className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+                      >
+                        翻訳済み
+                      </button>
                     )}
                     
                     {/* 削除ボタン */}
-                    <form 
-                      action={deleteFormAction}
-                      onSubmit={() => handleDeleteWithOptimistic(file.id)}
+                    <button
+                      onClick={() => handleDelete(file.id)}
+                      disabled={deletingFileId === file.id}
+                      className="px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
                     >
-                      <input type="hidden" name="fileId" value={file.id} />
-                      <DeleteButton fileId={file.id} />
-                    </form>
+                      {deletingFileId === file.id ? (
+                        <span className="flex items-center">
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          削除中...
+                        </span>
+                      ) : (
+                        <span className="flex items-center">
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          削除
+                        </span>
+                      )}
+                    </button>
                   </div>
                 </div>
               </div>

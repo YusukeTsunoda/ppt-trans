@@ -1,53 +1,29 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
-import { createClient } from '@/lib/supabase/client';
-import { useRouter } from 'next/navigation';
 
-export default function HomePage() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const router = useRouter();
-  
-  useEffect(() => {
-    const checkAuth = async () => {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setIsLoggedIn(true);
-      }
-    };
-    checkAuth();
-  }, []);
-
-  if (isLoggedIn) {
-    router.push('/dashboard');
-    return null;
-  }
-
+export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen gradient-bg animate-fadeIn">
       {/* ナビゲーションバー */}
-      <nav className="bg-white border-b border-slate-200">
+      <nav className="bg-white shadow-sm border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
-              <h1 className="text-xl font-heading font-bold text-blue-600">
-                PowerPoint Translator
-              </h1>
+              <h1 className="text-2xl font-bold text-blue-600">PPT Translator</h1>
             </div>
             <div className="flex items-center space-x-4">
               <Link
                 href="/login"
-                className="text-slate-700 hover:text-blue-600 font-medium transition-all duration-200"
+                className="text-slate-700 hover:text-blue-600 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200"
               >
                 ログイン
               </Link>
               <Link
                 href="/register"
-                className="btn-primary"
+                className="btn-primary text-sm inline-block"
               >
-                新規登録
+                無料で始める
               </Link>
             </div>
           </div>
@@ -55,215 +31,169 @@ export default function HomePage() {
       </nav>
 
       {/* ヒーローセクション */}
-      <section className="relative overflow-hidden">
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20 lg:py-24 relative">
-            <div className="text-center animate-fadeIn">
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-heading font-bold mb-4 sm:mb-6">
-                PowerPointを
-                <span className="text-emerald-400 block sm:inline"> 瞬時に翻訳</span>
-              </h2>
-              <p className="text-base sm:text-lg lg:text-xl text-blue-100 mb-6 sm:mb-8 max-w-2xl mx-auto font-body px-4">
-                AI搭載の高精度翻訳で、プレゼンテーション資料を
-                世界中の言語に簡単変換。レイアウトも保持します。
-              </p>
-              <div className="flex flex-col sm:flex-row justify-center gap-4 px-4">
-                <Link
-                  href="/login"
-                  className="bg-white text-blue-600 hover:bg-slate-50 px-6 sm:px-8 py-3 sm:py-4 rounded-lg font-heading font-bold text-base sm:text-lg transition-all duration-200 shadow-lg hover:shadow-xl"
-                >
-                  今すぐ始める
-                </Link>
-                <Link
-                  href="#features"
-                  className="bg-blue-500 text-white hover:bg-blue-400 px-6 sm:px-8 py-3 sm:py-4 rounded-lg font-heading font-bold text-base sm:text-lg transition-all duration-200"
-                >
-                  機能を見る
-                </Link>
-              </div>
-            </div>
-            
-            {/* 装飾的な要素 */}
-            <div className="absolute -bottom-10 -right-10 w-24 sm:w-32 lg:w-40 h-24 sm:h-32 lg:h-40 bg-blue-500 rounded-full opacity-20 animate-pulse"></div>
-            <div className="absolute -top-10 -left-10 w-20 sm:w-24 lg:w-32 h-20 sm:h-24 lg:h-32 bg-emerald-500 rounded-full opacity-20 animate-pulse"></div>
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16">
+        <div className="text-center animate-slideUp">
+          <div className="inline-flex items-center px-4 py-2 rounded-full bg-blue-100 text-blue-700 text-sm font-medium mb-6">
+            <span className="animate-pulse mr-2">🚀</span>
+            AI搭載の高精度翻訳エンジン
+          </div>
+          <h2 className="text-5xl font-bold text-slate-900 mb-6">
+            PowerPointプレゼンテーションを
+            <br />
+            <span className="text-primary bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent">
+              瞬時に多言語翻訳
+            </span>
+          </h2>
+          <p className="text-xl text-slate-600 mb-8 max-w-3xl mx-auto">
+            AIを活用した高精度な翻訳で、グローバルなプレゼンテーションを簡単に作成。
+            レイアウトを保持したまま、わずか数分で翻訳が完了します。
+          </p>
+          <div className="flex justify-center space-x-4">
+            <Link
+              href="/register"
+              className="btn-primary transform transition hover:scale-105 inline-block"
+            >
+              無料で試してみる
+            </Link>
+            <Link
+              href="/login?demo=true"
+              className="btn-outline transform transition hover:scale-105 inline-block"
+            >
+              デモを見る
+            </Link>
           </div>
         </div>
       </section>
 
-      {/* 機能紹介セクション */}
-      <section id="features" className="py-12 sm:py-16 lg:py-20">
+      {/* 特徴セクション */}
+      <section className="bg-white py-16 border-t border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-8 sm:mb-12">
-            <h3 className="text-2xl sm:text-3xl font-heading font-bold text-slate-900 mb-3 sm:mb-4">
-              主な機能
-            </h3>
-            <p className="text-base sm:text-lg text-slate-600 font-body">
-              プロフェッショナルな翻訳を簡単に
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-            {/* 機能カード1 */}
-            <div className="card hover:shadow-lg transition-all duration-200 group">
-              <div className="flex flex-col items-center text-center">
-                <div className="w-16 h-16 bg-blue-100 rounded-lg flex items-center justify-center mb-4 group-hover:bg-blue-200 transition-all duration-200">
-                  <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                  </svg>
-                </div>
-                <h4 className="text-xl font-heading font-semibold text-slate-900 mb-2">
-                  簡単アップロード
-                </h4>
-                <p className="text-slate-600 font-body">
-                  ドラッグ&ドロップで簡単にPowerPointファイルをアップロード
-                </p>
+          <h3 className="text-3xl font-bold text-center text-slate-900 mb-12">
+            なぜPPT Translatorを選ぶのか？
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="card-hover text-center">
+              <div className="bg-blue-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
               </div>
+              <h4 className="text-xl font-semibold text-slate-900 mb-2">高速処理</h4>
+              <p className="text-slate-600">
+                最新のAI技術により、大量のスライドも数分で翻訳完了
+              </p>
             </div>
-
-            {/* 機能カード2 */}
-            <div className="card hover:shadow-lg transition-all duration-200 group">
-              <div className="flex flex-col items-center text-center">
-                <div className="w-16 h-16 bg-emerald-100 rounded-lg flex items-center justify-center mb-4 group-hover:bg-emerald-200 transition-all duration-200">
-                  <svg className="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
-                  </svg>
-                </div>
-                <h4 className="text-xl font-heading font-semibold text-slate-900 mb-2">
-                  AI高精度翻訳
-                </h4>
-                <p className="text-slate-600 font-body">
-                  Claude AIによる文脈を理解した自然な翻訳を実現
-                </p>
+            <div className="card-hover text-center">
+              <div className="bg-emerald-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
               </div>
+              <h4 className="text-xl font-semibold text-slate-900 mb-2">高精度</h4>
+              <p className="text-slate-600">
+                専門用語も正確に翻訳し、文脈を理解した自然な翻訳を提供
+              </p>
             </div>
-
-            {/* 機能カード3 */}
-            <div className="card hover:shadow-lg transition-all duration-200 group">
-              <div className="flex flex-col items-center text-center">
-                <div className="w-16 h-16 bg-slate-100 rounded-lg flex items-center justify-center mb-4 group-hover:bg-slate-200 transition-all duration-200">
-                  <svg className="w-8 h-8 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                </div>
-                <h4 className="text-xl font-heading font-semibold text-slate-900 mb-2">
-                  レイアウト保持
-                </h4>
-                <p className="text-slate-600 font-body">
-                  元のスライドデザインとレイアウトを完全に保持したまま翻訳
-                </p>
+            <div className="card-hover text-center">
+              <div className="bg-slate-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+                </svg>
               </div>
+              <h4 className="text-xl font-semibold text-slate-900 mb-2">レイアウト保持</h4>
+              <p className="text-slate-600">
+                元のデザインとフォーマットを維持したまま翻訳
+              </p>
             </div>
           </div>
         </div>
       </section>
 
       {/* 使い方セクション */}
-      <section className="py-12 sm:py-16 lg:py-20 bg-white">
+      <section className="gradient-bg py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-8 sm:mb-12">
-            <h3 className="text-2xl sm:text-3xl font-heading font-bold text-slate-900 mb-3 sm:mb-4">
-              簡単3ステップ
-            </h3>
-            <p className="text-base sm:text-lg text-slate-600 font-body">
-              誰でも簡単に使える直感的な操作
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
+          <h3 className="text-3xl font-bold text-center text-slate-900 mb-12">
+            簡単3ステップで翻訳完了
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="text-center">
-              <div className="text-4xl font-bold text-blue-600 mb-4">1</div>
-              <h4 className="text-xl font-heading font-semibold text-slate-900 mb-2">
-                ファイルをアップロード
-              </h4>
-              <p className="text-slate-600 font-body">
-                翻訳したいPowerPointファイルを選択
+              <div className="w-16 h-16 bg-blue-600 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4 shadow-lg">
+                1
+              </div>
+              <h4 className="text-xl font-semibold text-slate-900 mb-2">ファイルをアップロード</h4>
+              <p className="text-slate-600">
+                PowerPointファイル（.pptx）をドラッグ＆ドロップまたは選択してアップロード
               </p>
             </div>
             <div className="text-center">
-              <div className="text-4xl font-bold text-emerald-600 mb-4">2</div>
-              <h4 className="text-xl font-heading font-semibold text-slate-900 mb-2">
-                言語を選択
-              </h4>
-              <p className="text-slate-600 font-body">
-                翻訳先の言語を選択して翻訳開始
+              <div className="w-16 h-16 bg-blue-600 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4 shadow-lg">
+                2
+              </div>
+              <h4 className="text-xl font-semibold text-slate-900 mb-2">言語を選択</h4>
+              <p className="text-slate-600">
+                翻訳先の言語を選択し、翻訳オプションを設定
               </p>
             </div>
             <div className="text-center">
-              <div className="text-4xl font-bold text-slate-600 mb-4">3</div>
-              <h4 className="text-xl font-heading font-semibold text-slate-900 mb-2">
-                ダウンロード
-              </h4>
-              <p className="text-slate-600 font-body">
-                翻訳完了後、ファイルをダウンロード
+              <div className="w-16 h-16 bg-emerald-500 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4 shadow-lg">
+                3
+              </div>
+              <h4 className="text-xl font-semibold text-slate-900 mb-2">ダウンロード</h4>
+              <p className="text-slate-600">
+                翻訳が完了したファイルをダウンロードして完了
               </p>
             </div>
-          </div>
-
-          <div className="text-center mt-8 sm:mt-12">
-            <Link
-              href="/register"
-              className="btn-accent text-base sm:text-lg px-6 sm:px-8 py-3 sm:py-4 inline-block"
-            >
-              無料で始める
-            </Link>
           </div>
         </div>
       </section>
 
       {/* CTAセクション */}
-      <section className="py-12 sm:py-16 lg:py-20 bg-gradient-to-r from-blue-600 to-blue-700 text-white">
+      <section className="header-gradient py-16">
         <div className="max-w-4xl mx-auto text-center px-4">
-          <h3 className="text-2xl sm:text-3xl font-heading font-bold mb-3 sm:mb-4">
-            今すぐ始めませんか？
+          <h3 className="text-3xl font-bold text-white mb-4">
+            今すぐ始めましょう
           </h3>
-          <p className="text-base sm:text-lg lg:text-xl text-blue-100 mb-6 sm:mb-8 font-body">
-            登録は無料。クレジットカード不要で今すぐお試しいただけます。
+          <p className="text-xl text-blue-100 mb-8">
+            無料アカウントを作成して、最初の翻訳を試してみてください
           </p>
-          <div className="flex flex-col sm:flex-row justify-center gap-4">
+          <div className="flex justify-center space-x-4">
             <Link
               href="/register"
-              className="bg-white text-blue-600 hover:bg-slate-50 px-6 sm:px-8 py-3 sm:py-4 rounded-lg font-heading font-bold text-base sm:text-lg transition-all duration-200 shadow-lg hover:shadow-xl"
+              className="bg-white text-blue-600 hover:bg-slate-50 px-8 py-4 rounded-lg text-lg font-semibold shadow-lg transform transition hover:scale-105 inline-block"
             >
               無料アカウント作成
             </Link>
             <Link
               href="/login"
-              className="bg-blue-500 text-white hover:bg-blue-400 px-6 sm:px-8 py-3 sm:py-4 rounded-lg font-heading font-bold text-base sm:text-lg transition-all duration-200"
+              className="bg-blue-800 text-white hover:bg-blue-900 px-8 py-4 rounded-lg text-lg font-semibold shadow-lg transform transition hover:scale-105 inline-block"
             >
-              ログイン
+              ログインはこちら
             </Link>
           </div>
         </div>
       </section>
 
-      {/* フッター（開発環境情報） */}
-      <footer className="bg-slate-900 text-slate-400 py-8 sm:py-12">
+      {/* フッター */}
+      <footer className="bg-slate-900 text-white py-8 border-t border-slate-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
+          <div className="flex justify-between items-center">
             <div>
-              <h4 className="text-white font-heading font-semibold mb-3 sm:mb-4">
-                PowerPoint Translator
-              </h4>
-              <p className="text-sm font-body">
-                AI搭載の高精度PowerPoint翻訳サービス
+              <h4 className="text-lg font-semibold">PPT Translator</h4>
+              <p className="text-slate-400 text-sm mt-1">
+                © 2024 PPT Translator. All rights reserved.
               </p>
             </div>
-            <div>
-              <h4 className="text-white font-heading font-semibold mb-3 sm:mb-4">
-                開発環境情報
-              </h4>
-              <div className="space-y-1 text-xs sm:text-sm font-code">
-                <p>✅ Next.js 15.4.6: 動作中</p>
-                <p>✅ React 19.1.0: 設定済み</p>
-                <p>✅ TypeScript: 有効</p>
-                <p>✅ Tailwind CSS: 有効</p>
-                <p>✅ Supabase: 接続中</p>
-                <p>✅ Claude AI: 統合済み</p>
-              </div>
+            <div className="flex space-x-6">
+              <Link href="/terms" className="text-slate-400 hover:text-white text-sm transition-colors duration-200">
+                利用規約
+              </Link>
+              <Link href="/privacy" className="text-slate-400 hover:text-white text-sm transition-colors duration-200">
+                プライバシーポリシー
+              </Link>
+              <Link href="/contact" className="text-slate-400 hover:text-white text-sm transition-colors duration-200">
+                お問い合わせ
+              </Link>
             </div>
-          </div>
-          <div className="mt-6 sm:mt-8 pt-6 sm:pt-8 border-t border-slate-800 text-center text-xs sm:text-sm">
-            <p>&copy; 2025 PowerPoint Translator. All rights reserved.</p>
           </div>
         </div>
       </footer>

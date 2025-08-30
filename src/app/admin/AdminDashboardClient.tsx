@@ -4,10 +4,70 @@ import { useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { ja } from 'date-fns/locale';
 
+interface Stats {
+  totalUsers: number;
+  activeUsers: number;
+  totalFiles: number;
+  totalTranslations: number;
+  storageUsed: number;
+  activeSubscriptions: number;
+  overview?: {
+    totalUsers: number;
+    activeUsers: number;
+    totalFiles: number;
+    totalTranslations: number;
+    userGrowthRate?: number;
+  };
+  files?: {
+    totalFiles: number;
+    totalSize: number;
+    averageSize: number;
+    processingFiles: number;
+    fileGrowthRate?: number;
+  };
+  usage?: {
+    dailyActiveUsers: number;
+    weeklyActiveUsers: number;
+    monthlyActiveUsers: number;
+    totalTranslations?: number;
+  };
+}
+
+interface User {
+  id: string;
+  email: string;
+  name?: string;
+  role: string;
+  created_at: string;
+  last_sign_in_at?: string;
+  lastLoginAt?: string;
+  files_count?: number;
+  storage_used?: number;
+  isActive?: boolean;
+  _count?: {
+    files: number;
+    translations?: number;
+  };
+}
+
+interface Activity {
+  id: string;
+  user_id: string;
+  action: string;
+  details?: Record<string, unknown>;
+  targetType?: string;
+  created_at: string;
+  createdAt?: string;
+  user?: {
+    email: string;
+    name?: string;
+  };
+}
+
 interface AdminDashboardClientProps {
-  initialStats: any;
-  initialUsers: any[];
-  initialActivities: any[];
+  initialStats: Stats;
+  initialUsers: User[];
+  initialActivities: Activity[];
 }
 
 export default function AdminDashboardClient({
@@ -85,22 +145,15 @@ export default function AdminDashboardClient({
                 総ユーザー数
               </div>
               <div className="mt-2 text-3xl font-semibold text-foreground">
-                {initialStats.overview?.totalUsers || 0}
+                {initialStats.totalUsers || initialStats.overview?.totalUsers || 0}
               </div>
-              {initialStats.overview?.userGrowthRate !== undefined && (
-                <div className={`text-sm mt-1 ${
-                  initialStats.overview.userGrowthRate > 0 ? 'text-accent-600' : 'text-red-600'
-                }`}>
-                  {initialStats.overview.userGrowthRate > 0 ? '+' : ''}{initialStats.overview.userGrowthRate}%
-                </div>
-              )}
             </div>
             <div className="bg-white dark:bg-secondary-800 rounded-lg shadow p-6">
               <div className="text-sm font-medium text-secondary-500 dark:text-secondary-400">
                 アクティブユーザー
               </div>
               <div className="mt-2 text-3xl font-semibold text-foreground">
-                {initialStats.overview?.activeUsers || 0}
+                {initialStats.activeUsers || initialStats.overview?.activeUsers || 0}
               </div>
             </div>
             <div className="bg-white dark:bg-secondary-800 rounded-lg shadow p-6">
@@ -108,22 +161,15 @@ export default function AdminDashboardClient({
                 総ファイル数
               </div>
               <div className="mt-2 text-3xl font-semibold text-foreground">
-                {initialStats.files?.totalFiles || 0}
+                {initialStats.totalFiles || initialStats.files?.totalFiles || 0}
               </div>
-              {initialStats.files?.fileGrowthRate !== undefined && (
-                <div className={`text-sm mt-1 ${
-                  initialStats.files.fileGrowthRate > 0 ? 'text-accent-600' : 'text-red-600'
-                }`}>
-                  {initialStats.files.fileGrowthRate > 0 ? '+' : ''}{initialStats.files.fileGrowthRate}%
-                </div>
-              )}
             </div>
             <div className="bg-white dark:bg-secondary-800 rounded-lg shadow p-6">
               <div className="text-sm font-medium text-secondary-500 dark:text-secondary-400">
                 総翻訳数
               </div>
               <div className="mt-2 text-3xl font-semibold text-foreground">
-                {initialStats.usage?.totalTranslations || 0}
+                {initialStats.totalTranslations || initialStats.usage?.totalTranslations || 0}
               </div>
             </div>
           </div>
@@ -152,7 +198,7 @@ export default function AdminDashboardClient({
                 </tr>
               </thead>
               <tbody className="bg-white dark:bg-secondary-800 divide-y divide-secondary-200 dark:divide-secondary-700">
-                {initialUsers.map((user: any) => (
+                {initialUsers.map((user) => (
                   <tr key={user.id}>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
@@ -166,7 +212,7 @@ export default function AdminDashboardClient({
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        user.role === 'ADMIN' 
+                        user.role === 'admin' 
                           ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'
                           : 'bg-secondary-100 text-secondary-800 dark:bg-secondary-700 dark:text-secondary-300'
                       }`}>
@@ -206,7 +252,7 @@ export default function AdminDashboardClient({
               <h3 className="text-lg font-medium text-foreground">最近のアクティビティ</h3>
             </div>
             <ul className="divide-y divide-secondary-200 dark:divide-secondary-700">
-              {initialActivities.map((activity: any) => (
+              {initialActivities.map((activity) => (
                 <li key={activity.id} className="px-4 py-3">
                   <div className="flex items-center space-x-4">
                     <div className="flex-1 min-w-0">
@@ -214,14 +260,16 @@ export default function AdminDashboardClient({
                         {activity.user?.name || activity.user?.email || 'Unknown User'}
                       </p>
                       <p className="text-sm text-secondary-500 dark:text-secondary-400">
-                        {getActionLabel(activity.action)} - {activity.targetType || 'N/A'}
+                        {getActionLabel(activity.action)} - {(activity as any).description || activity.details?.description || ''}
                       </p>
                     </div>
                     <div className="text-sm text-secondary-500 dark:text-secondary-400">
-                      {formatDistanceToNow(new Date(activity.createdAt), { 
-                        addSuffix: true, 
-                        locale: ja 
-                      })}
+                      {activity.created_at 
+                        ? formatDistanceToNow(new Date(activity.created_at), { 
+                            addSuffix: true, 
+                            locale: ja 
+                          })
+                        : 'N/A'}
                     </div>
                   </div>
                 </li>

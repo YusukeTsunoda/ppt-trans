@@ -1,62 +1,78 @@
 import { defineConfig, devices } from '@playwright/test';
+import path from 'path';
+import dotenv from 'dotenv';
+import { projects, ciProjects } from './e2e/config/projects';
 
 /**
  * Playwright E2E Test Configuration
+ * ハイブリッドアプローチによる段階的テスト実行
  */
+
+// 環境変数の読み込み
+dotenv.config({ path: '.env.test' });
+dotenv.config({ path: '.env.local' });
+
+const isCI = !!process.env.CI;
+const isDevelopment = process.env.NODE_ENV === 'development';
+
+// ポート番号を環境変数から取得（デフォルト: 3000）
+const PORT = process.env.TEST_PORT || '3000';
+const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
+
 export default defineConfig({
   testDir: './e2e',
-  fullyParallel: false,
-  forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 2 : 1,
-  reporter: process.env.CI ? [['html'], ['list']] : 'list',
+  fullyParallel: !isDevelopment, // 開発時は順次実行、CI/本番では並列実行
+  forbidOnly: isCI,
+  retries: isCI ? 2 : 0,
+  workers: isCI ? 2 : 4, // 並列ワーカー数を環境に応じて調整
+  // globalSetupを一時的に無効化 - テストの独立性を確保するため
+  // globalSetup: './e2e/fixtures/global-setup.ts',
+  // Jest関連ファイルの明示的除外（クロスコンタミネーション防止）
+  testIgnore: [
+    '**/src/**/*.test.ts',
+    '**/src/**/*.test.tsx',
+    '**/jest.config.js',
+    '**/jest.setup.js',
+    '**/__tests__/**/*',
+    '**/node_modules/**/*'
+  ],
+  
+  // プロジェクト設定（環境に応じて切り替え）
+  projects: isCI ? ciProjects : projects,
+  
+  // レポーター設定
+  reporter: [
+    ['list'], // コンソール出力
+    ['html', { outputFolder: 'playwright-report', open: 'never' }],
+    ['json', { outputFile: 'test-results/results.json' }],
+    ['junit', { outputFile: 'test-results/junit.xml' }],
+    isCI ? ['github'] : null,
+  ].filter(Boolean) as any,
   
   use: {
-    baseURL: process.env.BASE_URL || 'http://localhost:3000',
-    trace: 'on-first-retry',
+    baseURL: BASE_URL,
+    trace: isCI ? 'on-first-retry' : 'retain-on-failure',
     screenshot: 'only-on-failure',
-    video: 'retain-on-failure',
-    actionTimeout: 15000,
-    navigationTimeout: 20000,
-    // カスタムヘッダーの追加（セキュリティテスト用）
+    video: isCI ? 'retain-on-failure' : 'on',
+    actionTimeout: 10 * 1000,
+    navigationTimeout: 30 * 1000,
+    // E2Eテスト実行中であることを示すマーカーを追加
     extraHTTPHeaders: {
-      'Accept': 'application/json, text/plain, */*',
-      'Accept-Language': 'ja,en-US;q=0.9,en;q=0.8',
+      'X-E2E-Test': 'true',
     },
   },
   
-  timeout: 60000,
+  timeout: 90000, // タイムアウトを延長（プロセス分離対応）
   expect: {
-    timeout: 10000,
+    timeout: 15000, // expectタイムアウトも延長
   },
 
-  projects: [
-    {
-      name: 'chromium',
-      use: { 
-        ...devices['Desktop Chrome'],
-        viewport: { width: 1920, height: 1080 },
-      },
-    },
-    {
-      name: 'mobile',
-      use: { 
-        ...devices['iPhone 13'],
-      },
-    },
-  ],
-
-  webServer: {
-    command: 'npm run dev',
-    url: 'http://localhost:3000',
-    reuseExistingServer: true,
-    timeout: 60 * 1000,
+  webServer: process.env.NO_DEV_SERVER ? undefined : {
+    command: `PORT=${PORT} npm run dev`,
+    url: BASE_URL,
+    reuseExistingServer: !process.env.CI,
+    timeout: 120 * 1000,  // 120秒
     stdout: 'pipe',
     stderr: 'pipe',
-    env: {
-      NODE_ENV: 'test',
-      NEXT_PUBLIC_SUPABASE_URL: 'http://127.0.0.1:54321',
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0',
-    },
   },
 });

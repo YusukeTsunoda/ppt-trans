@@ -5,10 +5,11 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { User } from '@supabase/supabase-js';
+import logger from '@/lib/logger';
 
 export function UserNav() {
   const [user, setUser] = useState<User | null>(null);
-  const [userRole, setUserRole] = useState<string>('USER');
+  const [userRole, setUserRole] = useState<string>('user');
   const [loading, setLoading] = useState(true);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const router = useRouter();
@@ -28,12 +29,10 @@ export function UserNav() {
             .eq('id', user.id)
             .single();
 
-          const roleValue = profile?.role || 'USER';
-          console.log('User role from profile:', roleValue);
-          setUserRole(roleValue);
+          setUserRole(profile?.role || 'user');
         }
       } catch (error) {
-        console.error('Auth check error:', error);
+        logger.error('Auth check error:', error);
       } finally {
         setLoading(false);
       }
@@ -52,9 +51,9 @@ export function UserNav() {
           .eq('id', session.user.id)
           .single();
 
-        setUserRole(profile?.role || 'USER');
+        setUserRole(profile?.role || 'user');
       } else {
-        setUserRole('USER');
+        setUserRole('user');
       }
       setLoading(false);
     });
@@ -97,7 +96,7 @@ export function UserNav() {
     );
   }
 
-  const isAdmin = userRole?.toLowerCase() === 'admin' || userRole?.toLowerCase() === 'super_admin';
+  const isAdmin = userRole === 'admin';
 
   return (
     <div className="relative">

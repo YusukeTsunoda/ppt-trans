@@ -10,8 +10,8 @@ export const ALLOWED_MIME_TYPES = {
 export const ALLOWED_MIME_TYPES_ARRAY = Object.values(ALLOWED_MIME_TYPES);
 
 export const FILE_SIZE_LIMITS = {
-  MAX_FILE_SIZE: 50 * 1024 * 1024, // 50MB
-  MAX_FILE_SIZE_LABEL: '50MB',
+  MAX_FILE_SIZE: 100 * 1024 * 1024, // 100MB
+  MAX_FILE_SIZE_LABEL: '100MB',
 } as const;
 
 export const FILE_EXTENSIONS = {

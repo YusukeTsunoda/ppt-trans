@@ -143,6 +143,54 @@ const nextConfig = {
     // Critical dependency警告の抑制
     config.module.exprContextCritical = false;
     
+    // チャンク分割の最適化（クライアントサイドのみ）
+    if (!isServer && !dev) {
+      config.optimization.splitChunks = {
+        chunks: 'all',
+        cacheGroups: {
+          default: false,
+          vendors: false,
+          // フレームワーク
+          framework: {
+            name: 'framework',
+            chunks: 'all',
+            test: /[\\/]node_modules[\\/](react|react-dom|next)[\\/]/,
+            priority: 40,
+            enforce: true,
+          },
+          // ベンダーライブラリ
+          vendor: {
+            name: 'vendor',
+            chunks: 'all',
+            test: /[\\/]node_modules[\\/]/,
+            priority: 30,
+          },
+          // UIコンポーネント
+          ui: {
+            name: 'ui',
+            test: /[\\/]src[\\/]components[\\/]ui[\\/]/,
+            chunks: 'all',
+            priority: 25,
+            reuseExistingChunk: true,
+          },
+          // 共通コンポーネント
+          commons: {
+            name: 'commons',
+            minChunks: 2,
+            chunks: 'all',
+            priority: 20,
+            reuseExistingChunk: true,
+            enforce: true,
+          },
+        },
+      };
+      
+      // ランタイムチャンクを分離
+      config.optimization.runtimeChunk = {
+        name: 'runtime',
+      };
+    }
+    
     // Prisma/OpenTelemetryの警告を完全に抑制
     if (isServer) {
       config.externals.push({

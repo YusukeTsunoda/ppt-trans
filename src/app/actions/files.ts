@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { FileRecord } from '@/lib/data/files';
+import logger from '@/lib/logger';
 
 export interface FilesState {
   files?: FileRecord[];
@@ -11,11 +12,10 @@ export interface FilesState {
   message?: string;
 }
 
-// Server Action for deleting a file
-export async function deleteFileAction(
-  prevState: FilesState | null,
-  formData: FormData
-): Promise<FilesState> {
+// Server Action for deleting a file（改善版：直接引数を受け取る）
+export async function deleteFileAction(fileId: string): Promise<FilesState> {
+  'use server';
+  
   const supabase = await createClient();
   
   try {
@@ -25,8 +25,6 @@ export async function deleteFileAction(
     if (userError || !user) {
       return { error: 'Unauthorized' };
     }
-    
-    const fileId = formData.get('fileId') as string;
     
     if (!fileId) {
       return { error: 'File ID is required' };
@@ -41,24 +39,40 @@ export async function deleteFileAction(
       .single();
     
     if (fileError || !file) {
-      return { error: 'File not found' };
+      logger.error('File not found:', { fileId, userId: user.id, error: fileError });
+      return { error: 'ファイルが見つかりません' };
     }
     
-    // ストレージからファイルを削除
-    const { error: storageError } = await supabase.storage
-      .from('uploads')
-      .remove([file.storage_path]);
+    // ストレージパスを決定（file_path または filename）
+    const storagePath = file.file_path || file.filename;
     
-    if (storageError) {
-      console.error('Storage deletion error:', storageError);
-      // Continue with database deletion even if storage fails
+    if (storagePath) {
+      // ストレージからファイルを削除
+      const { error: storageError } = await supabase.storage
+        .from('uploads')
+        .remove([storagePath]);
+      
+      if (storageError) {
+        logger.error('Storage deletion error:', { 
+          path: storagePath, 
+          error: storageError 
+        });
+        // ストレージ削除が失敗してもデータベース削除は続行
+      }
     }
     
     // 翻訳済みファイルがあれば削除
-    if (file.translation_result?.translated_path) {
-      await supabase.storage
+    if (file.extracted_data?.translated_path) {
+      const { error: translatedStorageError } = await supabase.storage
         .from('uploads')
-        .remove([file.translation_result.translated_path]);
+        .remove([file.extracted_data.translated_path]);
+        
+      if (translatedStorageError) {
+        logger.error('Translated file deletion error:', { 
+          path: file.extracted_data.translated_path,
+          error: translatedStorageError 
+        });
+      }
     }
     
     // データベースから削除
@@ -69,26 +83,32 @@ export async function deleteFileAction(
       .eq('user_id', user.id);
     
     if (deleteError) {
-      return { error: 'Failed to delete file' };
+      logger.error('Database deletion error:', { 
+        fileId,
+        error: deleteError 
+      });
+      return { error: 'ファイルの削除に失敗しました' };
     }
     
     revalidatePath('/files');
     
     return { 
       success: true, 
-      message: 'File deleted successfully' 
+      message: 'ファイルを削除しました' 
     };
   } catch (error) {
-    console.error('Delete error:', error);
+    logger.error('Delete error:', error);
     return { error: 'An unexpected error occurred' };
   }
 }
 
-// Server Action for downloading a file
+// Server Action for downloading a file（改善版：直接引数を受け取る）
 export async function downloadFileAction(
-  prevState: FilesState | null,
-  formData: FormData
+  fileId: string,
+  fileType: 'original' | 'translated'
 ): Promise<FilesState> {
+  'use server';
+  
   const supabase = await createClient();
   
   try {
@@ -97,9 +117,6 @@ export async function downloadFileAction(
     if (userError || !user) {
       return { error: 'Unauthorized' };
     }
-    
-    const fileId = formData.get('fileId') as string;
-    const fileType = formData.get('fileType') as 'original' | 'translated';
     
     if (!fileId || !fileType) {
       return { error: 'Invalid parameters' };
@@ -118,8 +135,8 @@ export async function downloadFileAction(
     }
     
     const path = fileType === 'original' 
-      ? file.storage_path 
-      : file.translation_result?.translated_path;
+      ? file.file_path || file.filename
+      : file.extracted_data?.translated_path;
     
     if (!path) {
       return { error: 'File path not found' };
@@ -139,7 +156,7 @@ export async function downloadFileAction(
       message: urlData.signedUrl
     };
   } catch (error) {
-    console.error('Download error:', error);
+    logger.error('Download error:', error);
     return { error: 'An unexpected error occurred' };
   }
 }

@@ -3,6 +3,7 @@
  */
 
 import logger from '@/lib/logger';
+import type { CacheEntry, CacheStats, JsonValue } from '@/types/memory';
 
 interface MemoryInfo {
   used: number;        // 使用中メモリ (MB)
@@ -25,9 +26,14 @@ class MemoryManager {
     emergency: 95,
   };
 
-  private cache = new Map<string, { data: any; timestamp: number; size: number }>();
+  private cache = new Map<string, CacheEntry<JsonValue>>();
   private maxCacheSize = 50 * 1024 * 1024; // 50MB
   private currentCacheSize = 0;
+  
+  // 統計追跡用
+  private cacheHits = 0;
+  private cacheMisses = 0;
+  private evictionCount = 0;
 
   private constructor() {
     // 定期的なメモリ監視（30秒間隔）
@@ -134,7 +140,7 @@ class MemoryManager {
   /**
    * キャッシュにデータを保存
    */
-  public setCache(key: string, data: any, ttlMs: number = 10 * 60 * 1000): void {
+  public setCache(key: string, data: JsonValue, ttlMs: number = 10 * 60 * 1000): void {
     const dataStr = JSON.stringify(data);
     const size = Buffer.byteLength(dataStr, 'utf8');
 
@@ -150,8 +156,12 @@ class MemoryManager {
     }
 
     this.cache.set(key, {
-      data,
-      timestamp: Date.now() + ttlMs,
+      key,
+      value: data,
+      timestamp: Date.now(),
+      ttl: ttlMs,
+      accessCount: 0,
+      lastAccessed: Date.now(),
       size,
     });
 
@@ -161,18 +171,24 @@ class MemoryManager {
   /**
    * キャッシュからデータを取得
    */
-  public getCache(key: string): any | null {
+  public getCache<T extends JsonValue = JsonValue>(key: string): T | null {
     const entry = this.cache.get(key);
     if (!entry) return null;
 
     // 有効期限をチェック
-    if (Date.now() > entry.timestamp) {
+    const now = Date.now();
+    const expiryTime = entry.timestamp + (entry.ttl || 0);
+    if (now > expiryTime) {
       this.currentCacheSize -= entry.size;
       this.cache.delete(key);
       return null;
     }
 
-    return entry.data;
+    // アクセス統計を更新
+    entry.accessCount++;
+    entry.lastAccessed = now;
+
+    return entry.value as T;
   }
 
   /**
@@ -183,22 +199,27 @@ class MemoryManager {
     const now = Date.now();
 
     // 期限切れのエントリを削除
-    const expiredEntries = entries.filter(([, entry]) => now > entry.timestamp);
+    const expiredEntries = entries.filter(([, entry]) => {
+      const expiryTime = entry.timestamp + (entry.ttl || 0);
+      return now > expiryTime;
+    });
     for (const [key, entry] of expiredEntries) {
       this.currentCacheSize -= entry.size;
       this.cache.delete(key);
+      this.evictionCount++;
     }
 
     // 必要に応じて古いエントリを追加削除
     if (ratio < 1.0) {
       const remainingEntries = Array.from(this.cache.entries());
-      const sortedEntries = remainingEntries.sort(([, a], [, b]) => a.timestamp - b.timestamp);
+      const sortedEntries = remainingEntries.sort(([, a], [, b]) => a.lastAccessed - b.lastAccessed);
       const deleteCount = Math.floor(sortedEntries.length * ratio);
 
       for (let i = 0; i < deleteCount; i++) {
         const [key, entry] = sortedEntries[i];
         this.currentCacheSize -= entry.size;
         this.cache.delete(key);
+        this.evictionCount++;
       }
     }
 
@@ -276,15 +297,19 @@ class MemoryManager {
   /**
    * メモリ使用量の統計情報を取得
    */
-  public getMemoryStats(): any {
+  public getMemoryStats(): { memory: MemoryInfo; cache: CacheStats; thresholds: MemoryThresholds } {
     const info = this.getMemoryInfo();
     
     return {
       memory: info,
       cache: {
-        entries: this.cache.size,
-        sizeMB: Math.round(this.currentCacheSize / 1024 / 1024 * 100) / 100,
-        maxSizeMB: Math.round(this.maxCacheSize / 1024 / 1024 * 100) / 100,
+        totalEntries: this.cache.size,
+        memoryUsage: Math.round(this.currentCacheSize / 1024 / 1024 * 100) / 100,
+        hitRate: this.cacheHits > 0 ? this.cacheHits / (this.cacheHits + this.cacheMisses) : 0,
+        missRate: this.cacheMisses > 0 ? this.cacheMisses / (this.cacheHits + this.cacheMisses) : 0,
+        evictionCount: this.evictionCount,
+        oldestEntry: this.cache.size > 0 ? Math.min(...Array.from(this.cache.values()).map(e => e.lastAccessed)) : 0,
+        newestEntry: this.cache.size > 0 ? Math.max(...Array.from(this.cache.values()).map(e => e.lastAccessed)) : 0,
       },
       thresholds: this.thresholds,
     };

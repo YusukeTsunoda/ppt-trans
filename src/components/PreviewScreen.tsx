@@ -1,22 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import type { ProcessingResult, SlideData } from '@/types';
 import { getSettings } from '@/lib/settings';
 import { updateHistoryItem } from '@/lib/history';
 import { useResponsive } from '@/hooks/useResponsive';
+import logger from '@/lib/logger';
+import { fetchWithCSRF } from '@/hooks/useCSRF';
 
-// CSSアニメーションをグローバルスタイルとして追加
-const globalStyles = `
-  @keyframes pulse {
-    0%, 100% {
-      opacity: 1;
-    }
-    50% {
-      opacity: 0.5;
-    }
-  }
-`;
+// CSSアニメーションスタイル
+// Next.jsではCSS ModulesまたはCSS-in-JSを使用するため、
+// インラインスタイルとして定義
 
 interface PreviewScreenProps {
   data: ProcessingResult;
@@ -109,7 +103,7 @@ export function PreviewScreen({ data, onBack, onDataUpdate, historyId }: Preview
         const batch = batches[i];
         
         // API Route経由で翻訳
-        const response = await fetch('/api/translate/batch-simple', {
+        const response = await fetchWithCSRF('/api/translate/batch-simple', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -179,7 +173,7 @@ export function PreviewScreen({ data, onBack, onDataUpdate, historyId }: Preview
       }
 
     } catch (err) {
-      console.error('Translation error:', err);
+      logger.error('Translation error:', err);
       const errorMessage = err instanceof Error ? err.message : '翻訳中にエラーが発生しました。';
       setError(errorMessage);
     } finally {
@@ -293,10 +287,10 @@ export function PreviewScreen({ data, onBack, onDataUpdate, historyId }: Preview
         }))
       };
 
-      console.log('Generating translated PPTX...', requestData);
+      logger.debug('Generating translated PPTX...', { requestData });
 
       // API Route経由でPPTXファイルを生成
-      const response = await fetch('/api/generate/pptx', {
+      const response = await fetchWithCSRF('/api/generate/pptx', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -310,7 +304,7 @@ export function PreviewScreen({ data, onBack, onDataUpdate, historyId }: Preview
         throw new Error(result.error || 'PPTXファイルの生成に失敗しました');
       }
 
-      console.log('PPTX generation result:', result);
+      logger.debug('PPTX generation result:', { result });
 
       // ダウンロード処理
       if (result.downloadUrl) {
@@ -340,7 +334,10 @@ export function PreviewScreen({ data, onBack, onDataUpdate, historyId }: Preview
             return;
           }
         } catch (corsError) {
-          console.log('Direct download failed, trying fallback method...', corsError);
+          logger.debug('Direct download failed, trying fallback method...', {
+            error: corsError instanceof Error ? corsError.message : String(corsError),
+            stack: corsError instanceof Error ? corsError.stack : undefined
+          });
         }
         
         // CORS エラーの場合はリンククリックでダウンロード
@@ -366,7 +363,7 @@ export function PreviewScreen({ data, onBack, onDataUpdate, historyId }: Preview
       }
       
     } catch (error) {
-      console.error('Download error:', error);
+      logger.error('Download error:', error);
       setError(`ダウンロードに失敗しました: ${error instanceof Error ? error.message : '不明なエラー'}`);
     } finally {
       setIsDownloading(false);
@@ -376,7 +373,16 @@ export function PreviewScreen({ data, onBack, onDataUpdate, historyId }: Preview
 
   return (
     <>
-      <style dangerouslySetInnerHTML={{ __html: globalStyles }} />
+      <style jsx>{`
+        @keyframes pulse {
+          0%, 100% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.5;
+          }
+        }
+      `}</style>
       <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
       <div className="container mx-auto px-4 py-6 max-w-7xl">
         {/* ヘッダー */}
@@ -636,7 +642,7 @@ export function PreviewScreen({ data, onBack, onDataUpdate, historyId }: Preview
                         if (text.id !== highlightedTextId) return null;
                         
                         // デバッグ用ログ
-                        console.log('Highlighting text:', text.id, 'Position:', text.position);
+                        logger.debug('Highlighting text:', { id: text.id, position: text.position });
                         
                         // PowerPointのデフォルトスライドサイズ（ポイント単位）
                         // 標準的な16:9スライド: 幅960pt x 高さ540pt

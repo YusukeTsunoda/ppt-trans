@@ -1,51 +1,101 @@
-import { createClient } from '@supabase/supabase-js';
-import * as dotenv from 'dotenv';
+import { chromium } from '@playwright/test';
+import dotenv from 'dotenv';
+import path from 'path';
 
-dotenv.config();
+// Load environment variables
+dotenv.config({ path: path.resolve(process.cwd(), '.env.test') });
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+const testUserEmail = process.env.TEST_USER_EMAIL || 'test@example.com';
+const testUserPassword = process.env.TEST_USER_PASSWORD || 'Test123';
 
 async function testLogin() {
-  console.log('=========================================');
-  console.log('ログインテスト');
-  console.log('=========================================\n');
+  console.log('🚀 ログインテストを開始...');
+  console.log(`📧 Email: ${testUserEmail}`);
+  console.log(`🔑 Password: ${testUserPassword.replace(/./g, '*')}`);
+  console.log(`🌐 URL: http://localhost:3000`);
 
-  const testAccounts = [
-    { email: 'admin@example.com', password: 'Admin123!', role: 'admin' },
-    { email: 'user1@example.com', password: 'User123!', role: 'user' },
-  ];
+  const browser = await chromium.launch({ headless: false });
+  const context = await browser.newContext();
+  const page = await context.newPage();
 
-  for (const account of testAccounts) {
-    console.log(`\n📧 テスト: ${account.email}`);
-    console.log(`🔐 パスワード: ${account.password}`);
+  try {
+    // Navigate to login page
+    console.log('📍 ログインページへ移動中...');
+    await page.goto('http://localhost:3000/login');
     
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: account.email,
-      password: account.password,
-    });
-
-    if (error) {
-      console.error(`❌ ログイン失敗:`, error.message);
-      console.error(`   エラーコード: ${error.code}`);
-      console.error(`   ステータス: ${error.status}`);
-    } else {
-      console.log(`✅ ログイン成功!`);
-      console.log(`   ユーザーID: ${data.user?.id}`);
-      console.log(`   メールアドレス: ${data.user?.email}`);
-      console.log(`   ロール: ${data.user?.user_metadata?.role || account.role}`);
+    // Wait for page to load
+    await page.waitForLoadState('networkidle');
+    
+    // Take screenshot
+    await page.screenshot({ path: 'test-login-page.png' });
+    console.log('📸 スクリーンショット保存: test-login-page.png');
+    
+    // Find and fill email
+    console.log('📝 メールアドレスを入力中...');
+    const emailInput = page.locator('input[type="email"]');
+    await emailInput.waitFor({ state: 'visible', timeout: 5000 });
+    await emailInput.fill(testUserEmail);
+    
+    // Find and fill password
+    console.log('🔑 パスワードを入力中...');
+    const passwordInput = page.locator('input[type="password"]');
+    await passwordInput.waitFor({ state: 'visible', timeout: 5000 });
+    await passwordInput.fill(testUserPassword);
+    
+    // Take screenshot before submit
+    await page.screenshot({ path: 'test-login-filled.png' });
+    console.log('📸 入力後のスクリーンショット: test-login-filled.png');
+    
+    // Click login button
+    console.log('🖱️ ログインボタンをクリック...');
+    const submitButton = page.locator('button[type="submit"]').first();
+    await submitButton.click();
+    
+    // Wait for navigation or error
+    console.log('⏳ 結果を待機中...');
+    
+    try {
+      // Wait for either success (navigation) or error message
+      await Promise.race([
+        page.waitForURL('**/dashboard', { timeout: 10000 }),
+        page.waitForURL('**/upload', { timeout: 10000 }),
+        page.locator('text=/エラー|失敗|正しくありません/i').waitFor({ state: 'visible', timeout: 10000 })
+      ]);
       
-      // ログアウト
-      await supabase.auth.signOut();
-      console.log(`   ログアウトしました`);
+      const currentUrl = page.url();
+      console.log(`📍 現在のURL: ${currentUrl}`);
+      
+      if (currentUrl.includes('dashboard') || currentUrl.includes('upload')) {
+        console.log('✅ ログイン成功！');
+      } else {
+        console.log('❌ ログインは完了しましたが、予期しないページです');
+      }
+    } catch (error) {
+      console.log('⚠️  タイムアウトまたはエラー');
+      
+      // Check for error messages
+      const errorMessages = await page.locator('[role="alert"], .text-red-700, .text-red-400').allTextContents();
+      if (errorMessages.length > 0) {
+        console.log('❌ エラーメッセージ:');
+        errorMessages.forEach(msg => console.log(`   - ${msg}`));
+      }
     }
+    
+    // Final screenshot
+    await page.screenshot({ path: 'test-login-result.png' });
+    console.log('📸 最終スクリーンショット: test-login-result.png');
+    
+  } catch (error) {
+    console.error('❌ テストエラー:', error);
+  } finally {
+    // Keep browser open for inspection
+    console.log('⏸️  ブラウザを開いたままにします。Ctrl+Cで終了してください。');
+    await new Promise(() => {}); // Keep running
   }
-
-  console.log('\n=========================================');
-  console.log('テスト完了');
-  console.log('=========================================');
 }
 
-testLogin().catch(console.error);
+// Run the test
+testLogin().catch(error => {
+  console.error('❌ スクリプトエラー:', error);
+  process.exit(1);
+});
