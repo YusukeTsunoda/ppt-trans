@@ -12,8 +12,9 @@ const supabase = createClient(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id: fileId } = await params;
   // セキュリティチェックを追加
   const securityCheck = await performSecurityChecks(request, {
     csrf: true,
@@ -41,8 +42,6 @@ export async function DELETE(
       logger.warn('Unauthorized file deletion attempt', { requestId });
       return createErrorResponse('認証が必要です', 401, undefined, requestId);
     }
-    
-    const fileId = params.id;
     
     if (!fileId) {
       return NextResponse.json({ error: 'File ID is required' }, { status: 400 });

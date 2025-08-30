@@ -49,8 +49,8 @@ export async function GET(request: NextRequest) {
   });
 }
 
-// Helper function to send progress updates
-export function sendProgressUpdate(fileId: string, progress: any) {
+// Helper function to send progress updates (internal use only)
+function sendProgressUpdate(fileId: string, progress: any) {
   const controller = progressStreams.get(fileId);
   if (controller) {
     try {

@@ -82,14 +82,20 @@ export default async function FilesPage() {
       mime_type,
       storage_path,
       status,
-      translation_result,
+      extracted_data,
       created_at,
       updated_at
     `)
     .eq('user_id', user.id)
     .order('created_at', { ascending: false });
 
-  const userFiles = files || [];
+  // Map database columns to FileRecord type
+  const userFiles = (files || []).map(file => ({
+    ...file,
+    original_name: file.original_filename,
+    file_path: file.storage_path,
+    extracted_data: file.extracted_data || {}
+  }));
 
   return (
     <div className="min-h-screen bg-slate-50">
