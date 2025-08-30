@@ -7,7 +7,7 @@ import { ErrorCodes, type ErrorCode } from '@/lib/errors/ErrorCodes';
 import { ErrorStatusMap } from '@/lib/errors/ErrorStatusMap';
 import logger from '@/lib/logger';
 import type { JsonObject } from '@/types/common';
-import { fetchWithCSRF } from '@/lib/security/csrf';
+import { fetchWithCSRF } from '@/lib/security/csrf-client';
 
 interface ErrorDetailModalProps {
   error: Error | AppError;

@@ -5,7 +5,7 @@ import { AppError } from '@/lib/errors/AppError';
 import { ErrorCodes } from '@/lib/errors/ErrorCodes';
 import logger from '@/lib/logger';
 import { getErrorMessageObject } from '@/lib/errors/ErrorMessages';
-import { fetchWithCSRF } from '@/lib/security/csrf';
+import { fetchWithCSRF } from '@/lib/security/csrf-client';
 
 interface Props {
   children: ReactNode;
