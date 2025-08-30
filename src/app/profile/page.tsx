@@ -31,5 +31,5 @@ export default async function ProfilePage() {
   // プロフィール情報を取得（通常の関数として）
   const profile = await getUserProfile(user.id);
   
-  return <ProfileClient />;
+  return <ProfileClient user={user} />;
 }

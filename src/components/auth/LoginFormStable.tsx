@@ -36,7 +36,7 @@ export default function LoginFormStable() {
         // エラー時
         setState({
           isLoading: false,
-          error: result.message || 'ログインに失敗しました',
+          error: result.error || 'ログインに失敗しました',
         });
       }
       

@@ -233,10 +233,8 @@ export default function DashboardView({ userEmail, initialFiles }: DashboardView
   }, [supabase]);
 
   const handleLogout = async () => {
-    const result = await logoutAction();
-    if (result.success) {
-      router.push('/login');
-    }
+    await logoutAction();
+    // logoutAction already redirects to /login
   };
 
   const handleDeleteFile = async (fileId: string) => {

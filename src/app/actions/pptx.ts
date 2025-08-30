@@ -335,9 +335,9 @@ export async function applyTranslationsAction(
       );
       
       pythonResult = { stdout, stderr, success: true };
-      logger.info('Python script output:', stdout?.substring(0, 200) || '');
+      logger.info('Python script output:', { output: stdout?.substring(0, 200) || '' });
       if (stderr) {
-        logger.warn('Python script stderr:', stderr);
+        logger.warn('Python script stderr:', { stderr });
       }
     } catch (error: any) {
       logger.error('Python script error:', error);
