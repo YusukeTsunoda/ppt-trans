@@ -33,58 +33,117 @@
   }
 }
 
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    @apply bg-background text-foreground;
+  }
+  body {
+    @apply bg-background text-foreground min-h-screen;
+    font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+  }
+  
+  /* React 19ハイドレーション問題の対処 */
+  #__next {
+    @apply min-h-screen bg-background text-foreground;
+  }
+  
+  /* Ensure proper background and text colors */
+  .bg-background {
+    background-color: hsl(var(--background)) !important;
+  }
+  
+  .text-foreground {
+    color: hsl(var(--foreground)) !important;
+  }
+}
+
+/* Design.md準拠のプロフェッショナル・ブルー系デザインシステム */
 @layer components {
-  /* Button Styles */
+  /* ボタン - プライマリ (Design.md準拠) */
   .btn-primary {
-    @apply bg-blue-600 text-white hover:bg-blue-700 px-6 py-3 rounded-lg font-semibold transition-all duration-200 shadow-sm hover:shadow-md;
+    @apply bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md;
   }
 
+  /* ボタン - セカンダリ (Design.md準拠) */
   .btn-secondary {
-    @apply bg-slate-100 text-slate-700 hover:bg-slate-200 px-6 py-3 rounded-lg font-semibold transition-all duration-200 border border-slate-200;
+    @apply bg-slate-100 text-slate-700 hover:bg-slate-200 px-4 py-2 rounded-lg transition-all duration-200;
   }
 
+  /* ボタン - アクセント (Design.md準拠) */
   .btn-accent {
-    @apply bg-emerald-500 text-white hover:bg-emerald-600 px-6 py-3 rounded-lg font-semibold transition-all duration-200 shadow-sm hover:shadow-md;
+    @apply bg-emerald-500 text-white hover:bg-emerald-600 px-4 py-2 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md;
   }
 
-  .btn-outline {
-    @apply border-2 border-blue-600 text-blue-600 hover:bg-blue-50 px-6 py-3 rounded-lg font-semibold transition-all duration-200;
-  }
-
-  /* Card Styles */
+  /* カード (Design.md準拠) */
   .card {
     @apply bg-white rounded-xl shadow-sm border border-slate-200 p-6 transition-all duration-200 hover:shadow-md;
   }
 
-  .card-hover {
-    @apply bg-white rounded-xl shadow-sm border border-slate-200 p-6 transition-all duration-200 hover:shadow-lg hover:border-blue-200;
-  }
-
-  /* Input Styles */
+  /* 入力フィールド (Design.md準拠) */
   .input {
-    @apply border border-slate-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white;
+    @apply border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200;
+  }
+  
+  /* 大きめの入力フィールド */
+  .input-field {
+    @apply border border-slate-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white;
   }
 
   .input-error {
     @apply border border-red-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 bg-red-50;
   }
 
-  /* Gradient Backgrounds */
-  .gradient-bg {
-    @apply bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100;
+  /* 成功メッセージ */
+  .success-message {
+    @apply text-emerald-600 text-sm mt-1;
   }
 
-  .header-gradient {
+  /* リンク */
+  .link {
+    @apply text-blue-600 hover:text-blue-700 underline transition-all duration-200;
+  }
+
+  /* ステータスバッジ */
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .badge-primary {
+    @apply bg-blue-100 text-blue-800;
+  }
+
+  .badge-success {
+    @apply bg-emerald-100 text-emerald-800;
+  }
+
+  .badge-warning {
+    @apply bg-yellow-100 text-yellow-800;
+  }
+
+  .badge-danger {
+    @apply bg-red-100 text-red-800;
+  }
+
+  /* グラデーション背景 */
+  .gradient-primary {
     @apply bg-gradient-to-r from-blue-600 to-blue-700;
   }
 
-  /* Animation Classes */
-  .animate-fadeIn {
-    animation: fadeIn 0.3s ease-in-out;
+  .gradient-accent {
+    @apply bg-gradient-to-r from-blue-600 to-emerald-500;
   }
 
-  .animate-slideUp {
-    animation: slideUp 0.3s ease-out;
+  /* セクション */
+  .section {
+    @apply py-12 sm:py-16 lg:py-20;
+  }
+
+  /* コンテナ */
+  .container-custom {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
   }
 
   /* File Upload Area */
@@ -94,23 +153,6 @@
 
   .upload-area-active {
     @apply border-2 border-dashed border-blue-500 bg-blue-50 rounded-xl p-8;
-  }
-
-  /* Status Badges */
-  .badge-success {
-    @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-emerald-100 text-emerald-800;
-  }
-
-  .badge-warning {
-    @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-amber-100 text-amber-800;
-  }
-
-  .badge-error {
-    @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800;
-  }
-
-  .badge-info {
-    @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800;
   }
 
   /* File List Table */
@@ -123,7 +165,157 @@
   }
 }
 
+/* Design.md準拠のアニメーション */
 @layer utilities {
+  /* フェードイン */
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Animation Classes */
+  .animate-fadeIn {
+    animation: fadeIn 0.3s ease-in-out;
+  }
+
+  /* スライドイン */
+  @keyframes slideIn {
+    from {
+      transform: translateX(-100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  /* スケールイン */
+  @keyframes scaleIn {
+    from {
+      transform: scale(0.95);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  .animate-scaleIn {
+    animation: scaleIn 0.2s ease-out;
+  }
+
+  /* パルス（改良版） */
+  @keyframes pulse-soft {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.8;
+    }
+  }
+
+  .animate-pulse-soft {
+    animation: pulse-soft 2s ease-in-out infinite;
+  }
+
+  /* ローディングドット */
+  @keyframes bounce {
+    0%, 100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+
+  .animate-bounce {
+    animation: bounce 0.6s ease-in-out infinite;
+  }
+
+  /* スピン（改良版） */
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .animate-spin {
+    animation: spin 1s linear infinite;
+  }
+
+  /* シマー効果（スケルトン用） */
+  @keyframes shimmer {
+    0% {
+      background-position: -1000px 0;
+    }
+    100% {
+      background-position: 1000px 0;
+    }
+  }
+
+  .animate-shimmer {
+    animation: shimmer 2s infinite;
+    background: linear-gradient(
+      90deg,
+      #f0f0f0 25%,
+      #e0e0e0 50%,
+      #f0f0f0 75%
+    );
+    background-size: 1000px 100%;
+  }
+
+  /* 振動効果（エラー用） */
+  @keyframes shake {
+    0%, 100% {
+      transform: translateX(0);
+    }
+    10%, 30%, 50%, 70%, 90% {
+      transform: translateX(-2px);
+    }
+    20%, 40%, 60%, 80% {
+      transform: translateX(2px);
+    }
+  }
+
+  .animate-shake {
+    animation: shake 0.5s ease-in-out;
+  }
+
+  /* グロー効果 */
+  .glow {
+    box-shadow: 0 0 20px rgba(37, 99, 235, 0.3);
+  }
+
+  .glow-emerald {
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
+  }
+
+  /* テキストグラデーション */
+  .text-gradient {
+    @apply bg-gradient-to-r from-blue-600 to-emerald-500 bg-clip-text text-transparent;
+  }
+
+  /* ホバー時のリフト効果 */
+  .hover-lift {
+    @apply transition-all duration-200 hover:transform hover:-translate-y-1 hover:shadow-lg;
+  }
+
+  /* フォーカス時のリング */
+  .focus-ring {
+    @apply focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2;
+  }
+
   /* Text Utilities */
   .text-primary {
     color: var(--primary);
@@ -152,28 +344,51 @@
   }
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
+/* スクロールバーのカスタマイズ */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* レスポンシブヘルパー */
+@media (max-width: 640px) {
+  .hide-mobile {
+    display: none !important;
   }
 }
 
-@keyframes slideUp {
-  from {
-    transform: translateY(10px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
+@media (min-width: 641px) {
+  .show-mobile {
+    display: none !important;
   }
 }
 
-body {
-  background-color: var(--background);
-  color: var(--foreground);
-  font-family: 'Inter', 'Noto Sans JP', system-ui, -apple-system, sans-serif;
+/* プリント時のスタイル */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}
+
+/* トランジション無効化（アクセシビリティ） */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

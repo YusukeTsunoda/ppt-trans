@@ -3,8 +3,12 @@
 const fs = require('fs');
 const path = require('path');
 
-// .env.buildから環境変数を読み込む
-require('dotenv').config({ path: '.env.build' });
+// .env.buildから環境変数を読み込む（ファイルが存在する場合のみ）
+try {
+  require('dotenv').config({ path: '.env.build' });
+} catch (error) {
+  console.warn('.env.build file not found, using default environment variables');
+}
 
 // ビルドメタデータの読み込み
 function loadBuildMetadata() {

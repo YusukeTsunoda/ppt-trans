@@ -279,3 +279,16 @@ MIT License - 詳細は[LICENSE](./LICENSE)を参照
 ---
 
 Built with ❤️ using Next.js and Supabase
+  推奨アクション
+
+  1. Supabaseを再起動してマイグレーションを適用:
+  npx supabase stop
+  npx supabase start
+  npx supabase db reset
+
+  2. ユーザーを再作成:
+  npx tsx scripts/create-supabase-users.ts
+
+  3. 管理者でログインして確認:
+  - メール: admin@example.com
+  - パスワード: Admin123!
