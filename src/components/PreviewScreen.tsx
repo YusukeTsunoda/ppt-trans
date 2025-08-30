@@ -1,23 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import type { ProcessingResult, SlideData } from '@/types';
 import { getSettings } from '@/lib/settings';
 import { updateHistoryItem } from '@/lib/history';
 import { useResponsive } from '@/hooks/useResponsive';
 import logger from '@/lib/logger';
+import { fetchWithCSRF } from '@/hooks/useCSRF';
 
-// CSSアニメーションをグローバルスタイルとして追加
-const globalStyles = `
-  @keyframes pulse {
-    0%, 100% {
-      opacity: 1;
-    }
-    50% {
-      opacity: 0.5;
-    }
-  }
-`;
+// CSSアニメーションスタイル
+// Next.jsではCSS ModulesまたはCSS-in-JSを使用するため、
+// インラインスタイルとして定義
 
 interface PreviewScreenProps {
   data: ProcessingResult;
@@ -110,7 +103,7 @@ export function PreviewScreen({ data, onBack, onDataUpdate, historyId }: Preview
         const batch = batches[i];
         
         // API Route経由で翻訳
-        const response = await fetch('/api/translate/batch-simple', {
+        const response = await fetchWithCSRF('/api/translate/batch-simple', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -297,7 +290,7 @@ export function PreviewScreen({ data, onBack, onDataUpdate, historyId }: Preview
       logger.debug('Generating translated PPTX...', { requestData });
 
       // API Route経由でPPTXファイルを生成
-      const response = await fetch('/api/generate/pptx', {
+      const response = await fetchWithCSRF('/api/generate/pptx', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -380,7 +373,16 @@ export function PreviewScreen({ data, onBack, onDataUpdate, historyId }: Preview
 
   return (
     <>
-      <style dangerouslySetInnerHTML={{ __html: globalStyles }} />
+      <style jsx>{`
+        @keyframes pulse {
+          0%, 100% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.5;
+          }
+        }
+      `}</style>
       <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
       <div className="container mx-auto px-4 py-6 max-w-7xl">
         {/* ヘッダー */}

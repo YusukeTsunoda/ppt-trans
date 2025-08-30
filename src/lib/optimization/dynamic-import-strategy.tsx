@@ -5,6 +5,7 @@
 
 import React, { ComponentType, lazy, Suspense } from 'react';
 import { useIntersectionObserver } from '@/hooks/useIntersectionObserver';
+import logger from '@/lib/logger';
 
 /**
  * デメリット1: 初期表示の遅延
@@ -24,7 +25,7 @@ export class DynamicImportManager {
       
       // エラーハンドリング
       promise.catch(error => {
-        console.error(`Failed to preload module ${key}:`, error);
+        logger.error(`Failed to preload module ${key}:`, error);
         this.preloadedModules.delete(key);
       });
     }
@@ -203,7 +204,7 @@ export const createDynamicComponent = <T extends ComponentType<any>>(
   // webpackChunkNameを使用してチャンク名を指定
   const LazyComponent = lazy(() => 
     importFn().catch(err => {
-      console.error(`Failed to load component ${chunkName}:`, err);
+      logger.error(`Failed to load component ${chunkName}:`, err);
       // フォールバックコンポーネントを返す
       return { 
         default: (() => React.createElement(error, { 

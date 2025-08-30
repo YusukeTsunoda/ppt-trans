@@ -27,6 +27,9 @@ module.exports = {
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
     '\\.(css|less|sass|scss)$': 'identity-obj-proxy',
+    '^@supabase/supabase-js$': '<rootDir>/__mocks__/@supabase/supabase-js.js',
+    '^@/lib/supabase/server$': '<rootDir>/src/lib/supabase/__mocks__/server.js',
+    '^@/lib/supabase/client$': '<rootDir>/src/lib/supabase/__mocks__/server.js',
   },
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js', '<rootDir>/tests/setup/test-setup.ts'],
   collectCoverageFrom: [

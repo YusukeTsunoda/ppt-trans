@@ -1,5 +1,7 @@
 import { LRUCache } from 'lru-cache';
 import { NextRequest } from 'next/server';
+import { SecurityMonitor } from '@/lib/security/security-monitor';
+import logger from '@/lib/logger';
 
 export type RateLimitConfig = {
   interval: number; // ミリ秒
@@ -50,7 +52,9 @@ export class RateLimiter {
    */
   async check(
     identifier: string,
-    limit: number = 10
+    limit: number = 10,
+    path?: string,
+    method?: string
   ): Promise<RateLimitResult> {
     const now = Date.now();
     const windowStart = now - this.config.interval;
@@ -63,6 +67,36 @@ export class RateLimiter {
     if (recentRequests.length >= limit) {
       const oldestRequest = Math.min(...recentRequests);
       const reset = new Date(oldestRequest + this.config.interval);
+
+      // セキュリティモニターに記録
+      const monitor = SecurityMonitor.getInstance();
+      const requestId = crypto.randomUUID();
+      
+      // IP部分を抽出
+      const ipMatch = identifier.match(/^ip:(.+)$/);
+      const ip = ipMatch ? ipMatch[1] : undefined;
+      
+      await monitor.logEvent({
+        type: 'rate_limit',
+        severity: 'medium',
+        details: {
+          identifier,
+          limit,
+          attempts: recentRequests.length,
+          window: this.config.interval,
+        },
+        requestId,
+        ip,
+        path,
+        method,
+      });
+
+      logger.warn('Rate limit exceeded', {
+        identifier,
+        limit,
+        attempts: recentRequests.length,
+        path,
+      });
 
       return {
         success: false,
@@ -143,7 +177,12 @@ export async function withRateLimit(
 
   const limiter = getRateLimiter(limiterName);
   const identifier = getIdentifier(request);
-  const result = await limiter.check(identifier, limit);
+  const result = await limiter.check(
+    identifier, 
+    limit,
+    request.nextUrl.pathname,
+    request.method
+  );
 
   // レスポンスヘッダーに制限情報を追加
   if (!result.success) {

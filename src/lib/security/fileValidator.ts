@@ -197,13 +197,33 @@ export class FileValidator {
   
   /**
    * MIMEタイプを検出
+   * PPTXファイルのMagic bytesを確認して正確なファイルタイプを検証
    */
-  private static detectMimeType(_buffer: Buffer): Promise<string> {
-    return new Promise((resolve, _reject) => {
-      // TODO: stream-mmmagicライブラリを追加またはfile-typeなどの代替ライブラリを使用
-      // 現在は仮の実装
-      resolve('application/octet-stream');
-    });
+  private static async detectMimeType(buffer: Buffer): Promise<string> {
+    // PPTXファイルのMagic bytes（PKZipアーカイブ）
+    const PPTX_SIGNATURE = Buffer.from([0x50, 0x4B, 0x03, 0x04]);
+    const PPT_SIGNATURE = Buffer.from([0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1]);
+    
+    // 最初の4バイトをチェック
+    if (buffer.length >= 4) {
+      const header = buffer.slice(0, 4);
+      
+      // PPTXファイル（ZIP形式）
+      if (header.equals(PPTX_SIGNATURE)) {
+        return 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+      }
+      
+      // PPTファイル（OLE形式）
+      if (buffer.length >= 8) {
+        const oleHeader = buffer.slice(0, 8);
+        if (oleHeader.equals(PPT_SIGNATURE)) {
+          return 'application/vnd.ms-powerpoint';
+        }
+      }
+    }
+    
+    // 不明なファイルタイプ
+    return 'application/octet-stream';
   }
   
   /**

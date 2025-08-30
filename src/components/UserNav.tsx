@@ -51,7 +51,7 @@ export function UserNav() {
           .eq('id', session.user.id)
           .single();
 
-        setUserRole(profile?.role || 'USER');
+        setUserRole(profile?.role || 'user');
       } else {
         setUserRole('user');
       }

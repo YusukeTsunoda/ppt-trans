@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
-import { TEST_CONFIG } from './fixtures/test-config';
+import { Config } from './config';
+import { WaitUtils } from './utils/wait-utils';
 
 /**
  * 認証フロー統合テスト（厳格版）
@@ -27,9 +28,9 @@ test.describe('認証フロー統合テスト（厳格版）', () => {
       await page.click('button:has-text("新規登録")');
       
       // 正確なエラーメッセージのみを許容
-      const errorElement = page.locator(`text="${TEST_CONFIG.errorMessages.passwordMismatch}"`);
+      const errorElement = page.locator(`text="${Config.errorMessages.passwordMismatch}"`);
       await expect(errorElement).toBeVisible({
-        timeout: TEST_CONFIG.timeouts.element,
+        timeout: Config.timeouts.element,
       });
       
       // ページが遷移していないことを確認
@@ -61,20 +62,8 @@ test.describe('認証フロー統合テスト（厳格版）', () => {
       const authCookieBefore = cookiesBefore.find(c => c.name.includes('auth') || c.name.includes('sb-'));
       expect(authCookieBefore).toBeUndefined();
       
-      // 正確な認証情報でログイン
-      await page.fill('input[name="email"]', TEST_CONFIG.auth.email);
-      await page.fill('input[name="password"]', TEST_CONFIG.auth.password);
-      
-      // ネットワークリクエストを監視
-      const navigationPromise = page.waitForURL('**/dashboard', {
-        timeout: TEST_CONFIG.timeouts.navigation,
-        waitUntil: 'networkidle'
-      });
-      
-      await page.click('button:has-text("ログイン")');
-      
-      // ダッシュボードへの遷移を確認
-      await navigationPromise;
+      // 新しいConfigのloginメソッドを使用
+      await Config.login(page);
       
       // セッションCookieの検証
       const cookiesAfter = await context.cookies();
@@ -88,13 +77,13 @@ test.describe('認証フロー統合テスト（厳格版）', () => {
       // ダッシュボードの要素が表示されていることを確認
       // PowerPoint Translatorというタイトルが実際に表示される
       await expect(page.locator('h1:has-text("PowerPoint Translator")')).toBeVisible({
-        timeout: TEST_CONFIG.timeouts.element
+        timeout: Config.timeouts.element
       });
       
       // ユーザー情報が表示されていることを確認
       // 「ようこそ、test@example.comさん」という形式で表示される
-      await expect(page.locator(`text=/ようこそ、.*${TEST_CONFIG.auth.email}/`)).toBeVisible({
-        timeout: TEST_CONFIG.timeouts.element
+      await expect(page.locator(`text=/ようこそ、.*${Config.auth.email}/`)).toBeVisible({
+        timeout: Config.timeouts.element
       });
     });
 
@@ -108,7 +97,7 @@ test.describe('認証フロー統合テスト（厳格版）', () => {
         await page.waitForURL('**/login');
       }
       
-      await page.fill('input[name="email"]', TEST_CONFIG.auth.email);
+      await page.fill('input[name="email"]', Config.auth.email);
       await page.fill('input[name="password"]', 'WrongPassword123!');
       
       // フォーム送信前の状態を記録
@@ -122,13 +111,13 @@ test.describe('認証フロー統合テスト（厳格版）', () => {
       // エラーメッセージの表示を確認（複数の可能性に対応）
       const errorElement = page.locator('.bg-red-50').first();
       await expect(errorElement).toBeVisible({
-        timeout: TEST_CONFIG.timeouts.element
+        timeout: Config.timeouts.element
       });
       
       // エラーメッセージの内容を確認
       const errorText = await errorElement.textContent();
       expect(
-        errorText?.includes(TEST_CONFIG.errorMessages.loginFailed) ||
+        errorText?.includes(Config.errorMessages.loginFailed) ||
         errorText?.includes('Invalid login credentials') ||
         errorText?.includes('ログインに失敗しました')
       ).toBeTruthy();
@@ -151,9 +140,9 @@ test.describe('認証フロー統合テスト（厳格版）', () => {
       await page.click('button:has-text("ログイン")');
       
       // タイミング攻撃対策: 同じエラーメッセージ
-      const errorElement = page.locator(`text="${TEST_CONFIG.errorMessages.loginFailed}"`);
+      const errorElement = page.locator(`text="${Config.errorMessages.loginFailed}"`);
       await expect(errorElement).toBeVisible({
-        timeout: TEST_CONFIG.timeouts.element
+        timeout: Config.timeouts.element
       });
       
       // エラーメッセージがユーザーの存在を示唆しないことを確認
@@ -165,25 +154,16 @@ test.describe('認証フロー統合テスト（厳格版）', () => {
 
   test.describe('ログアウト機能', () => {
     test('完全なログアウトとセッション破棄の検証', async ({ page, baseURL, context }) => {
-      // まずログイン
-      await page.goto(`${baseURL}/login`);
-      await page.fill('input[name="email"]', TEST_CONFIG.auth.email);
-      await page.fill('input[name="password"]', TEST_CONFIG.auth.password);
-      await page.click('button:has-text("ログイン")');
-      await page.waitForURL('**/dashboard');
+      // まずログイン（新しいloginメソッドを使用）
+      await Config.login(page);
       
       // ログアウト前のCookie確認
       const cookiesBefore = await context.cookies();
       const authCookieBefore = cookiesBefore.find(c => c.name.includes('auth') || c.name.includes('sb-'));
       expect(authCookieBefore).toBeDefined();
       
-      // ログアウト実行
-      await page.click('button:has-text("ログアウト")');
-      
-      // ログインページへのリダイレクト確認
-      await page.waitForURL('**/login', {
-        timeout: TEST_CONFIG.timeouts.navigation
-      });
+      // ログアウト実行（新しいlogoutメソッドを使用）
+      await Config.logout(page);
       
       // セッションCookieが削除されていることを確認
       const cookiesAfter = await context.cookies();
@@ -214,7 +194,7 @@ test.describe('認証フロー統合テスト（厳格版）', () => {
         // ログインページへのリダイレクトを確認
         // 現在の実装ではcallbackUrlパラメータが設定されていることを確認
         await page.waitForURL(/\/login/, {
-          timeout: TEST_CONFIG.timeouts.navigation
+          timeout: Config.timeouts.navigation
         });
         
         // callbackUrlパラメータの存在を確認（実装により異なる可能性がある）
@@ -235,15 +215,8 @@ test.describe('認証フロー統合テスト（厳格版）', () => {
       await page.goto(`${baseURL}${targetRoute}`);
       await page.waitForURL(`**/login?callbackUrl=${encodeURIComponent(targetRoute)}`);
       
-      // ログイン
-      await page.fill('input[name="email"]', TEST_CONFIG.auth.email);
-      await page.fill('input[name="password"]', TEST_CONFIG.auth.password);
-      await page.click('button:has-text("ログイン")');
-      
-      // 現在の実装ではダッシュボードにリダイレクトされる
-      await page.waitForURL('**/dashboard', {
-        timeout: TEST_CONFIG.timeouts.navigation
-      });
+      // 新しいloginメソッドを使用してログイン
+      await Config.login(page);
       
       // ダッシュボードページが表示されていることを確認（実際の動作）
       await expect(page.locator('h1')).toContainText(/PowerPoint Translator/);
@@ -286,7 +259,7 @@ test.describe('認証フロー統合テスト（厳格版）', () => {
       // ログインが失敗することを確認（複数の可能性に対応）
       const errorElement = page.locator('.bg-red-50, [role="alert"]').first();
       await expect(errorElement).toBeVisible({
-        timeout: TEST_CONFIG.timeouts.element
+        timeout: Config.timeouts.element
       });
       
       // ダッシュボードにアクセスしていないことを確認
@@ -298,13 +271,13 @@ test.describe('認証フロー統合テスト（厳格版）', () => {
       
       // 5回連続で失敗
       for (let i = 0; i < 5; i++) {
-        await page.fill('input[name="email"]', TEST_CONFIG.auth.email);
+        await page.fill('input[name="email"]', Config.auth.email);
         await page.fill('input[name="password"]', `wrong_password_${i}`);
         await page.click('button:has-text("ログイン")');
         
         // エラーメッセージを待つ
-        await page.waitForSelector(`text="${TEST_CONFIG.errorMessages.loginFailed}"`, {
-          timeout: TEST_CONFIG.timeouts.element
+        await page.waitForSelector(`text="${Config.errorMessages.loginFailed}"`, {
+          timeout: Config.timeouts.element
         });
         
         // 少し待機（レート制限のため）
@@ -312,14 +285,14 @@ test.describe('認証フロー統合テスト（厳格版）', () => {
       }
       
       // 6回目の試行
-      await page.fill('input[name="email"]', TEST_CONFIG.auth.email);
+      await page.fill('input[name="email"]', Config.auth.email);
       await page.fill('input[name="password"]', 'wrong_password_6');
       await page.click('button:has-text("ログイン")');
       
       // レート制限メッセージまたは通常のエラーを確認
       const errorElement = page.locator('.bg-red-50, [role="alert"]').first();
       await expect(errorElement).toBeVisible({
-        timeout: TEST_CONFIG.timeouts.element
+        timeout: Config.timeouts.element
       });
       
       // アプリケーションがクラッシュしていないことを確認

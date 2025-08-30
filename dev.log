@@ -29,3 +29,159 @@
  ✓ Compiled in 122ms (352 modules)
  ✓ Compiled in 5ms
  ✓ Compiled in 45ms (563 modules)
+ ⨯ Module not found: SyntaxError: /Users/yusuketsunoda/Documents/cursor/ppttrans/ppt-trans/package.json (directory description file): SyntaxError: /Users/yusuketsunoda/Documents/cursor/ppttrans/ppt-trans/package.json (directory description file): SyntaxError: /Users/yusuketsunoda/Documents/cursor/ppttrans/ppt-trans/package.json (directory description file): SyntaxError: /Users/yusuketsunoda/Documents/cursor/ppttrans/ppt-trans/package.json (directory description file): SyntaxError: Expected double-quoted property name in JSON at position 3042 (line 44 column 1)
+ ⨯ Module not found: SyntaxError: /Users/yusuketsunoda/Documents/cursor/ppttrans/ppt-trans/package.json (directory description file): SyntaxError: /Users/yusuketsunoda/Documents/cursor/ppttrans/ppt-trans/package.json (directory description file): SyntaxError: /Users/yusuketsunoda/Documents/cursor/ppttrans/ppt-trans/package.json (directory description file): SyntaxError: Expected double-quoted property name in JSON at position 3042 (line 44 column 1)
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (108kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+ ⨯ ./src/app/globals.css:7:9
+Syntax error: /Users/yusuketsunoda/Documents/cursor/ppttrans/ppt-trans/src/app/globals.css Unknown word
+
+  5 | @layer base {
+  6 |   :root {
+> 7 | <<<<<<< HEAD
+    |         ^
+  8 |     /* Design System Colors */
+  9 |     --primary: #2563eb;
+ ⨯ ./src/app/globals.css
+Syntax error: /Users/yusuketsunoda/Documents/cursor/ppttrans/ppt-trans/src/app/globals.css Unknown word (7:9)
+
+  5 | @layer base {
+  6 |   :root {
+> 7 | <<<<<<< HEAD
+    |         ^
+  8 |     /* Design System Colors */
+  9 |     --primary: #2563eb;
+-- inner error --
+Syntax error: /Users/yusuketsunoda/Documents/cursor/ppttrans/ppt-trans/src/app/globals.css Unknown word (7:9)
+
+  5 | @layer base {
+  6 |   :root {
+> 7 | <<<<<<< HEAD
+    |         ^
+  8 |     /* Design System Colors */
+  9 |     --primary: #2563eb;
+Generated code for /Users/yusuketsunoda/Documents/cursor/ppttrans/ppt-trans/node_modules/next/dist/build/webpack/loaders/css-loader/src/index.js??ruleSet[1].rules[13].oneOf[10].use[2]!/Users/yusuketsunoda/Documents/cursor/ppttrans/ppt-trans/node_modules/next/dist/build/webpack/loaders/postcss-loader/src/index.js??ruleSet[1].rules[13].oneOf[10].use[3]!/Users/yusuketsunoda/Documents/cursor/ppttrans/ppt-trans/src/app/globals.css
+
+Import trace for requested module:
+./src/app/globals.css
+ ⨯ ./src/app/globals.css
+Syntax error: /Users/yusuketsunoda/Documents/cursor/ppttrans/ppt-trans/src/app/globals.css Unknown word (7:9)
+
+  5 | @layer base {
+  6 |   :root {
+> 7 | <<<<<<< HEAD
+    |         ^
+  8 |     /* Design System Colors */
+  9 |     --primary: #2563eb;
+-- inner error --
+Syntax error: /Users/yusuketsunoda/Documents/cursor/ppttrans/ppt-trans/src/app/globals.css Unknown word (7:9)
+
+  5 | @layer base {
+  6 |   :root {
+> 7 | <<<<<<< HEAD
+    |         ^
+  8 |     /* Design System Colors */
+  9 |     --primary: #2563eb;
+Generated code for /Users/yusuketsunoda/Documents/cursor/ppttrans/ppt-trans/node_modules/next/dist/build/webpack/loaders/css-loader/src/index.js??ruleSet[1].rules[13].oneOf[10].use[2]!/Users/yusuketsunoda/Documents/cursor/ppttrans/ppt-trans/node_modules/next/dist/build/webpack/loaders/postcss-loader/src/index.js??ruleSet[1].rules[13].oneOf[10].use[3]!/Users/yusuketsunoda/Documents/cursor/ppttrans/ppt-trans/src/app/globals.css
+
+Import trace for requested module:
+./src/app/globals.css
+ ⨯ ./src/app/globals.css
+Syntax error: /Users/yusuketsunoda/Documents/cursor/ppttrans/ppt-trans/src/app/globals.css Unknown word (7:9)
+
+  5 | @layer base {
+  6 |   :root {
+> 7 | <<<<<<< HEAD
+    |         ^
+  8 |     /* Design System Colors */
+  9 |     --primary: #2563eb;
+-- inner error --
+Syntax error: /Users/yusuketsunoda/Documents/cursor/ppttrans/ppt-trans/src/app/globals.css Unknown word (7:9)
+
+  5 | @layer base {
+  6 |   :root {
+> 7 | <<<<<<< HEAD
+    |         ^
+  8 |     /* Design System Colors */
+  9 |     --primary: #2563eb;
+Generated code for /Users/yusuketsunoda/Documents/cursor/ppttrans/ppt-trans/node_modules/next/dist/build/webpack/loaders/css-loader/src/index.js??ruleSet[1].rules[13].oneOf[10].use[2]!/Users/yusuketsunoda/Documents/cursor/ppttrans/ppt-trans/node_modules/next/dist/build/webpack/loaders/postcss-loader/src/index.js??ruleSet[1].rules[13].oneOf[10].use[3]!/Users/yusuketsunoda/Documents/cursor/ppttrans/ppt-trans/src/app/globals.css
+
+Import trace for requested module:
+./src/app/globals.css
+ ⨯ ./src/components/dashboard/DashboardView.tsx:5:1
+Module not found: Can't resolve '@/app/actions/auth'
+  3 | import { useState, useEffect } from 'react';
+  4 | import { translateFileAction, deleteFileAction } from '@/app/actions/dashboard';
+> 5 | import { logoutAction } from '@/app/actions/auth';
+    | ^
+  6 | import Link from 'next/link';
+  7 | import { createClient } from '@/lib/supabase/client';
+  8 | import { useRouter } from 'next/navigation';
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./src/hooks/usePreload.ts
+./src/components/PreloadProvider.tsx
+ ⨯ ./src/components/dashboard/DashboardView.tsx:5:1
+Module not found: Can't resolve '@/app/actions/auth'
+  3 | import { useState, useEffect } from 'react';
+  4 | import { translateFileAction, deleteFileAction } from '@/app/actions/dashboard';
+> 5 | import { logoutAction } from '@/app/actions/auth';
+    | ^
+  6 | import Link from 'next/link';
+  7 | import { createClient } from '@/lib/supabase/client';
+  8 | import { useRouter } from 'next/navigation';
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./src/hooks/usePreload.ts
+./src/components/PreloadProvider.tsx
+ ⨯ ./src/lib/security/csrf.ts
+Error:   [31mx[0m You're importing a component that needs "next/headers". That only works in a Server Component which is not supported in the pages/ directory. Read more: https://nextjs.org/docs/app/building-your-application/rendering/server-components
+  [31m|[0m
+
+   ,-[[36;1;4m/Users/yusuketsunoda/Documents/cursor/ppttrans/ppt-trans/src/lib/security/csrf.ts[0m:2:1]
+ [2m1[0m | import { randomBytes } from 'crypto';
+ [2m2[0m | import { cookies } from 'next/headers';
+   : [35;1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+ [2m3[0m | import { NextRequest, NextResponse } from 'next/server';
+ [2m4[0m | 
+ [2m5[0m | export const CSRF_TOKEN_NAME = 'csrf-token';
+   `----
+
+Import trace for requested module:
+./src/lib/security/csrf.ts
+./src/components/ErrorBoundary.tsx
+ ⨯ ./src/lib/security/csrf.ts
+Error:   [31mx[0m You're importing a component that needs "next/headers". That only works in a Server Component which is not supported in the pages/ directory. Read more: https://nextjs.org/docs/app/building-your-application/rendering/server-components
+  [31m|[0m
+
+   ,-[[36;1;4m/Users/yusuketsunoda/Documents/cursor/ppttrans/ppt-trans/src/lib/security/csrf.ts[0m:2:1]
+ [2m1[0m | import { randomBytes } from 'crypto';
+ [2m2[0m | import { cookies } from 'next/headers';
+   : [35;1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+ [2m3[0m | import { NextRequest, NextResponse } from 'next/server';
+ [2m4[0m | 
+ [2m5[0m | export const CSRF_TOKEN_NAME = 'csrf-token';
+   `----
+
+Import trace for requested module:
+./src/lib/security/csrf.ts
+./src/components/ErrorBoundary.tsx
+ ⨯ ./src/lib/security/csrf.ts
+Error:   [31mx[0m You're importing a component that needs "next/headers". That only works in a Server Component which is not supported in the pages/ directory. Read more: https://nextjs.org/docs/app/building-your-application/rendering/server-components
+  [31m|[0m
+
+   ,-[[36;1;4m/Users/yusuketsunoda/Documents/cursor/ppttrans/ppt-trans/src/lib/security/csrf.ts[0m:2:1]
+ [2m1[0m | import { randomBytes } from 'crypto';
+ [2m2[0m | import { cookies } from 'next/headers';
+   : [35;1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+ [2m3[0m | import { NextRequest, NextResponse } from 'next/server';
+ [2m4[0m | 
+ [2m5[0m | export const CSRF_TOKEN_NAME = 'csrf-token';
+   `----
+
+Import trace for requested module:
+./src/lib/security/csrf.ts
+./src/components/ErrorBoundary.tsx

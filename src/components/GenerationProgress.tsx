@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import type { JsonValue } from '@/types/common';
+// Removed Server Action import - will use API Routes if needed
 
 export interface GenerationProgressProps {
   jobId?: string;
@@ -34,30 +35,50 @@ export function GenerationProgress({ jobId, onComplete, onError }: GenerationPro
 
     const checkStatus = async () => {
       try {
-        // Server Actionの代わりに一時的なモックデータ
-        // TODO: getGenerationJobStatus Server Actionを呼び出す
-        const mockProgress = Math.min(100, currentProgress + Math.random() * 20);
-        currentProgress = mockProgress;
+        // Fetch job status from API (placeholder - implement if needed)
+        // For now, return a mock status since this feature isn't used
+        const jobStatus: {
+          status: string;
+          progress: number;
+          message: string;
+          details?: string;
+          error?: string;
+          downloadUrl?: string;
+        } = { status: 'completed', progress: 100, message: 'Completed' };
+        currentProgress = jobStatus.progress;
         
-        if (mockProgress >= 100) {
+        if (jobStatus.status === 'completed') {
           setState({
             status: 'completed',
             progress: 100,
-            message: 'PPTXファイルの生成が完了しました！',
-            details: 'ダウンロードの準備ができました'
+            message: jobStatus.message || 'PPTXファイルの生成が完了しました！',
+            details: jobStatus.details || 'ダウンロードの準備ができました'
           });
           
-          if (onComplete) {
-            onComplete({ downloadUrl: '/mock/download.pptx' });
+          if (onComplete && jobStatus.downloadUrl) {
+            onComplete({ downloadUrl: jobStatus.downloadUrl });
+          }
+          
+          if (intervalId) clearInterval(intervalId);
+        } else if (jobStatus.status === 'failed') {
+          setState({
+            status: 'failed',
+            progress: jobStatus.progress,
+            message: jobStatus.message || '生成に失敗しました',
+            error: jobStatus.error
+          });
+          
+          if (onError && jobStatus.error) {
+            onError(jobStatus.error);
           }
           
           if (intervalId) clearInterval(intervalId);
         } else {
           setState({
             status: 'processing',
-            progress: mockProgress,
-            message: getProgressMessage(mockProgress),
-            details: getProgressDetails(mockProgress)
+            progress: jobStatus.progress,
+            message: jobStatus.message || getProgressMessage(jobStatus.progress),
+            details: jobStatus.details || getProgressDetails(jobStatus.progress)
           });
         }
         
@@ -219,4 +240,4 @@ export function GenerationProgress({ jobId, onComplete, onError }: GenerationPro
       )}
     </div>
   );
-}
+}export default GenerationProgress;

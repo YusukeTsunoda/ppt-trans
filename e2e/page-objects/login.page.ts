@@ -1,6 +1,7 @@
 import { Page, Locator, expect } from '@playwright/test';
 import { BasePage } from './base.page';
 import { TestConfig } from '../config/test-config';
+import { ServerActionsHelper } from '../helpers/server-actions-helper';
 
 export class LoginPage extends BasePage {
   // ページ要素の定義
@@ -109,5 +110,34 @@ export class LoginPage extends BasePage {
     await this.submitButton.click();
     await this.page.waitForTimeout(2000);
     expect(xssTriggered).toBe(false);
+  }
+  
+  // Server Actions対応メソッド
+  async loginWithServerAction(email: string, password: string) {
+    await ServerActionsHelper.fillAndSubmitForm(
+      this.page,
+      { email, password },
+      TestConfig.selectors.auth.submitButton,
+      /.*\/dashboard/
+    );
+  }
+  
+  async loginAsDefaultUserWithServerAction() {
+    const user = TestConfig.users.default;
+    await this.loginWithServerAction(user.email, user.password);
+  }
+  
+  async loginAsAdminWithServerAction() {
+    const admin = TestConfig.users.admin;
+    await this.loginWithServerAction(admin.email, admin.password);
+  }
+  
+  async expectServerActionError() {
+    const hasError = await ServerActionsHelper.hasServerActionError(this.page);
+    expect(hasError).toBe(true);
+  }
+  
+  async getServerActionErrorMessage(): Promise<string | null> {
+    return await ServerActionsHelper.getServerActionError(this.page);
   }
 }

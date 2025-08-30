@@ -67,10 +67,28 @@ test.describe('Performance Tests', () => {
     }
   });
 
-  test.skip('API rate limiting should work', async ({ page }) => {
-    // レート制限のテスト（実装後に有効化）
-    // 現在はrate-limitライブラリを削除したため、スキップ
-    // TODO: カスタムレート制限実装後に再有効化
+  test('API rate limiting should work', async ({ page }) => {
+    // カスタムレート制限のテスト
+    const responses: number[] = [];
+    
+    // 短時間に複数のAPIリクエストを送信
+    for (let i = 0; i < 15; i++) {
+      const response = await page.request.get('/api/translate', {
+        data: { text: 'test', targetLanguage: 'ja' }
+      });
+      responses.push(response.status());
+      
+      // レート制限に達した場合
+      if (response.status() === 429) {
+        break;
+      }
+      
+      await page.waitForTimeout(50); // 50ms間隔
+    }
+    
+    // 少なくとも1つの429レスポンスがあることを確認
+    const rateLimited = responses.filter(status => status === 429);
+    expect(rateLimited.length).toBeGreaterThan(0);
   });
 
   test('Bundle size should be optimized', async ({ page }) => {

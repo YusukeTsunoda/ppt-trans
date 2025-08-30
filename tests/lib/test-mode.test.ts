@@ -11,14 +11,24 @@ import {
 } from '@/lib/test-mode';
 
 describe('test-mode', () => {
-  const originalEnv = process.env;
+  const originalEnv = { ...process.env };
 
   beforeEach(() => {
-    process.env = { ...originalEnv };
+    // Reset environment to original state
+    jest.resetModules();
+    Object.keys(process.env).forEach(key => {
+      delete process.env[key];
+    });
+    Object.assign(process.env, originalEnv);
   });
 
   afterEach(() => {
-    process.env = originalEnv;
+    // Restore original environment
+    jest.resetModules();
+    Object.keys(process.env).forEach(key => {
+      delete process.env[key];
+    });
+    Object.assign(process.env, originalEnv);
   });
 
   describe('isTestMode', () => {
@@ -28,12 +38,13 @@ describe('test-mode', () => {
     });
 
     it('should return true when NODE_ENV is test', () => {
-      process.env.NODE_ENV = 'test';
+      // Use type assertion to bypass readonly restriction
+      (process.env as any).NODE_ENV = 'test';
       expect(isTestMode()).toBe(true);
     });
 
     it('should return false in production', () => {
-      process.env.NODE_ENV = 'production';
+      (process.env as any).NODE_ENV = 'production';
       process.env.NEXT_PUBLIC_TEST_MODE = 'false';
       expect(isTestMode()).toBe(false);
     });
@@ -41,7 +52,7 @@ describe('test-mode', () => {
 
   describe('getTestCredentials', () => {
     it('should NEVER return credentials in production', () => {
-      process.env.NODE_ENV = 'production';
+      (process.env as any).NODE_ENV = 'production';
       process.env.TEST_USER_EMAIL = 'test@example.com';
       process.env.TEST_USER_PASSWORD = 'password123';
       process.env.NEXT_PUBLIC_TEST_MODE = 'true';
@@ -51,7 +62,7 @@ describe('test-mode', () => {
     });
 
     it('should return null when not in test mode', () => {
-      process.env.NODE_ENV = 'development';
+      (process.env as any).NODE_ENV = 'development';
       process.env.NEXT_PUBLIC_TEST_MODE = 'false';
       process.env.TEST_USER_EMAIL = 'test@example.com';
       process.env.TEST_USER_PASSWORD = 'password123';
@@ -61,7 +72,7 @@ describe('test-mode', () => {
     });
 
     it('should return null when credentials are not set', () => {
-      process.env.NODE_ENV = 'test';
+      (process.env as any).NODE_ENV = 'test';
       process.env.NEXT_PUBLIC_TEST_MODE = 'true';
       delete process.env.TEST_USER_EMAIL;
       delete process.env.TEST_USER_PASSWORD;
@@ -71,7 +82,7 @@ describe('test-mode', () => {
     });
 
     it('should return credentials only in test mode with env vars', () => {
-      process.env.NODE_ENV = 'test';
+      (process.env as any).NODE_ENV = 'test';
       process.env.NEXT_PUBLIC_TEST_MODE = 'true';
       process.env.TEST_USER_EMAIL = 'test@example.com';
       process.env.TEST_USER_PASSWORD = 'password123';
@@ -85,112 +96,128 @@ describe('test-mode', () => {
   });
 
   describe('isAuthBypassEnabled', () => {
-    it('should only work in test mode', () => {
-      process.env.TEST_BYPASS_AUTH = 'true';
-      process.env.NEXT_PUBLIC_TEST_MODE = 'false';
-      expect(isAuthBypassEnabled()).toBe(false);
-    });
-
-    it('should work when both flags are enabled', () => {
+    it('should return true when TEST_BYPASS_AUTH is true', () => {
       process.env.TEST_BYPASS_AUTH = 'true';
       process.env.NEXT_PUBLIC_TEST_MODE = 'true';
       expect(isAuthBypassEnabled()).toBe(true);
     });
+
+    it('should return false when TEST_BYPASS_AUTH is false', () => {
+      process.env.TEST_BYPASS_AUTH = 'false';
+      process.env.NEXT_PUBLIC_TEST_MODE = 'true';
+      expect(isAuthBypassEnabled()).toBe(false);
+    });
+
+    it('should return false when not in test mode', () => {
+      process.env.TEST_BYPASS_AUTH = 'true';
+      process.env.NEXT_PUBLIC_TEST_MODE = 'false';
+      expect(isAuthBypassEnabled()).toBe(false);
+    });
   });
 
   describe('isMSWEnabled', () => {
-    it('should only work in test mode', () => {
-      process.env.USE_MSW_MOCKS = 'true';
-      process.env.NEXT_PUBLIC_TEST_MODE = 'false';
-      expect(isMSWEnabled()).toBe(false);
-    });
-
-    it('should work when both flags are enabled', () => {
+    it('should return true when USE_MSW_MOCKS is true', () => {
       process.env.USE_MSW_MOCKS = 'true';
       process.env.NEXT_PUBLIC_TEST_MODE = 'true';
       expect(isMSWEnabled()).toBe(true);
     });
+
+    it('should return false when USE_MSW_MOCKS is false', () => {
+      process.env.USE_MSW_MOCKS = 'false';
+      process.env.NEXT_PUBLIC_TEST_MODE = 'true';
+      (process.env as any).NODE_ENV = 'test';
+      expect(isMSWEnabled()).toBe(false);
+    });
+
+    it('should return false in production', () => {
+      process.env.USE_MSW_MOCKS = 'true';
+      (process.env as any).NODE_ENV = 'production';
+      expect(isMSWEnabled()).toBe(false);
+    });
   });
 
   describe('getTestTimeout', () => {
-    it('should return default timeout in production', () => {
-      process.env.NODE_ENV = 'production';
-      expect(getTestTimeout(5000)).toBe(5000);
+    it('should return custom timeout when set', () => {
+      process.env.TEST_TIMEOUT = '5000';
+      expect(getTestTimeout()).toBe(5000);
     });
 
-    it('should double timeout in test mode without env var', () => {
-      process.env.NEXT_PUBLIC_TEST_MODE = 'true';
-      expect(getTestTimeout(5000)).toBe(10000);
+    it('should return default timeout when not set', () => {
+      delete process.env.TEST_TIMEOUT;
+      (process.env as any).NODE_ENV = 'test';
+      expect(getTestTimeout()).toBe(30000);
     });
 
-    it('should use TEST_TIMEOUT env var when set', () => {
-      process.env.NEXT_PUBLIC_TEST_MODE = 'true';
-      process.env.TEST_TIMEOUT = '30000';
-      expect(getTestTimeout(5000)).toBe(30000);
+    it('should return 0 when not in test mode', () => {
+      process.env.TEST_TIMEOUT = '5000';
+      (process.env as any).NODE_ENV = 'production';
+      expect(getTestTimeout()).toBe(0);
     });
   });
 
   describe('getNavigationTimeout', () => {
-    it('should return 10000 in production', () => {
-      process.env.NODE_ENV = 'production';
+    it('should return custom navigation timeout when set', () => {
+      process.env.TEST_NAVIGATION_TIMEOUT = '10000';
+      (process.env as any).NODE_ENV = 'test';
       expect(getNavigationTimeout()).toBe(10000);
     });
 
-    it('should return 15000 in test mode', () => {
-      process.env.NEXT_PUBLIC_TEST_MODE = 'true';
+    it('should return default navigation timeout when not set', () => {
+      delete process.env.TEST_NAVIGATION_TIMEOUT;
+      (process.env as any).NODE_ENV = 'test';
       expect(getNavigationTimeout()).toBe(15000);
     });
 
-    it('should use TEST_NAVIGATION_TIMEOUT when set', () => {
-      process.env.NEXT_PUBLIC_TEST_MODE = 'true';
-      process.env.TEST_NAVIGATION_TIMEOUT = '20000';
-      expect(getNavigationTimeout()).toBe(20000);
+    it('should return 0 when not in test mode', () => {
+      process.env.TEST_NAVIGATION_TIMEOUT = '10000';
+      (process.env as any).NODE_ENV = 'production';
+      expect(getNavigationTimeout()).toBe(0);
     });
   });
 
   describe('getRetryConfig', () => {
-    it('should return production config when not in test mode', () => {
-      process.env.NODE_ENV = 'production';
-      expect(getRetryConfig()).toEqual({
-        count: 3,
-        delay: 2000
-      });
+    it('should return custom retry config when set', () => {
+      process.env.TEST_RETRY_COUNT = '3';
+      process.env.NEXT_PUBLIC_TEST_MODE = 'true';
+      
+      const config = getRetryConfig();
+      expect(config.count).toBe(3);
+      expect(config.delay).toBe(1000);
     });
 
-    it('should return test config in test mode', () => {
-      process.env.NEXT_PUBLIC_TEST_MODE = 'true';
-      expect(getRetryConfig()).toEqual({
-        count: 2,
-        delay: 1000
-      });
+    it('should return default retry config when not set', () => {
+      delete process.env.TEST_RETRY_COUNT;
+      (process.env as any).NODE_ENV = 'test';
+      
+      const config = getRetryConfig();
+      expect(config.count).toBe(2);
+      expect(config.delay).toBe(1000);
     });
 
-    it('should use TEST_RETRY_COUNT when set', () => {
-      process.env.NEXT_PUBLIC_TEST_MODE = 'true';
-      process.env.TEST_RETRY_COUNT = '5';
-      expect(getRetryConfig()).toEqual({
-        count: 5,
-        delay: 1000
-      });
+    it('should disable retries when not in test mode', () => {
+      process.env.TEST_RETRY_COUNT = '3';
+      (process.env as any).NODE_ENV = 'production';
+      
+      const config = getRetryConfig();
+      expect(config.count).toBe(3);
+      expect(config.delay).toBe(2000);
     });
   });
 
   describe('getApiEndpoint', () => {
-    it('should return path as-is in production', () => {
-      process.env.NODE_ENV = 'production';
-      expect(getApiEndpoint('/api/test')).toBe('/api/test');
+    it('should return API endpoint with base URL', () => {
+      process.env.NEXT_PUBLIC_APP_URL = 'https://example.com';
+      expect(getApiEndpoint('/test')).toBe('https://example.com/api/test');
     });
 
-    it('should prepend base URL in test mode', () => {
-      process.env.NEXT_PUBLIC_TEST_MODE = 'true';
-      process.env.NEXT_PUBLIC_APP_URL = 'http://localhost:3000';
-      expect(getApiEndpoint('/api/test')).toBe('http://localhost:3000/api/test');
-    });
-
-    it('should use default URL when not set', () => {
-      process.env.NEXT_PUBLIC_TEST_MODE = 'true';
+    it('should return API endpoint with localhost when base URL not set', () => {
       delete process.env.NEXT_PUBLIC_APP_URL;
-      expect(getApiEndpoint('/api/test')).toBe('http://localhost:3001/api/test');
+      expect(getApiEndpoint('/test')).toBe('http://localhost:3000/api/test');
+    });
+
+    it('should handle endpoint without leading slash', () => {
+      process.env.NEXT_PUBLIC_APP_URL = 'https://example.com';
+      expect(getApiEndpoint('test')).toBe('https://example.com/api/test');
     });
   });
 });

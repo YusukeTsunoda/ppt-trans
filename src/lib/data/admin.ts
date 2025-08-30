@@ -122,7 +122,7 @@ export async function getAdminDashboardData() {
         logsWithUsers.push({
           ...log,
           user: {
-            email: getUserEmailByUserId(log.user_id, profiles),
+            email: getUserEmailByUserId(log.user_id, profiles || []),
             name: profile?.full_name || profile?.username || 'Unknown'
           }
         });

@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { ServerActionsHelper } from '../helpers/server-actions-helper';
 
 /**
  * 認証フローの独立テスト
@@ -26,23 +27,25 @@ test.describe('認証フロー（関心の分離）', () => {
     await expect(passwordInput).toBeVisible();
     await expect(submitButton).toBeVisible();
     
-    // テスト認証情報を入力
-    await emailInput.fill('test@example.com');
-    await passwordInput.fill('password123');
+    // Server Actionsを使用してテスト認証情報でログイン
+    await ServerActionsHelper.fillAndSubmitForm(
+      page,
+      { 
+        email: 'test@example.com',
+        password: 'password123'
+      },
+      'button[type="submit"]',
+      /.*\/(dashboard|upload)/
+    );
     
-    // ネットワークのアイドル状態を監視
-    const navigationPromise = page.waitForURL('**/dashboard', { timeout: 30000 })
-      .catch(() => page.waitForURL('**/upload', { timeout: 1000 }))
-      .catch(() => null);
-    
-    // ログインボタンをクリック
-    await submitButton.click();
+    // pending状態の完了を待つ
+    await ServerActionsHelper.waitForPendingState(page);
     
     // 認証成功の確認（複数の条件）
-    try {
-      await navigationPromise;
+    const currentUrl = page.url();
+    if (currentUrl.includes('/dashboard') || currentUrl.includes('/upload')) {
       console.log('✅ ログイン成功：ページ遷移を確認');
-    } catch (error) {
+    } else {
       // フォールバック：エラーメッセージの確認
       const errorMessage = page.locator('[role="alert"], .error-message').first();
       const hasError = await errorMessage.isVisible({ timeout: 5000 }).catch(() => false);

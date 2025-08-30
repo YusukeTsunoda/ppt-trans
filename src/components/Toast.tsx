@@ -113,6 +113,9 @@ export function useToast() {
   return context;
 }
 
+// Default export for compatibility
+export default ToastProvider;
+
 /**
  * トーストコンテナー
  */

@@ -585,3 +585,6 @@ export function SettingsScreen({ onSettingsChange }: SettingsScreenProps) {
     </div>
   );
 }
+
+// Default export for compatibility
+export default SettingsScreen;
