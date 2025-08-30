@@ -1,0 +1,372 @@
+import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { validateServerEnv, validateClientEnv, getServerEnv, getClientEnv } from '@/lib/env-validator';
+
+describe('Environment Variable Validator', () => {
+  let originalEnv: NodeJS.ProcessEnv;
+
+  beforeEach(() => {
+    // Save original environment
+    originalEnv = { ...process.env };
+    // Clear environment for clean tests
+    process.env = {};
+  });
+
+  afterEach(() => {
+    // Restore original environment
+    process.env = originalEnv;
+  });
+
+  describe('validateServerEnv', () => {
+    it('should validate valid server environment variables', () => {
+      process.env = {
+        NODE_ENV: 'test',
+        DATABASE_URL: 'postgresql://user:pass@localhost:5432/db',
+        ANTHROPIC_API_KEY: 'sk-ant-api03-valid-key-here',
+        NEXTAUTH_SECRET: 'super-secret-key-for-auth',
+        NEXTAUTH_URL: 'http://localhost:3000',
+        SUPABASE_URL: 'https://project.supabase.co',
+        SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.example',
+        SUPABASE_SERVICE_ROLE_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.service',
+        GOOGLE_CLIENT_ID: 'google-client-id.apps.googleusercontent.com',
+        GOOGLE_CLIENT_SECRET: 'google-client-secret',
+        SMTP_HOST: 'smtp.example.com',
+        SMTP_PORT: '587',
+        SMTP_USER: 'user@example.com',
+        SMTP_PASS: 'smtp-password',
+        REDIS_URL: 'redis://localhost:6379',
+        SENTRY_DSN: 'https://example@sentry.io/123456',
+        AWS_ACCESS_KEY_ID: 'AKIAIOSFODNN7EXAMPLE',
+        AWS_SECRET_ACCESS_KEY: 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY',
+        AWS_REGION: 'us-west-2',
+        S3_BUCKET_NAME: 'my-bucket'
+      };
+
+      const result = validateServerEnv();
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.DATABASE_URL).toBe('postgresql://user:pass@localhost:5432/db');
+        expect(result.data.ANTHROPIC_API_KEY).toBe('sk-ant-api03-valid-key-here');
+      }
+    });
+
+    it('should fail validation with missing required variables', () => {
+      process.env = {
+        NODE_ENV: 'test',
+        // Missing DATABASE_URL and ANTHROPIC_API_KEY
+      };
+
+      const result = validateServerEnv();
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error.issues).toContainEqual(
+          expect.objectContaining({
+            path: ['DATABASE_URL'],
+            message: expect.stringContaining('Required')
+          })
+        );
+      }
+    });
+
+    it('should fail validation with invalid DATABASE_URL format', () => {
+      process.env = {
+        NODE_ENV: 'test',
+        DATABASE_URL: 'not-a-valid-url',
+        ANTHROPIC_API_KEY: 'sk-ant-api03-valid-key'
+      };
+
+      const result = validateServerEnv();
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error.issues).toContainEqual(
+          expect.objectContaining({
+            path: ['DATABASE_URL'],
+            message: expect.stringContaining('Invalid url')
+          })
+        );
+      }
+    });
+
+    it('should fail validation with invalid ANTHROPIC_API_KEY format', () => {
+      process.env = {
+        NODE_ENV: 'test',
+        DATABASE_URL: 'postgresql://user:pass@localhost:5432/db',
+        ANTHROPIC_API_KEY: 'invalid-api-key' // Doesn't start with 'sk-'
+      };
+
+      const result = validateServerEnv();
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error.issues).toContainEqual(
+          expect.objectContaining({
+            path: ['ANTHROPIC_API_KEY'],
+            code: 'custom'
+          })
+        );
+      }
+    });
+
+    it('should validate optional variables when present', () => {
+      process.env = {
+        NODE_ENV: 'production',
+        DATABASE_URL: 'postgresql://user:pass@localhost:5432/db',
+        ANTHROPIC_API_KEY: 'sk-ant-api03-valid-key',
+        SMTP_PORT: 'not-a-number' // Invalid port
+      };
+
+      const result = validateServerEnv();
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error.issues).toContainEqual(
+          expect.objectContaining({
+            path: ['SMTP_PORT'],
+            code: 'invalid_type'
+          })
+        );
+      }
+    });
+  });
+
+  describe('validateClientEnv', () => {
+    it('should validate valid client environment variables', () => {
+      process.env = {
+        NEXT_PUBLIC_APP_URL: 'https://app.example.com',
+        NEXT_PUBLIC_API_URL: 'https://api.example.com',
+        NEXT_PUBLIC_SUPABASE_URL: 'https://project.supabase.co',
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.example',
+        NEXT_PUBLIC_GA_MEASUREMENT_ID: 'G-XXXXXXXXXX',
+        NEXT_PUBLIC_POSTHOG_KEY: 'phc_1234567890',
+        NEXT_PUBLIC_POSTHOG_HOST: 'https://app.posthog.com',
+        NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: 'pk_test_51234567890',
+        NEXT_PUBLIC_SENTRY_DSN: 'https://example@sentry.io/123456'
+      };
+
+      const result = validateClientEnv();
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.NEXT_PUBLIC_APP_URL).toBe('https://app.example.com');
+        expect(result.data.NEXT_PUBLIC_SUPABASE_URL).toBe('https://project.supabase.co');
+      }
+    });
+
+    it('should allow missing optional client variables', () => {
+      process.env = {
+        // All client variables are optional
+      };
+
+      const result = validateClientEnv();
+      expect(result.success).toBe(true);
+    });
+
+    it('should fail validation with invalid URL formats', () => {
+      process.env = {
+        NEXT_PUBLIC_APP_URL: 'not-a-url',
+        NEXT_PUBLIC_API_URL: 'also-not-a-url'
+      };
+
+      const result = validateClientEnv();
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error.issues.length).toBeGreaterThan(0);
+        expect(result.error.issues).toContainEqual(
+          expect.objectContaining({
+            path: ['NEXT_PUBLIC_APP_URL'],
+            message: expect.stringContaining('Invalid url')
+          })
+        );
+      }
+    });
+
+    it('should validate Stripe key format', () => {
+      process.env = {
+        NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: 'invalid-stripe-key' // Should start with pk_
+      };
+
+      const result = validateClientEnv();
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error.issues).toContainEqual(
+          expect.objectContaining({
+            path: ['NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY'],
+            code: 'custom'
+          })
+        );
+      }
+    });
+  });
+
+  describe('getServerEnv', () => {
+    it('should return validated server environment', () => {
+      process.env = {
+        NODE_ENV: 'test',
+        DATABASE_URL: 'postgresql://user:pass@localhost:5432/db',
+        ANTHROPIC_API_KEY: 'sk-ant-api03-valid-key'
+      };
+
+      const env = getServerEnv();
+      expect(env.DATABASE_URL).toBe('postgresql://user:pass@localhost:5432/db');
+      expect(env.ANTHROPIC_API_KEY).toBe('sk-ant-api03-valid-key');
+    });
+
+    it('should throw error for invalid server environment', () => {
+      process.env = {
+        NODE_ENV: 'test',
+        DATABASE_URL: 'invalid-url'
+      };
+
+      expect(() => getServerEnv()).toThrow('Invalid server environment variables');
+    });
+
+    it('should memoize server environment', () => {
+      process.env = {
+        NODE_ENV: 'test',
+        DATABASE_URL: 'postgresql://user:pass@localhost:5432/db',
+        ANTHROPIC_API_KEY: 'sk-ant-api03-valid-key'
+      };
+
+      const env1 = getServerEnv();
+      const env2 = getServerEnv();
+      expect(env1).toBe(env2); // Should be the same reference (memoized)
+    });
+  });
+
+  describe('getClientEnv', () => {
+    it('should return validated client environment', () => {
+      process.env = {
+        NEXT_PUBLIC_APP_URL: 'https://app.example.com',
+        NEXT_PUBLIC_SUPABASE_URL: 'https://project.supabase.co',
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.example'
+      };
+
+      const env = getClientEnv();
+      expect(env.NEXT_PUBLIC_APP_URL).toBe('https://app.example.com');
+      expect(env.NEXT_PUBLIC_SUPABASE_URL).toBe('https://project.supabase.co');
+    });
+
+    it('should return empty object for all missing optional variables', () => {
+      process.env = {};
+
+      const env = getClientEnv();
+      expect(env).toEqual({});
+    });
+
+    it('should throw error for invalid client environment', () => {
+      process.env = {
+        NEXT_PUBLIC_APP_URL: 'not-a-url'
+      };
+
+      expect(() => getClientEnv()).toThrow('Invalid client environment variables');
+    });
+
+    it('should memoize client environment', () => {
+      process.env = {
+        NEXT_PUBLIC_APP_URL: 'https://app.example.com'
+      };
+
+      const env1 = getClientEnv();
+      const env2 = getClientEnv();
+      expect(env1).toBe(env2); // Should be the same reference (memoized)
+    });
+  });
+
+  describe('Security Considerations', () => {
+    it('should never expose server variables in client validator', () => {
+      process.env = {
+        DATABASE_URL: 'postgresql://user:pass@localhost:5432/db',
+        ANTHROPIC_API_KEY: 'sk-ant-api03-secret-key',
+        NEXTAUTH_SECRET: 'super-secret',
+        NEXT_PUBLIC_APP_URL: 'https://app.example.com'
+      };
+
+      const clientResult = validateClientEnv();
+      expect(clientResult.success).toBe(true);
+      if (clientResult.success) {
+        // Ensure server-only variables are not in client result
+        expect('DATABASE_URL' in clientResult.data).toBe(false);
+        expect('ANTHROPIC_API_KEY' in clientResult.data).toBe(false);
+        expect('NEXTAUTH_SECRET' in clientResult.data).toBe(false);
+        // But client variables should be present
+        expect(clientResult.data.NEXT_PUBLIC_APP_URL).toBe('https://app.example.com');
+      }
+    });
+
+    it('should validate sensitive key formats strictly', () => {
+      process.env = {
+        NODE_ENV: 'test',
+        DATABASE_URL: 'postgresql://user:pass@localhost:5432/db',
+        ANTHROPIC_API_KEY: 'sk-', // Too short
+        AWS_SECRET_ACCESS_KEY: '123' // Too short for AWS key
+      };
+
+      const result = validateServerEnv();
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        // Check that sensitive keys have minimum length requirements
+        const apiKeyIssue = result.error.issues.find(
+          issue => issue.path[0] === 'ANTHROPIC_API_KEY'
+        );
+        expect(apiKeyIssue).toBeDefined();
+      }
+    });
+
+    it('should handle NODE_ENV correctly', () => {
+      // Test development
+      process.env = {
+        NODE_ENV: 'development',
+        DATABASE_URL: 'postgresql://user:pass@localhost:5432/db',
+        ANTHROPIC_API_KEY: 'sk-ant-api03-valid-key'
+      };
+      let result = validateServerEnv();
+      expect(result.success).toBe(true);
+
+      // Test production
+      process.env.NODE_ENV = 'production';
+      result = validateServerEnv();
+      expect(result.success).toBe(true);
+
+      // Test invalid environment
+      process.env.NODE_ENV = 'invalid-env';
+      result = validateServerEnv();
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe('Error Messages', () => {
+    it('should provide clear error messages for missing variables', () => {
+      process.env = {};
+
+      const result = validateServerEnv();
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        const errorMessages = result.error.issues.map(issue => issue.message);
+        expect(errorMessages.some(msg => msg.includes('Required'))).toBe(true);
+      }
+    });
+
+    it('should provide specific error for invalid formats', () => {
+      process.env = {
+        NODE_ENV: 'test',
+        DATABASE_URL: 'postgresql://user:pass@localhost:5432/db',
+        ANTHROPIC_API_KEY: 'wrong-format',
+        NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: 'wrong-stripe-key'
+      };
+
+      const serverResult = validateServerEnv();
+      expect(serverResult.success).toBe(false);
+      if (!serverResult.success) {
+        const apiKeyError = serverResult.error.issues.find(
+          issue => issue.path[0] === 'ANTHROPIC_API_KEY'
+        );
+        expect(apiKeyError?.message).toContain('must start with "sk-"');
+      }
+
+      const clientResult = validateClientEnv();
+      expect(clientResult.success).toBe(false);
+      if (!clientResult.success) {
+        const stripeError = clientResult.error.issues.find(
+          issue => issue.path[0] === 'NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY'
+        );
+        expect(stripeError?.message).toContain('must start with "pk_"');
+      }
+    });
+  });
+});

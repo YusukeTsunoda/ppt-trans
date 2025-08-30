@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 import logger from '@/lib/logger';
+import { extractTextFromPPTXAction, applyTranslationsAction } from '@/app/actions/pptx';
+import { translateTextsAction } from '@/app/actions/translate';
 
 interface ExtractedData {
   success: boolean;
@@ -100,6 +102,7 @@ export default function PreviewView({ file }: PreviewViewProps) {
   const [editingTextId, setEditingTextId] = useState<string | null>(null);
   const [editingText, setEditingText] = useState<string>('');
   const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadSuccess, setDownloadSuccess] = useState(false);
   
   // ズーム・パン関連の状態
   const [zoomLevel, setZoomLevel] = useState(1);
@@ -113,30 +116,18 @@ export default function PreviewView({ file }: PreviewViewProps) {
     setError(null);
     
     try {
-      const response = await fetch('/api/extract', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          fileId: file.id,
-          filePath: file.filename || file.file_path,
-        }),
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'ネットワークエラー' }));
-        throw new Error(errorData.error || `HTTPエラー: ${response.status}`);
-      }
-      
-      const result = await response.json();
+      // Server Actionを呼び出す
+      const result = await extractTextFromPPTXAction(
+        file.id,
+        file.filename || file.file_path || ''
+      );
       
       if (!result.success) {
-        throw new Error(result.error || result.details || 'テキスト抽出に失敗しました');
+        throw new Error(result.error || 'テキスト抽出に失敗しました');
       }
       
-      // APIレスポンスのextractedDataを使用
-      const extractedDataResult = result.extractedData || result.data;
+      // Server ActionレスポンスのextractedTextsを使用
+      const extractedDataResult = result.extractedTexts;
       
       if (!extractedDataResult || !extractedDataResult.slides) {
         throw new Error('抽出されたデータが不正です');
@@ -236,7 +227,7 @@ export default function PreviewView({ file }: PreviewViewProps) {
   
   // 初回読み込み時に既存のデータをチェック
   useEffect(() => {
-    if (file.extracted_data) {
+    if (file.extracted_data && file.extracted_data.slides) {
       setExtractedData(file.extracted_data);
       
       // スライドデータを整形
@@ -339,24 +330,19 @@ export default function PreviewView({ file }: PreviewViewProps) {
         const progressBeforeTranslation = Math.max(1, Math.round((translatedCount / totalTexts) * 100));
         setTranslationProgress(progressBeforeTranslation);
         
-        const response = await fetch('/api/translate', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            texts: batch,
-            targetLanguage,
-          }),
-        });
-        
-        const result = await response.json();
+        // Server Actionを呼び出す
+        const result = await translateTextsAction(
+          batch,
+          targetLanguage
+        );
         
         if (!result.success) {
           throw new Error(result.error || '翻訳に失敗しました');
         }
         
-        allTranslations.push(...result.translations);
+        if (result.translations) {
+          allTranslations.push(...result.translations);
+        }
         translatedCount += batch.length;
         
         // 翻訳完了後の進捗率を更新
@@ -534,65 +520,96 @@ export default function PreviewView({ file }: PreviewViewProps) {
   // 翻訳済みPowerPointのダウンロード
   const downloadTranslatedPPTX = async () => {
     setIsDownloading(true);
+    setDownloadSuccess(false);
     setError(null);
     
     try {
-      // すべてのスライドの翻訳データを整形
+      // slidesが存在しない場合はエラー
+      if (!slides || slides.length === 0) {
+        throw new Error('翻訳データが見つかりません。先にテキスト抽出と翻訳を実行してください。');
+      }
+      
+      // 各スライドを安全に処理
       const translationsData = {
-        slides: slides.map(slide => ({
-          slide_number: slide.pageNumber,
-          translations: slide.texts.map(text => ({
-            original: text.original,
-            translated: text.translated || text.original,
-            isTable: text.type === 'TABLE',
-            isTableCell: text.type === 'TABLE_CELL',
-            tableInfo: text.tableInfo
-          }))
-        }))
+        slides: slides.map((slide, index) => {
+          // slideが存在しない場合の処理
+          if (!slide) {
+            console.error(`Slide at index ${index} is undefined`);
+            return {
+              slide_number: index + 1,
+              translations: []
+            };
+          }
+          
+          // slide.textsが存在しない場合の処理
+          if (!slide.texts || !Array.isArray(slide.texts)) {
+            console.warn(`Slide ${slide.pageNumber || index + 1} has no texts`);
+            return {
+              slide_number: slide.pageNumber || index + 1,
+              translations: []
+            };
+          }
+          
+          return {
+            slide_number: slide.pageNumber || index + 1,
+            translations: slide.texts.map(text => ({
+              original: text?.original || '',
+              translated: text?.translated || text?.original || '',
+              isTable: text?.type === 'TABLE',
+              isTableCell: text?.type === 'TABLE_CELL',
+              tableInfo: text?.tableInfo
+            }))
+          };
+        })
       };
       
-      const response = await fetch('/api/apply-translations', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          fileId: file.id,
-          filePath: file.filename || file.file_path,
-          translations: translationsData
-        }),
-      });
+      // Server Actionを呼び出す
+      const result = await applyTranslationsAction(
+        file.id,
+        file.filename || file.file_path || '',
+        translationsData
+      );
       
-      const result = await response.json();
+      logger.info('Server action result:', {
+        success: result.success,
+        hasTranslatedPath: !!result.translatedPath,
+        hasDownloadUrl: !!result.downloadUrl,
+        error: result.error
+      });
       
       if (!result.success) {
         throw new Error(result.error || '翻訳済みファイルの生成に失敗しました');
       }
       
-      // ダウンロードリンクを作成してクリック
-      if (result.dataUri) {
+      // 翻訳済みファイルのダウンロード処理
+      if (result.downloadUrl) {
+        // 署名付きURLを使用してダウンロード
+        const response = await fetch(result.downloadUrl);
+        if (!response.ok) {
+          throw new Error(`Download failed: ${response.statusText}`);
+        }
+        
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
-        link.href = result.dataUri;
-        link.download = result.fileName || 'translated_presentation.pptx';
+        link.href = url;
+        link.download = `translated_${file.original_name || 'presentation.pptx'}`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+        URL.revokeObjectURL(url);
         
-        // 成功メッセージを表示（一時的）
-        const tempMessage = `${result.message || 'ファイルのダウンロードを開始しました'}`;
+        // ダウンロード成功
+        setDownloadSuccess(true);
         setError(null);
-        // 成功トーストなどを表示する場合はここに追加
-        logger.info('Download started:', { fileName: result.fileName, appliedCount: result.appliedCount });
-      } else if (result.downloadUrl) {
-        // 互換性のため古い形式もサポート
-        const link = document.createElement('a');
-        link.href = result.downloadUrl;
-        link.download = result.fileName || 'translated_presentation.pptx';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        logger.info('Translation download completed:', { translatedPath: result.translatedPath });
         
-        logger.info('Download started:', { fileName: result.fileName, appliedCount: result.appliedCount });
+        // 成功メッセージを3秒後に消す
+        setTimeout(() => {
+          setDownloadSuccess(false);
+        }, 3000);
+      } else {
+        throw new Error('翻訳済みファイルが見つかりません');
       }
     } catch (err) {
       logger.error('Download error:', err);
@@ -623,7 +640,7 @@ export default function PreviewView({ file }: PreviewViewProps) {
               <select
                 value={targetLanguage}
                 onChange={(e) => setTargetLanguage(e.target.value)}
-                className="input text-sm px-3 py-1.5"
+                className="input text-sm px-3 py-1.5 text-blue-700 font-medium"
                 disabled={isTranslating}
                 aria-label="翻訳先言語"
                 data-testid="language-select"
@@ -636,14 +653,14 @@ export default function PreviewView({ file }: PreviewViewProps) {
               <button
                 onClick={() => handleTranslate(false)}
                 disabled={isTranslating || !currentSlide}
-                className="px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-all duration-200 text-sm font-medium"
+                className="px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-all duration-200 text-sm font-bold"
               >
                 {isTranslating ? '翻訳中...' : '現在のスライドを翻訳'}
               </button>
               <button
                 onClick={() => handleTranslate(true)}
                 disabled={isTranslating || slides.length === 0}
-                className="px-3 py-1.5 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 disabled:opacity-50 transition-all duration-200 text-sm font-medium"
+                className="px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-all duration-200 text-sm font-bold"
               >
                 すべて翻訳
               </button>
@@ -652,8 +669,8 @@ export default function PreviewView({ file }: PreviewViewProps) {
               <div className="border-l pl-2 ml-2">
                 <button
                   onClick={downloadTranslatedPPTX}
-                  disabled={isDownloading || slides.length === 0 || !slides.some(s => s.texts.some(t => t.translated))}
-                  className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg disabled:opacity-50 transition-all duration-200 text-sm font-medium flex items-center gap-1.5"
+                  disabled={isDownloading || slides.length === 0 || !slides.some(s => s.texts && s.texts.some(t => t.translated))}
+                  className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:opacity-50 transition-all duration-200 text-sm font-bold flex items-center gap-1.5"
                   title="翻訳済みのPowerPointファイルをダウンロード"
                 >
                   {isDownloading ? (
@@ -674,6 +691,15 @@ export default function PreviewView({ file }: PreviewViewProps) {
             </div>
           </div>
         </div>
+        
+        {/* 成功メッセージ表示 */}
+        {downloadSuccess && (
+          <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 mb-6 animate-fadeIn">
+            <p className="text-green-700 dark:text-green-300">
+              ✓ 翻訳済みファイルのダウンロードを開始しました
+            </p>
+          </div>
+        )}
         
         {/* エラー表示 */}
         {error && (
@@ -728,7 +754,7 @@ export default function PreviewView({ file }: PreviewViewProps) {
             {/* スライドナビゲーション */}
             <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold">
+                <h2 className="text-lg font-semibold text-gray-800">
                   スライド {currentSlide?.pageNumber} / {slides.length}
                 </h2>
                 <div className="flex gap-2">
@@ -779,7 +805,7 @@ export default function PreviewView({ file }: PreviewViewProps) {
                     data-testid="slide-thumbnail"
                     aria-label={`スライド ${slide.pageNumber}`}
                   >
-                    <div className="text-xs font-medium text-gray-600 mb-1">
+                    <div className="text-xs font-medium text-gray-700 mb-1">
                       スライド {slide.pageNumber}
                     </div>
                     <div className="text-xs text-gray-500">
@@ -796,7 +822,7 @@ export default function PreviewView({ file }: PreviewViewProps) {
             {/* スライドプレビュー（プレースホルダー） */}
             <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold">スライドプレビュー</h3>
+                <h3 className="text-lg font-semibold text-gray-800">スライドプレビュー</h3>
                 
                 {/* ズームコントロール */}
                 <div className="flex items-center gap-2">
@@ -913,7 +939,7 @@ export default function PreviewView({ file }: PreviewViewProps) {
             {/* テキスト内容 */}
             <div className="bg-white rounded-lg shadow-sm" data-testid="preview-container">
               <div className="px-6 py-4 border-b border-gray-200">
-                <h3 className="text-lg font-semibold">
+                <h3 className="text-lg font-semibold text-gray-800">
                   テキスト内容 ({currentSlide?.texts.length || 0} 項目)
                 </h3>
               </div>
@@ -980,7 +1006,7 @@ export default function PreviewView({ file }: PreviewViewProps) {
                               <div className="flex gap-2 mt-2">
                                 <button
                                   onClick={() => saveEditedTranslation(text.id)}
-                                  className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition-colors"
+                                  className="px-3 py-1 bg-blue-600 text-white text-sm font-bold rounded hover:bg-blue-700 transition-colors"
                                 >
                                   保存
                                 </button>

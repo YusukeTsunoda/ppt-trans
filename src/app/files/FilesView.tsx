@@ -108,7 +108,7 @@ export default function FilesView({ initialFiles }: FilesViewProps) {
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                      {file.original_filename || file.filename}
+                      {file.original_name || file.filename}
                     </h3>
                     <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
                       <span>{formatFileSize(file.file_size)}</span>
@@ -129,9 +129,9 @@ export default function FilesView({ initialFiles }: FilesViewProps) {
                          file.status === 'failed' ? '失敗' : 'アップロード済み'}
                       </span>
                     </div>
-                    {file.translation_result?.error && (
+                    {file.extracted_data?.error && (
                       <p className="mt-2 text-sm text-red-600 dark:text-red-400">
-                        エラー: {file.translation_result.error}
+                        エラー: {file.extracted_data.error}
                       </p>
                     )}
                   </div>
@@ -156,7 +156,7 @@ export default function FilesView({ initialFiles }: FilesViewProps) {
                     </button>
                     
                     {/* 翻訳済みファイルのダウンロード */}
-                    {file.status === 'completed' && file.translation_result?.translated_path && (
+                    {file.status === 'completed' && file.extracted_data?.translated_path && (
                       <button
                         onClick={() => handleDownload(file.id, 'translated')}
                         disabled={downloadingFileId === file.id}

@@ -43,8 +43,8 @@ export async function deleteFileAction(fileId: string): Promise<FilesState> {
       return { error: 'ファイルが見つかりません' };
     }
     
-    // ストレージパスを決定（storage_path, file_path, filename のいずれか）
-    const storagePath = file.storage_path || file.file_path || file.filename;
+    // ストレージパスを決定（file_path または filename）
+    const storagePath = file.file_path || file.filename;
     
     if (storagePath) {
       // ストレージからファイルを削除
@@ -62,14 +62,14 @@ export async function deleteFileAction(fileId: string): Promise<FilesState> {
     }
     
     // 翻訳済みファイルがあれば削除
-    if (file.translation_result?.translated_path) {
+    if (file.extracted_data?.translated_path) {
       const { error: translatedStorageError } = await supabase.storage
         .from('uploads')
-        .remove([file.translation_result.translated_path]);
+        .remove([file.extracted_data.translated_path]);
         
       if (translatedStorageError) {
         logger.error('Translated file deletion error:', { 
-          path: file.translation_result.translated_path,
+          path: file.extracted_data.translated_path,
           error: translatedStorageError 
         });
       }
@@ -135,8 +135,8 @@ export async function downloadFileAction(
     }
     
     const path = fileType === 'original' 
-      ? file.storage_path 
-      : file.translation_result?.translated_path;
+      ? file.file_path || file.filename
+      : file.extracted_data?.translated_path;
     
     if (!path) {
       return { error: 'File path not found' };

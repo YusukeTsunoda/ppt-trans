@@ -1,0 +1,31 @@
+
+> pptx-translator@0.1.0 dev
+> next dev
+
+[dotenv@17.2.1] injecting env (2) from .env.build -- tip: ⚙️  suppress all logs with { quiet: true }
+[dotenv@17.2.1] injecting env (0) from .env.build -- tip: ⚙️  suppress all logs with { quiet: true }
+   ▲ Next.js 15.4.6
+   - Local:        http://localhost:3000
+   - Network:      http://192.168.11.8:3000
+   - Environments: .env.local, .env
+   - Experiments (use with caution):
+     · serverActions
+
+ ✓ Starting...
+ ✓ Ready in 1199ms
+(node:43885) [DEP_WEBPACK_EXTERNALS_FUNCTION_PARAMETERS] DeprecationWarning: The externals-function should be defined like ({context, request}, cb) => { ... }
+(Use `node --trace-deprecation ...` to show where the warning was created)
+ ✓ Compiled /middleware in 123ms (225 modules)
+ ○ Compiling / ...
+ ✓ Compiled / in 1244ms (1246 modules)
+(node:43885) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+ HEAD / 200 in 1521ms
+ ✓ Compiled in 154ms (352 modules)
+ ✓ Compiled in 324ms (1246 modules)
+ ✓ Compiled in 119ms (352 modules)
+ ✓ Compiled in 62ms (563 modules)
+ ✓ Compiled /test-download in 169ms (1234 modules)
+ GET /test-download 200 in 315ms
+ ✓ Compiled in 122ms (352 modules)
+ ✓ Compiled in 5ms
+ ✓ Compiled in 45ms (563 modules)

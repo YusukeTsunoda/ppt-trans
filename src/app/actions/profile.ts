@@ -10,11 +10,45 @@ export interface ProfileState {
   message?: string;
 }
 
-// プロフィール更新アクション
+// プロフィール更新アクション（オーバーロード）
 export async function updateProfileAction(
-  prevState: ProfileState | null,
-  formData: FormData
-): Promise<ProfileState> {
+  userIdOrState: string | ProfileState | null,
+  displayNameOrFormData: string | FormData
+): Promise<{ success: boolean; error?: string } | ProfileState> {
+  // シンプル版の処理
+  if (typeof userIdOrState === 'string' && typeof displayNameOrFormData === 'string') {
+    const userId = userIdOrState;
+    const displayName = displayNameOrFormData;
+    
+    try {
+      const supabase = await createClient();
+      
+      // プロファイルデータの更新
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .upsert({
+          id: userId,
+          display_name: displayName,
+          updated_at: new Date().toISOString()
+        });
+
+      if (updateError) {
+        logger.error('Profile update error:', updateError);
+        return { success: false, error: 'プロフィールの更新に失敗しました' };
+      }
+
+      revalidatePath('/profile');
+      revalidatePath('/dashboard');
+
+      return { success: true };
+    } catch (error) {
+      logger.error('Profile action error:', error);
+      return { success: false, error: 'プロフィールの更新に失敗しました' };
+    }
+  }
+  
+  // FormData版の処理
+  const formData = displayNameOrFormData as FormData;
   try {
     const displayName = formData.get('displayName') as string;
     const bio = formData.get('bio') as string;

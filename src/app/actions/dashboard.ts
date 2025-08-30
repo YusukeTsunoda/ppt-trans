@@ -41,7 +41,7 @@ export async function getFiles() {
   return { files: data || [], error: null };
 }
 
-// 翻訳実行アクション（改善版：直接引数を受け取る）
+// 翻訳実行アクション（Server Action直接呼び出し版）
 export async function translateFileAction(fileId: string): Promise<TranslateState> {
   'use server';
   
@@ -71,15 +71,11 @@ export async function translateFileAction(fileId: string): Promise<TranslateStat
       return { error: 'ファイルが見つかりません' };
     }
     
-    // 翻訳APIを呼び出す
-    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/translate-pptx`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fileId })
-    });
+    // PPTXファイル翻訳のServer Actionをインポートして直接呼び出す
+    const { translatePPTXAction } = await import('./pptx');
+    const result = await translatePPTXAction(fileId, 'ja'); // デフォルトで日本語に翻訳
     
-    if (!response.ok) {
-      const result = await response.json();
+    if (!result.success) {
       return { error: result.error || '翻訳に失敗しました' };
     }
     
@@ -88,7 +84,7 @@ export async function translateFileAction(fileId: string): Promise<TranslateStat
     
     return {
       success: true,
-      message: '翻訳を開始しました',
+      message: '翻訳が完了しました',
       fileId
     };
     

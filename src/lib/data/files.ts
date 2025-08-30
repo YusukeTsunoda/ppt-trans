@@ -5,15 +5,17 @@ export interface FileRecord {
   id: string;
   user_id: string;
   filename: string;
-  original_filename: string;
+  original_name: string;
   file_size: number;
   mime_type: string;
-  storage_path: string;
+  file_path: string;
   status: 'uploaded' | 'processing' | 'completed' | 'failed';
-  translation_result?: {
+  extracted_data?: {
     translated_path?: string;
     slide_count?: number;
+    translation_completed_at?: string;
     error?: string;
+    [key: string]: any;
   };
   created_at: string;
   updated_at: string;

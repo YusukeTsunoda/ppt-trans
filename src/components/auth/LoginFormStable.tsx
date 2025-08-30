@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, FormEvent } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { loginAction } from '@/app/actions/auth';
 
 interface LoginFormState {
   isLoading: boolean;
@@ -15,61 +16,42 @@ export default function LoginFormStable() {
     error: null,
   });
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    
+  const handleSubmit = async (formData: FormData) => {
     // 1. ローディング状態を設定
     setState({ isLoading: true, error: null });
     
-    // 2. FormDataの取得
-    const formData = new FormData(e.currentTarget);
-    const email = formData.get('email') as string;
-    const password = formData.get('password') as string;
-    
     try {
-      // 3. API呼び出し
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
+      // 2. サーバーアクションを呼び出し
+      const result = await loginAction(formData);
       
-      // 4. レスポンス処理
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'ログインに失敗しました');
-      }
-      
-      // 5. 成功時の処理
-      if (data.success) {
-        // オプション: ローカルストレージに一時的な状態を保存
-        if (data.user) {
-          localStorage.setItem('user', JSON.stringify(data.user));
-        }
-        
-        // 6. リダイレクト
-        router.push(data.redirectTo || '/dashboard');
+      // 3. レスポンス処理
+      if (result.success) {
+        // 成功時はダッシュボードへリダイレクト
+        router.push('/dashboard');
         router.refresh(); // App Routerのキャッシュをリフレッシュ
         
         // リダイレクト中もローディング表示を維持
         setState({ isLoading: true, error: null });
+      } else {
+        // エラー時
+        setState({
+          isLoading: false,
+          error: result.message || 'ログインに失敗しました',
+        });
       }
       
     } catch (error) {
-      // 7. エラーハンドリング
+      // 4. エラーハンドリング
       console.error('Login error:', error);
       setState({
         isLoading: false,
-        error: error instanceof Error ? error.message : 'ログインに失敗しました',
+        error: 'サーバーエラーが発生しました',
       });
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="mt-8 space-y-6" noValidate>
+    <form action={handleSubmit} className="mt-8 space-y-6" noValidate>
       {/* エラー表示 */}
       {state.error && (
         <div className="rounded-md bg-red-50 dark:bg-red-900/20 p-4" role="alert">

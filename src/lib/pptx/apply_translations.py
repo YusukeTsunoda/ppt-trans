@@ -192,13 +192,24 @@ def main():
     if len(sys.argv) != 4:
         print(json.dumps({
             "success": False,
-            "error": "Usage: python apply_translations.py <input_pptx> <output_pptx> <translations_json>"
+            "error": "Usage: python apply_translations.py <input_pptx> <output_pptx> <translations_json_file>"
         }))
         sys.exit(1)
     
     input_path = sys.argv[1]
     output_path = sys.argv[2]
-    translations_json = sys.argv[3]
+    translations_json_path = sys.argv[3]
+    
+    # JSONファイルを読み込む
+    try:
+        with open(translations_json_path, 'r', encoding='utf-8') as f:
+            translations_json = f.read()
+    except Exception as e:
+        print(json.dumps({
+            "success": False,
+            "error": f"Failed to read translations JSON file: {str(e)}"
+        }))
+        sys.exit(1)
     
     result = apply_translations_to_pptx(input_path, output_path, translations_json)
     print(json.dumps(result, ensure_ascii=False, indent=2))

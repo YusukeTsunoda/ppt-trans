@@ -15,10 +15,12 @@ interface FileRecord {
   original_name: string;  // original_filename -> original_nameに修正
   file_size: number;
   status: string;
-  translation_result?: {
+  extracted_data?: {
     translated_path?: string;
     slide_count?: number;
+    translation_completed_at?: string;
     error?: string;
+    [key: string]: any;
   };
   created_at: string;
 }
@@ -114,9 +116,9 @@ function FileCard({ file, onDelete }: { file: FileRecord; onDelete: (fileId: str
         <div className="text-sm font-medium text-gray-900">
           {file.original_name}
         </div>
-        {file.translation_result?.slide_count && (
+        {file.extracted_data?.slide_count && (
           <div className="text-xs text-gray-500">
-            {file.translation_result.slide_count} スライド
+            {file.extracted_data.slide_count} スライド
           </div>
         )}
       </td>
@@ -125,9 +127,9 @@ function FileCard({ file, onDelete }: { file: FileRecord; onDelete: (fileId: str
       </td>
       <td className="px-6 py-4 whitespace-nowrap">
         {getStatusBadge(file.status)}
-        {file.translation_result?.error && (
+        {file.extracted_data?.error && (
           <div className="text-xs text-red-600 mt-1">
-            {file.translation_result.error}
+            {file.extracted_data.error}
           </div>
         )}
         {translateError && (
@@ -141,19 +143,19 @@ function FileCard({ file, onDelete }: { file: FileRecord; onDelete: (fileId: str
       </td>
       <td className="px-6 py-4 whitespace-nowrap">
         <div className="flex gap-2">
-          {/* 元ファイルダウンロード */}
+          {/* PowerPointダウンロード */}
           <button
             onClick={() => handleDownload(file.filename, file.original_name)}
-            className="text-sm text-blue-600 hover:text-blue-800"
+            className="text-sm bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-all duration-200 font-bold"
           >
-            元ファイル
+            💾 PowerPoint
           </button>
           
           {/* プレビューボタン */}
-          {file.status === 'uploaded' && (
+          {(file.status === 'uploaded' || file.status === 'completed' || file.status === 'pending') && (
             <Link
               href={`/preview/${file.id}`}
-              className="text-sm bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-all duration-200"
+              className="text-sm bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-all duration-200 font-bold"
             >
               📄 プレビュー
             </Link>
@@ -175,7 +177,7 @@ function FileCard({ file, onDelete }: { file: FileRecord; onDelete: (fileId: str
                 }
               }}
               disabled={isTranslating}
-              className="text-sm bg-emerald-500 text-white px-4 py-2 rounded-lg hover:bg-emerald-600 disabled:opacity-50 transition-all duration-200"
+              className="text-sm bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-all duration-200 font-bold"
             >
               {isTranslating ? '翻訳中...' : '🌐 翻訳'}
             </button>
@@ -188,26 +190,13 @@ function FileCard({ file, onDelete }: { file: FileRecord; onDelete: (fileId: str
             </span>
           )}
           
-          {/* 翻訳済みファイルダウンロード */}
-          {file.status === 'completed' && file.translation_result?.translated_path && (
-            <button
-              onClick={() => handleDownload(
-                file.translation_result!.translated_path!,
-                `translated_${file.original_name}`
-              )}
-              className="text-sm bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-all duration-200"
-            >
-              翻訳済み
-            </button>
-          )}
-          
           {/* 削除ボタン */}
           <button
             onClick={handleDelete}
             disabled={isDeleting}
-            className="text-sm text-red-600 hover:text-red-800 disabled:opacity-50"
+            className="text-sm text-red-600 hover:text-red-800 disabled:opacity-50 transition-all duration-200"
           >
-            {isDeleting ? '削除中...' : '削除'}
+            {isDeleting ? '削除中...' : '🗑️ 削除'}
           </button>
         </div>
       </td>
@@ -282,7 +271,7 @@ export default function DashboardView({ userEmail, initialFiles }: DashboardView
               {isAdmin && (
                 <Link
                   href="/admin"
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-all duration-200 text-sm font-medium"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-200 text-sm font-bold"
                   title="管理画面"
                 >
                   <Settings className="w-4 h-4" />
@@ -305,7 +294,7 @@ export default function DashboardView({ userEmail, initialFiles }: DashboardView
               {/* 新規アップロードボタン */}
               <Link
                 href="/upload"
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition-all duration-200 text-sm font-medium"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-200 text-sm font-bold"
                 data-testid="new-upload-link"
               >
                 <Upload className="w-4 h-4" />

@@ -10,11 +10,11 @@ const SECURITY_HEADERS = {
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
     img-src 'self' data: https: blob:;
     font-src 'self' data: https://fonts.gstatic.com;
-    connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.anthropic.com https://www.google-analytics.com;
+    connect-src 'self' http://127.0.0.1:54321 http://localhost:54321 https://*.supabase.co wss://*.supabase.co https://api.anthropic.com https://www.google-analytics.com;
     frame-ancestors 'none';
     base-uri 'self';
     form-action 'self';
-    upgrade-insecure-requests;
+    ${process.env.NODE_ENV === 'production' ? 'upgrade-insecure-requests;' : ''}
   `.replace(/\s{2,}/g, ' ').trim(),
   'X-DNS-Prefetch-Control': 'on',
   'X-Frame-Options': 'DENY',

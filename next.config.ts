@@ -49,9 +49,10 @@ const nextConfig: NextConfig = {
   experimental: {
     // optimizeCss: true, // CSS最適化 - 一時的に無効化（CSS表示問題の対処）
     scrollRestoration: true, // スクロール位置の復元
-    // serverActions: {
-    //   bodySizeLimit: '2mb',
-    // },
+    serverActions: {
+      bodySizeLimit: '2mb',
+      allowedOrigins: ['localhost:3000', 'localhost:3001', 'localhost:3002', 'localhost:3003', 'localhost:3004']
+    },
   },
 
   // Server Action安定化設定
@@ -68,6 +69,16 @@ const nextConfig: NextConfig = {
   // ヘッダー設定（キャッシュ制御）
   async headers() {
     return [
+      // CSP設定 - ローカルSupabaseを許可
+      {
+        source: '/:path*',
+        headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: "default-src 'self' 'unsafe-inline' 'unsafe-eval'; connect-src 'self' http://127.0.0.1:54321 http://localhost:54321 https://*.supabase.co wss://*.supabase.co https://api.anthropic.com https://www.google-analytics.com; img-src 'self' data: blob: https:; font-src 'self' data:;",
+          },
+        ],
+      },
       {
         source: '/(.*).(jpg|jpeg|png|gif|ico|svg)',
         headers: [

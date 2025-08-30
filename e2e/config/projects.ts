@@ -58,7 +58,7 @@ export const coreProject: Project = {
 // Server Actionsテストプロジェクト
 export const serverActionsProject: Project = {
   name: 'server-actions',
-  testMatch: /.*-server-actions\.spec\.ts$/,
+  testMatch: /server-actions\/.+\.spec\.ts$/,
   timeout: 30 * 60 * 1000,
   retries: 1,
   use: {
@@ -67,6 +67,10 @@ export const serverActionsProject: Project = {
     headless: true,
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
+    // Server Actions用のヘッダー
+    extraHTTPHeaders: {
+      'X-E2E-Test': 'true',
+    },
   },
 };
 

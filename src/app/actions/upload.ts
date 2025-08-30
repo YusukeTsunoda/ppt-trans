@@ -95,7 +95,7 @@ export async function uploadFileAction(
         file_size: buffer.length,
         mime_type: file.type,
         file_path: uploadData.path,  // storage_path -> file_path に修正
-        status: 'uploaded'
+        status: 'completed'  // 'uploaded' -> 'completed' に修正（DBスキーマに合わせる）
       })
       .select()
       .single();

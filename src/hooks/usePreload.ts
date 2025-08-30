@@ -15,7 +15,7 @@ const preloadMap: Record<string, () => Promise<any>> = {
     await Promise.all([
       import('@/app/preview/[id]/PreviewView'),
       import('@/app/files/FilesView'),
-      import('@/app/profile/ProfileClient'),
+      // ProfileClient removed
     ].map(promise => promise.catch(() => null))); // エラーを無視
   },
   '/files': async () => {
@@ -67,7 +67,7 @@ export function useHoverPreload(href: string) {
     }
     // プロフィールの場合
     else if (href === '/profile') {
-      import('@/app/profile/ProfileClient').catch(() => null);
+      // ProfileClient removed
     }
   };
 
@@ -94,9 +94,10 @@ export function useVisibilityPreload(componentName: string, threshold = 0.5) {
               case 'DashboardView':
                 import('@/components/dashboard/DashboardView').catch(() => null);
                 break;
-              case 'ProfileClient':
-                import('@/app/profile/ProfileClient').catch(() => null);
-                break;
+              // ProfileClient removed
+              // case 'ProfileClient':
+              //   import('@/app/profile/ProfileClient').catch(() => null);
+              //   break;
             }
           }
         });

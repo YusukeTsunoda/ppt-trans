@@ -4,6 +4,7 @@
  */
 
 import { test, expect } from '@playwright/test';
+import { UNIFIED_TEST_CONFIG } from './config/unified-test-config';
 
 test.describe('Server Actions Debug', () => {
   test('フォームのaction属性を確認', async ({ page }) => {
@@ -43,8 +44,8 @@ test.describe('Server Actions Debug', () => {
     });
     
     // フォーム入力
-    await page.fill('[name="email"]', 'test@example.com');
-    await page.fill('[name="password"]', 'testpassword123');
+    await page.fill('[name="email"]', UNIFIED_TEST_CONFIG.users.standard.email);
+    await page.fill('[name="password"]', UNIFIED_TEST_CONFIG.users.standard.password);
     
     // 送信前の状態を記録
     const submitButton = page.locator('button[type="submit"]');
@@ -96,8 +97,8 @@ test.describe('Server Actions Debug', () => {
     const result = await page.evaluate(async () => {
       // FormDataを作成
       const formData = new FormData();
-      formData.append('email', 'test@example.com');
-      formData.append('password', 'testpassword123');
+      formData.append('email', UNIFIED_TEST_CONFIG.users.standard.email);
+      formData.append('password', UNIFIED_TEST_CONFIG.users.standard.password);
       
       try {
         // フォーム要素を取得
